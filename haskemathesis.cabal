@@ -70,7 +70,17 @@ test-suite haskemathesis-test
   hs-source-dirs:   test
   other-modules:
     Haskemathesis.Test.Generators
-    Haskemathesis.Test.Properties
+    Haskemathesis.Test.Properties.ContentType
+    Haskemathesis.Test.Properties.Curl
+    Haskemathesis.Test.Properties.Gen
+    Haskemathesis.Test.Properties.Render
+    Haskemathesis.Test.Properties.Request
+    Haskemathesis.Test.Properties.ResponseHeaders
+    Haskemathesis.Test.Properties.ResponseSchema
+    Haskemathesis.Test.Properties.StatusCode
+    Haskemathesis.Test.Properties.Validate
+    Haskemathesis.Test.Spec
+    Haskemathesis.Test.Support
 
   build-depends:
     , aeson
@@ -80,6 +90,7 @@ test-suite haskemathesis-test
     , containers
     , haskemathesis
     , hedgehog
+    , hspec
     , http-types
     , regex-tdfa
     , scientific

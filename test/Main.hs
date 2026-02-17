@@ -1,9 +1,8 @@
 module Main (main) where
 
-import Control.Monad (void)
-import Hedgehog (checkParallel)
+import Test.Hspec (hspec)
 
-import Haskemathesis.Test.Properties (tests)
+import Haskemathesis.Test.Spec (spec)
 
 main :: IO ()
-main = void (checkParallel tests)
+main = hspec spec
