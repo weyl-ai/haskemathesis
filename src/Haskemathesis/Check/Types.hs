@@ -27,5 +27,6 @@ data FailureDetail = FailureDetail
     , fdRequest :: ApiRequest
     , fdResponse :: ApiResponse
     , fdOperation :: Text
+    , fdSchemaErrors :: [Text]
     }
     deriving (Eq, Show)

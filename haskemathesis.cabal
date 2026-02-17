@@ -76,9 +76,11 @@ test-suite haskemathesis-test
     , aeson
     , base
     , bytestring
+    , case-insensitive
     , containers
     , haskemathesis
     , hedgehog
+    , http-types
     , regex-tdfa
     , scientific
     , text

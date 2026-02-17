@@ -12,17 +12,21 @@ import Haskemathesis.Check.Types (FailureDetail (..))
 import Haskemathesis.Execute.Types (ApiRequest (..), ApiResponse (..), BaseUrl)
 import Haskemathesis.Report.Curl (toCurl)
 
-renderFailureDetail :: Maybe BaseUrl -> FailureDetail -> Text
-renderFailureDetail mBase detail =
+renderFailureDetail :: Maybe BaseUrl -> Maybe Text -> FailureDetail -> Text
+renderFailureDetail mBase mSeed detail =
     T.intercalate
         "\n"
-        [ "Check: " <> fdCheck detail
-        , "Operation: " <> fdOperation detail
-        , "Message: " <> fdMessage detail
-        , "Request: " <> renderRequest (fdRequest detail)
-        , "Response: " <> renderResponse (fdResponse detail)
-        , "Curl: " <> toCurl mBase (fdRequest detail)
-        ]
+        ( [ "Check: " <> fdCheck detail
+          , "Operation: " <> fdOperation detail
+          , "Message: " <> fdMessage detail
+          ]
+            <> renderSchemaErrors detail
+            <> renderSeed mSeed
+            <> [ "Request: " <> renderRequest (fdRequest detail)
+               , "Response: " <> renderResponse (fdResponse detail)
+               , "Curl: " <> toCurl mBase (fdRequest detail)
+               ]
+        )
 
 renderRequest :: ApiRequest -> Text
 renderRequest req =
@@ -42,3 +46,15 @@ renderQuery params =
     "?" <> T.intercalate "&" (map renderPair params)
   where
     renderPair (name, value) = name <> "=" <> value
+
+renderSchemaErrors :: FailureDetail -> [Text]
+renderSchemaErrors detail =
+    case fdSchemaErrors detail of
+        [] -> []
+        errs -> ["Schema errors: " <> T.intercalate "; " errs]
+
+renderSeed :: Maybe Text -> [Text]
+renderSeed mSeed =
+    case mSeed of
+        Nothing -> []
+        Just seedText -> ["Seed: " <> seedText]

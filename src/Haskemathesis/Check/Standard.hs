@@ -52,7 +52,7 @@ notAServerError :: Check
 notAServerError =
     Check "not_a_server_error" $ \req res op ->
         if resStatusCode res >= 500
-            then CheckFailed (failureDetail "not_a_server_error" "response status is 5xx" req res op)
+            then CheckFailed (failureDetail "not_a_server_error" "response status is 5xx" [] req res op)
             else CheckPassed
 
 responseSchemaConformance :: Check
@@ -67,6 +67,7 @@ responseSchemaConformance =
                             ( failureDetail
                                 "response_schema_conformance"
                                 ("response body is not valid JSON: " <> T.pack err)
+                                []
                                 req
                                 res
                                 op
@@ -79,6 +80,7 @@ responseSchemaConformance =
                                     ( failureDetail
                                         "response_schema_conformance"
                                         ("response violates schema: " <> T.intercalate "; " errs)
+                                        errs
                                         req
                                         res
                                         op
@@ -94,6 +96,7 @@ statusCodeConformance =
                     ( failureDetail
                         "status_code_conformance"
                         ("response status code is not documented: " <> T.pack (show (resStatusCode res)))
+                        []
                         req
                         res
                         op
@@ -113,6 +116,7 @@ contentTypeConformance =
                                 ( failureDetail
                                     "content_type_conformance"
                                     "response is missing Content-Type header"
+                                    []
                                     req
                                     res
                                     op
@@ -126,6 +130,7 @@ contentTypeConformance =
                                             ( failureDetail
                                                 "content_type_conformance"
                                                 ("response Content-Type not documented: " <> contentType)
+                                                []
                                                 req
                                                 res
                                                 op
@@ -144,6 +149,7 @@ responseHeadersConformance =
                             ( failureDetail
                                 "response_headers_conformance"
                                 ("response headers invalid: " <> T.intercalate "; " errs)
+                                []
                                 req
                                 res
                                 op
@@ -196,14 +202,15 @@ matchesContentType contentType schemas =
 lookupHeader :: HeaderName -> [(HeaderName, ByteString)] -> Maybe ByteString
 lookupHeader = lookup
 
-failureDetail :: Text -> Text -> ApiRequest -> ApiResponse -> ResolvedOperation -> FailureDetail
-failureDetail checkLabel message req res op =
+failureDetail :: Text -> Text -> [Text] -> ApiRequest -> ApiResponse -> ResolvedOperation -> FailureDetail
+failureDetail checkLabel message schemaErrors req res op =
     FailureDetail
         { fdCheck = checkLabel
         , fdMessage = message
         , fdRequest = req
         , fdResponse = res
         , fdOperation = operationLabel op
+        , fdSchemaErrors = schemaErrors
         }
 
 operationLabel :: ResolvedOperation -> Text
