@@ -2,20 +2,26 @@
 
 module Haskemathesis.Property (
     propertyForOperation,
+    propertyForOperationWithConfig,
     propertiesForSpec,
+    propertiesForSpecWithConfig,
 ) where
 
 import Data.Text (Text)
 import qualified Data.Text as T
-import Hedgehog (Property, annotate, evalIO, failure, forAll, property, success)
+import Hedgehog (Property, annotate, evalIO, failure, forAll, property, success, withTests)
 import Hedgehog.Internal.Property (PropertyT)
 import System.Environment (lookupEnv)
 
+import Data.OpenApi (OpenApi)
+
+import Haskemathesis.Auth.Config (applyAuthForOperation)
 import Haskemathesis.Check.Types (Check (..), CheckResult (..))
+import Haskemathesis.Config (TestConfig (..))
 import Haskemathesis.Execute.Types (ApiRequest, ApiResponse, BaseUrl)
 import Haskemathesis.Gen.Request (genApiRequest)
 import Haskemathesis.OpenApi.Types (ResolvedOperation (..))
-import Haskemathesis.Report.Render (renderFailureDetail)
+import Haskemathesis.Report.Render (renderFailureDetailAnsi)
 
 propertyForOperation ::
     Maybe BaseUrl ->
@@ -29,6 +35,23 @@ propertyForOperation mBase checks execute op =
         res <- evalIO (execute req)
         runChecks mBase checks req res op
 
+propertyForOperationWithConfig ::
+    OpenApi ->
+    TestConfig ->
+    (ApiRequest -> IO ApiResponse) ->
+    ResolvedOperation ->
+    Property
+propertyForOperationWithConfig openApi config execute op =
+    withTests (fromIntegral (tcPropertyCount config)) $
+        property $ do
+            req <- forAll (genApiRequest op)
+            let req' =
+                    case tcAuthConfig config of
+                        Nothing -> req
+                        Just auth -> applyAuthForOperation openApi auth op req
+            res <- evalIO (execute req')
+            runChecks (tcBaseUrl config) (tcChecks config) req' res op
+
 propertiesForSpec ::
     Maybe BaseUrl ->
     [Check] ->
@@ -38,6 +61,18 @@ propertiesForSpec ::
 propertiesForSpec mBase checks execute ops =
     [ (operationLabel op, propertyForOperation mBase checks execute op)
     | op <- ops
+    ]
+
+propertiesForSpecWithConfig ::
+    OpenApi ->
+    TestConfig ->
+    (ApiRequest -> IO ApiResponse) ->
+    [ResolvedOperation] ->
+    [(Text, Property)]
+propertiesForSpecWithConfig openApi config execute ops =
+    [ (operationLabel op, propertyForOperationWithConfig openApi config execute op)
+    | op <- ops
+    , tcOperationFilter config op
     ]
 
 runChecks ::
@@ -53,7 +88,7 @@ runChecks mBase checks req res op =
         Just detail -> do
             mSeed <- evalIO (lookupEnv "HEDGEHOG_SEED")
             let seedText = T.pack <$> mSeed
-            annotate (T.unpack (renderFailureDetail mBase seedText detail))
+            annotate (T.unpack (renderFailureDetailAnsi mBase seedText detail))
             failure
   where
     firstFailure =

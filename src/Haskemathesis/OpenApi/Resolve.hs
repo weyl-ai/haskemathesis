@@ -4,6 +4,7 @@ module Haskemathesis.OpenApi.Resolve (
 
 import Data.Aeson ()
 import qualified Data.HashMap.Strict.InsOrd as InsOrdHashMap
+import qualified Data.HashSet.InsOrd as InsOrdHashSet
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 import Data.Maybe (catMaybes, fromMaybe, mapMaybe)
@@ -27,6 +28,7 @@ import Data.OpenApi (
     Response (..),
     Responses (..),
     Schema,
+    SecurityRequirement,
  )
 
 import Haskemathesis.OpenApi.Convert (convertSchema)
@@ -35,41 +37,52 @@ import qualified Haskemathesis.Schema as HS
 
 resolveOperations :: OpenApi -> [HOT.ResolvedOperation]
 resolveOperations openApi =
-    concatMap (uncurry (resolvePathItem components)) (InsOrdHashMap.toList pathMap)
+    concatMap (uncurry (resolvePathItem components globalSecurity)) (InsOrdHashMap.toList pathMap)
   where
     components = _openApiComponents openApi
+    globalSecurity = _openApiSecurity openApi
     pathMap = _openApiPaths openApi
 
-resolvePathItem :: Components -> FilePath -> PathItem -> [HOT.ResolvedOperation]
-resolvePathItem components path item =
+resolvePathItem :: Components -> [SecurityRequirement] -> FilePath -> PathItem -> [HOT.ResolvedOperation]
+resolvePathItem components globalSecurity path item =
     catMaybes
-        [ resolveOperation components path (T.pack "GET") (_pathItemGet item)
-        , resolveOperation components path (T.pack "PUT") (_pathItemPut item)
-        , resolveOperation components path (T.pack "POST") (_pathItemPost item)
-        , resolveOperation components path (T.pack "DELETE") (_pathItemDelete item)
-        , resolveOperation components path (T.pack "OPTIONS") (_pathItemOptions item)
-        , resolveOperation components path (T.pack "HEAD") (_pathItemHead item)
-        , resolveOperation components path (T.pack "PATCH") (_pathItemPatch item)
-        , resolveOperation components path (T.pack "TRACE") (_pathItemTrace item)
+        [ resolveOperation components globalSecurity path (T.pack "GET") (_pathItemGet item)
+        , resolveOperation components globalSecurity path (T.pack "PUT") (_pathItemPut item)
+        , resolveOperation components globalSecurity path (T.pack "POST") (_pathItemPost item)
+        , resolveOperation components globalSecurity path (T.pack "DELETE") (_pathItemDelete item)
+        , resolveOperation components globalSecurity path (T.pack "OPTIONS") (_pathItemOptions item)
+        , resolveOperation components globalSecurity path (T.pack "HEAD") (_pathItemHead item)
+        , resolveOperation components globalSecurity path (T.pack "PATCH") (_pathItemPatch item)
+        , resolveOperation components globalSecurity path (T.pack "TRACE") (_pathItemTrace item)
         ]
   where
     pathParams = _pathItemParameters item
 
-    resolveOperation comps p method mOp = do
+    resolveOperation comps globalSec p method mOp = do
         op <- mOp
         let params = resolveParams comps (pathParams <> _operationParameters op)
         let requestBody = resolveRequestBody comps (_operationRequestBody op)
         let (responses, defaultResponse) = resolveResponses comps (_operationResponses op)
+        let tags = InsOrdHashSet.toList (_operationTags op)
+        let security = resolveSecurity globalSec (_operationSecurity op)
         pure
             HOT.ResolvedOperation
                 { HOT.roMethod = method
                 , HOT.roPath = T.pack p
                 , HOT.roOperationId = _operationOperationId op
+                , HOT.roTags = tags
                 , HOT.roParameters = params
                 , HOT.roRequestBody = requestBody
                 , HOT.roResponses = responses
                 , HOT.roDefaultResponse = defaultResponse
+                , HOT.roSecurity = security
                 }
+
+resolveSecurity :: [SecurityRequirement] -> [SecurityRequirement] -> [SecurityRequirement]
+resolveSecurity globalSecurity operationSecurity =
+    if null operationSecurity
+        then globalSecurity
+        else operationSecurity
 
 resolveParams :: Components -> [Referenced Param] -> [HOT.ResolvedParam]
 resolveParams components =

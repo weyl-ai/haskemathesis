@@ -19,6 +19,7 @@ spec =
         itProp "respects existing content-type header" prop_curl_respects_existing_content_type_header
         itProp "renders query params" prop_request_query_params_rendered_in_curl
         itProp "renders duplicate query params" prop_request_query_params_duplicate_in_curl
+        itProp "preserves query param order" prop_request_query_params_ordered_in_curl
         itProp "includes base url" prop_curl_includes_base_url
         itProp "omits body when none" prop_curl_omits_body_when_none
         itProp "encodes spaces in query" prop_curl_encodes_spaces_in_query
@@ -81,6 +82,20 @@ prop_request_query_params_duplicate_in_curl =
                     }
             curl = toCurl Nothing req
         assert ("/items?tag=a&tag=b" `T.isInfixOf` curl)
+
+prop_request_query_params_ordered_in_curl :: Property
+prop_request_query_params_ordered_in_curl =
+    property $ do
+        let req =
+                ApiRequest
+                    { reqMethod = "GET"
+                    , reqPath = "/search"
+                    , reqQueryParams = [("a", "1"), ("b", "2"), ("a", "3")]
+                    , reqHeaders = []
+                    , reqBody = Nothing
+                    }
+            curl = toCurl Nothing req
+        assert ("/search?a=1&b=2&a=3" `T.isInfixOf` curl)
 
 prop_curl_includes_base_url :: Property
 prop_curl_includes_base_url =

@@ -2,6 +2,7 @@
 
 module Haskemathesis.Test.Properties.Request (spec) where
 
+import Data.Aeson (Value (..))
 import qualified Data.CaseInsensitive as CI
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
@@ -19,6 +20,7 @@ spec =
     describe "Request generation" $ do
         itProp "path interpolation" prop_request_path_interpolation
         itProp "path interpolation with multiple params" prop_request_path_multiple_params
+        itProp "path params are URL-encoded" prop_request_path_param_encoding
         itProp "header generation" prop_request_header_generation
         itProp "request body sets media type" prop_request_body_sets_media_type
 
@@ -82,6 +84,28 @@ prop_request_header_generation =
         req <- forAll (genApiRequest op)
         let headerNames = map fst (reqHeaders req)
         assert (CI.mk (encodeUtf8 "X-Test") `elem` headerNames)
+
+prop_request_path_param_encoding :: Property
+prop_request_path_param_encoding =
+    property $ do
+        let op =
+                emptyOperation
+                    { roPath = "/items/{name}"
+                    , roParameters =
+                        [ ResolvedParam
+                            { rpName = "name"
+                            , rpLocation = ParamPath
+                            , rpRequired = True
+                            , rpSchema =
+                                emptySchema
+                                    { schemaType = Just SString
+                                    , schemaConst = Just (String "hello world")
+                                    }
+                            }
+                        ]
+                    }
+        req <- forAll (genApiRequest op)
+        assert ("/items/hello%20world" `T.isInfixOf` reqPath req)
 
 prop_request_body_sets_media_type :: Property
 prop_request_body_sets_media_type =

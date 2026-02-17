@@ -15,6 +15,7 @@ import qualified Data.Text as T
 import Data.Text.Encoding (decodeUtf8, encodeUtf8)
 import Hedgehog (Gen)
 import Network.HTTP.Types (HeaderName)
+import Network.HTTP.Types.URI (urlEncode)
 
 import Haskemathesis.Execute.Types
 import Haskemathesis.Gen (genFromSchema)
@@ -66,7 +67,10 @@ interpolatePath =
     foldl' replace
   where
     replace acc (name, value) =
-        T.replace ("{" <> name <> "}") value acc
+        T.replace ("{" <> name <> "}") (encodePathSegment value) acc
+
+encodePathSegment :: Text -> Text
+encodePathSegment = decodeUtf8 . urlEncode False . encodeUtf8
 
 renderValue :: Value -> Text
 renderValue value =

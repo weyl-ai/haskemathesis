@@ -5,6 +5,7 @@ module Haskemathesis.Test.Properties.ResponseSchema (spec) where
 import Data.Aeson (encode)
 import qualified Data.ByteString.Lazy as LBS
 import qualified Data.Map.Strict as Map
+import Data.Maybe (isJust)
 import Data.Text (Text)
 import Hedgehog (Property, assert, failure, property, success)
 import Test.Hspec (Spec, describe)
@@ -22,6 +23,7 @@ spec :: Spec
 spec =
     describe "Response schema conformance" $ do
         itProp "schema errors reported" prop_schema_errors_reported
+        itProp "schema diff reported" prop_schema_diff_reported
         itProp "without content-type and single schema" prop_response_schema_without_content_type_single_schema
         itProp "without content-type and multiple schemas" prop_response_schema_without_content_type_multiple_schemas_skips
         itProp "invalid json fails" prop_response_schema_conformance_invalid_json_fails
@@ -51,6 +53,27 @@ prop_schema_errors_reported =
                     }
         case checkRun responseSchemaConformance (dummyRequest op) res op of
             CheckFailed detail -> assert (not (null (fdSchemaErrors detail)))
+            _otherResult -> failure
+
+prop_schema_diff_reported :: Property
+prop_schema_diff_reported =
+    property $ do
+        let responseSpec =
+                ResponseSpec
+                    { rsContent = Map.fromList [("application/json", emptySchema{schemaType = Just SInteger})]
+                    , rsHeaders = mempty
+                    , rsRequiredHeaders = []
+                    }
+            op = emptyOperation{roResponses = Map.fromList [(200, responseSpec)]}
+            res =
+                ApiResponse
+                    { resStatusCode = 200
+                    , resHeaders = [(hContentType, "application/json")]
+                    , resBody = LBS.toStrict (encode ("oops" :: Text))
+                    , resTime = 0
+                    }
+        case checkRun responseSchemaConformance (dummyRequest op) res op of
+            CheckFailed detail -> assert (isJust (fdSchemaDiff detail))
             _otherResult -> failure
 
 prop_response_schema_without_content_type_single_schema :: Property

@@ -12,8 +12,10 @@ common warnings
 library
   import:           warnings
   exposed-modules:
+    Haskemathesis.Auth.Config
     Haskemathesis.Check.Standard
     Haskemathesis.Check.Types
+    Haskemathesis.Config
     Haskemathesis.Execute.Http
     Haskemathesis.Execute.Types
     Haskemathesis.Execute.Wai
@@ -70,6 +72,8 @@ test-suite haskemathesis-test
   hs-source-dirs:   test
   other-modules:
     Haskemathesis.Test.Generators
+    Haskemathesis.Test.Properties.Auth
+    Haskemathesis.Test.Properties.Config
     Haskemathesis.Test.Properties.ContentType
     Haskemathesis.Test.Properties.Curl
     Haskemathesis.Test.Properties.Gen
@@ -85,6 +89,7 @@ test-suite haskemathesis-test
   build-depends:
     , aeson
     , base
+    , base64-bytestring
     , bytestring
     , case-insensitive
     , containers
@@ -92,6 +97,8 @@ test-suite haskemathesis-test
     , hedgehog
     , hspec
     , http-types
+    , insert-ordered-containers
+    , openapi3
     , regex-tdfa
     , scientific
     , text

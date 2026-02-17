@@ -2,6 +2,7 @@
 
 module Haskemathesis.Report.Render (
     renderFailureDetail,
+    renderFailureDetailAnsi,
 ) where
 
 import Data.Text (Text)
@@ -21,10 +22,28 @@ renderFailureDetail mBase mSeed detail =
           , "Message: " <> fdMessage detail
           ]
             <> renderSchemaErrors detail
+            <> renderSchemaDiff detail
             <> renderSeed mSeed
             <> [ "Request: " <> renderRequest (fdRequest detail)
                , "Response: " <> renderResponse (fdResponse detail)
                , "Curl: " <> toCurl mBase (fdRequest detail)
+               ]
+        )
+
+renderFailureDetailAnsi :: Maybe BaseUrl -> Maybe Text -> FailureDetail -> Text
+renderFailureDetailAnsi mBase mSeed detail =
+    T.intercalate
+        "\n"
+        ( [ ansi Cyan ("Check: " <> fdCheck detail)
+          , ansi Cyan ("Operation: " <> fdOperation detail)
+          , ansi Red ("Message: " <> fdMessage detail)
+          ]
+            <> map (ansi Red) (renderSchemaErrors detail)
+            <> map (ansi Red) (renderSchemaDiff detail)
+            <> map (ansi Yellow) (renderSeed mSeed)
+            <> [ ansi Green ("Request: " <> renderRequest (fdRequest detail))
+               , ansi Green ("Response: " <> renderResponse (fdResponse detail))
+               , ansi Green ("Curl: " <> toCurl mBase (fdRequest detail))
                ]
         )
 
@@ -53,8 +72,36 @@ renderSchemaErrors detail =
         [] -> []
         errs -> ["Schema errors: " <> T.intercalate "; " errs]
 
+renderSchemaDiff :: FailureDetail -> [Text]
+renderSchemaDiff detail =
+    case fdSchemaDiff detail of
+        Nothing -> []
+        Just diffText ->
+            "Schema diff:" : map ("  " <>) (T.lines diffText)
+
 renderSeed :: Maybe Text -> [Text]
 renderSeed mSeed =
     case mSeed of
         Nothing -> []
         Just seedText -> ["Seed: " <> seedText]
+
+data AnsiColor
+    = Red
+    | Green
+    | Yellow
+    | Cyan
+
+ansi :: AnsiColor -> Text -> Text
+ansi color text =
+    ansiCode color <> text <> ansiReset
+
+ansiCode :: AnsiColor -> Text
+ansiCode color =
+    case color of
+        Red -> "\ESC[31m"
+        Green -> "\ESC[32m"
+        Yellow -> "\ESC[33m"
+        Cyan -> "\ESC[36m"
+
+ansiReset :: Text
+ansiReset = "\ESC[0m"

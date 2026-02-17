@@ -27,7 +27,6 @@ import Haskemathesis.Check.Standard (allChecks)
 import Haskemathesis.Execute.Wai (executeWai)
 import Haskemathesis.Integration.Hspec (specForExecutor)
 import Haskemathesis.OpenApi.Loader (loadOpenApiFile)
-import Haskemathesis.OpenApi.Resolve (resolveOperations)
 
 main :: IO ()
 main = do
@@ -41,21 +40,42 @@ main = do
 ## Quick Start (HTTP)
 
 ```haskell
+import Network.HTTP.Client (newManager)
+import Network.HTTP.Client.TLS (tlsManagerSettings)
 import Test.Tasty (defaultMain)
 
-import Haskemathesis.Check.Standard (allChecks)
-import Haskemathesis.Execute.Http (executeHttp)
-import Haskemathesis.Integration.Tasty (testTreeForExecutor)
+import Haskemathesis.Config (defaultTestConfig)
+import Haskemathesis.Integration.Tasty (testTreeForUrl)
 import Haskemathesis.OpenApi.Loader (loadOpenApiFile)
 import Haskemathesis.OpenApi.Resolve (resolveOperations)
 
 main :: IO ()
 main = do
+  manager <- newManager tlsManagerSettings
   specResult <- loadOpenApiFile "openapi.yaml"
   case specResult of
     Left err -> error (show err)
     Right spec ->
-      defaultMain (testTreeForExecutor (Just "https://api.example.com") allChecks executeHttp (resolveOperations spec))
+      defaultMain (testTreeForUrl defaultTestConfig spec manager "https://api.example.com")
+```
+
+## Auth & Operation Filters
+
+```haskell
+import qualified Data.Map.Strict as Map
+
+import Haskemathesis.Auth.Config (AuthConfig(..), AuthValue(..))
+import Haskemathesis.Config (defaultTestConfig, filterByTag)
+import Haskemathesis.Integration.Hspec (specForUrl)
+
+let authConfig =
+      AuthConfig
+        (Map.fromList [("api_key", AuthApiKey "secret-token")])
+let config =
+      defaultTestConfig
+        { tcAuthConfig = Just authConfig
+        , tcOperationFilter = filterByTag "public"
+        }
 ```
 
 ## Examples

@@ -25,10 +25,12 @@ emptyOperation =
         { roMethod = "GET"
         , roPath = "/"
         , roOperationId = Nothing
+        , roTags = []
         , roParameters = []
         , roRequestBody = Nothing
         , roResponses = mempty
         , roDefaultResponse = Nothing
+        , roSecurity = []
         }
 
 dummyRequest :: ResolvedOperation -> ApiRequest

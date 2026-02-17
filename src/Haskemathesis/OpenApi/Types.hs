@@ -9,6 +9,7 @@ module Haskemathesis.OpenApi.Types (
 ) where
 
 import Data.Map.Strict (Map)
+import Data.OpenApi (SecurityRequirement)
 import Data.Text (Text)
 
 import Haskemathesis.Schema (Schema)
@@ -45,9 +46,11 @@ data ResolvedOperation = ResolvedOperation
     { roMethod :: Text
     , roPath :: Text
     , roOperationId :: Maybe Text
+    , roTags :: [Text]
     , roParameters :: [ResolvedParam]
     , roRequestBody :: Maybe ResolvedRequestBody
     , roResponses :: Map Int ResponseSpec
     , roDefaultResponse :: Maybe ResponseSpec
+    , roSecurity :: [SecurityRequirement]
     }
     deriving (Eq, Show)

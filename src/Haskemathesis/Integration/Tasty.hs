@@ -3,6 +3,9 @@
 module Haskemathesis.Integration.Tasty (
     testTreeForExecutor,
     testTreeForApp,
+    testTreeForExecutorWithConfig,
+    testTreeForAppWithConfig,
+    testTreeForUrl,
 ) where
 
 import Data.Text (Text)
@@ -12,14 +15,17 @@ import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.Hedgehog (testPropertyNamed)
 
 import Data.OpenApi (OpenApi)
+import Network.HTTP.Client (Manager)
 import Network.Wai (Application)
 
 import Haskemathesis.Check.Types (Check)
+import Haskemathesis.Config (TestConfig (..))
+import Haskemathesis.Execute.Http (executeHttp)
 import Haskemathesis.Execute.Types (ApiRequest, ApiResponse, BaseUrl)
 import Haskemathesis.Execute.Wai (executeWai)
 import Haskemathesis.OpenApi.Resolve (resolveOperations)
 import Haskemathesis.OpenApi.Types (ResolvedOperation (..))
-import Haskemathesis.Property (propertyForOperation)
+import Haskemathesis.Property (propertyForOperation, propertyForOperationWithConfig)
 
 testTreeForExecutor ::
     Maybe BaseUrl ->
@@ -43,6 +49,39 @@ testTreeForApp ::
     TestTree
 testTreeForApp mBase checks openApi app =
     testTreeForExecutor mBase checks (executeWai app) (resolveOperations openApi)
+
+testTreeForExecutorWithConfig ::
+    OpenApi ->
+    TestConfig ->
+    (ApiRequest -> IO ApiResponse) ->
+    [ResolvedOperation] ->
+    TestTree
+testTreeForExecutorWithConfig openApi config execute ops =
+    testGroup
+        "OpenAPI Conformance"
+        [ testPropertyNamed name (PropertyName name) (propertyForOperationWithConfig openApi config execute op)
+        | op <- ops
+        , tcOperationFilter config op
+        , let name = T.unpack (operationLabel op)
+        ]
+
+testTreeForAppWithConfig ::
+    TestConfig ->
+    OpenApi ->
+    Application ->
+    TestTree
+testTreeForAppWithConfig config openApi app =
+    testTreeForExecutorWithConfig openApi config (executeWai app) (resolveOperations openApi)
+
+testTreeForUrl ::
+    TestConfig ->
+    OpenApi ->
+    Manager ->
+    BaseUrl ->
+    TestTree
+testTreeForUrl config openApi manager baseUrl =
+    let config' = config{tcBaseUrl = Just baseUrl}
+     in testTreeForExecutorWithConfig openApi config' (executeHttp manager baseUrl) (resolveOperations openApi)
 
 operationLabel :: ResolvedOperation -> Text
 operationLabel op =

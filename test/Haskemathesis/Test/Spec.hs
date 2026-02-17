@@ -2,6 +2,8 @@ module Haskemathesis.Test.Spec (spec) where
 
 import Test.Hspec (Spec, describe)
 
+import qualified Haskemathesis.Test.Properties.Auth as Auth
+import qualified Haskemathesis.Test.Properties.Config as Config
 import qualified Haskemathesis.Test.Properties.ContentType as ContentType
 import qualified Haskemathesis.Test.Properties.Curl as Curl
 import qualified Haskemathesis.Test.Properties.Gen as Gen
@@ -18,6 +20,8 @@ spec =
         Gen.spec
         Request.spec
         Curl.spec
+        Auth.spec
+        Config.spec
         ContentType.spec
         ResponseHeaders.spec
         StatusCode.spec
