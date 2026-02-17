@@ -29,5 +29,6 @@ data FailureDetail = FailureDetail
     , fdOperation :: Text
     , fdSchemaErrors :: [Text]
     , fdSchemaDiff :: Maybe Text
+    , fdMutation :: Maybe Text
     }
     deriving (Eq, Show)

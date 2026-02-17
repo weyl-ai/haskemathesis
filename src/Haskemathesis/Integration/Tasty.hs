@@ -6,6 +6,9 @@ module Haskemathesis.Integration.Tasty (
     testTreeForExecutorWithConfig,
     testTreeForAppWithConfig,
     testTreeForUrl,
+    testTreeForExecutorNegative,
+    testTreeForAppNegative,
+    testTreeForUrlNegative,
 ) where
 
 import Data.Text (Text)
@@ -82,6 +85,33 @@ testTreeForUrl ::
 testTreeForUrl config openApi manager baseUrl =
     let config' = config{tcBaseUrl = Just baseUrl}
      in testTreeForExecutorWithConfig openApi config' (executeHttp manager baseUrl) (resolveOperations openApi)
+
+testTreeForExecutorNegative ::
+    OpenApi ->
+    TestConfig ->
+    (ApiRequest -> IO ApiResponse) ->
+    [ResolvedOperation] ->
+    TestTree
+testTreeForExecutorNegative openApi config execute ops =
+    let config' = config{tcNegativeTesting = True}
+     in testTreeForExecutorWithConfig openApi config' execute ops
+
+testTreeForAppNegative ::
+    TestConfig ->
+    OpenApi ->
+    Application ->
+    TestTree
+testTreeForAppNegative config openApi app =
+    testTreeForExecutorNegative openApi config (executeWai app) (resolveOperations openApi)
+
+testTreeForUrlNegative ::
+    TestConfig ->
+    OpenApi ->
+    Manager ->
+    BaseUrl ->
+    TestTree
+testTreeForUrlNegative config openApi manager baseUrl =
+    testTreeForExecutorNegative openApi (config{tcBaseUrl = Just baseUrl}) (executeHttp manager baseUrl) (resolveOperations openApi)
 
 operationLabel :: ResolvedOperation -> Text
 operationLabel op =

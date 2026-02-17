@@ -16,6 +16,7 @@ spec =
     describe "Render" $ do
         itProp "includes schema errors" prop_render_failure_includes_schema_errors
         itProp "includes schema diff" prop_render_failure_includes_schema_diff
+        itProp "includes mutation" prop_render_failure_includes_mutation
         itProp "ansi includes color codes" prop_render_failure_includes_ansi
         itProp "ansi includes seed" prop_render_failure_includes_seed_ansi
         itProp "includes seed" prop_render_failure_includes_seed
@@ -39,6 +40,7 @@ prop_render_failure_includes_schema_errors =
                     , fdOperation = "GET /"
                     , fdSchemaErrors = ["err-1"]
                     , fdSchemaDiff = Nothing
+                    , fdMutation = Nothing
                     }
             rendered = renderFailureDetail Nothing Nothing detail
         assert ("Schema errors: err-1" `T.isInfixOf` rendered)
@@ -61,10 +63,34 @@ prop_render_failure_includes_schema_diff =
                     , fdOperation = "GET /"
                     , fdSchemaErrors = []
                     , fdSchemaDiff = Just "diff line"
+                    , fdMutation = Nothing
                     }
             rendered = renderFailureDetail Nothing Nothing detail
         assert ("Schema diff:" `T.isInfixOf` rendered)
         assert ("diff line" `T.isInfixOf` rendered)
+
+prop_render_failure_includes_mutation :: Property
+prop_render_failure_includes_mutation =
+    property $ do
+        let detail =
+                FailureDetail
+                    { fdCheck = "check"
+                    , fdMessage = "message"
+                    , fdRequest = dummyRequest emptyOperation
+                    , fdResponse =
+                        ApiResponse
+                            { resStatusCode = 200
+                            , resHeaders = []
+                            , resBody = ""
+                            , resTime = 0
+                            }
+                    , fdOperation = "GET /"
+                    , fdSchemaErrors = []
+                    , fdSchemaDiff = Nothing
+                    , fdMutation = Just "invalid body"
+                    }
+            rendered = renderFailureDetail Nothing Nothing detail
+        assert ("Mutation: invalid body" `T.isInfixOf` rendered)
 
 prop_render_failure_includes_seed :: Property
 prop_render_failure_includes_seed =
@@ -84,6 +110,7 @@ prop_render_failure_includes_seed =
                     , fdOperation = "GET /"
                     , fdSchemaErrors = []
                     , fdSchemaDiff = Nothing
+                    , fdMutation = Nothing
                     }
             rendered = renderFailureDetail Nothing (Just "seed-123") detail
         assert ("Seed: seed-123" `T.isInfixOf` rendered)
@@ -106,6 +133,7 @@ prop_render_failure_includes_ansi =
                     , fdOperation = "GET /"
                     , fdSchemaErrors = ["err-1"]
                     , fdSchemaDiff = Nothing
+                    , fdMutation = Nothing
                     }
             rendered = renderFailureDetailAnsi Nothing Nothing detail
         assert ("\ESC[" `T.isInfixOf` rendered)
@@ -129,6 +157,7 @@ prop_render_failure_includes_seed_ansi =
                     , fdOperation = "GET /"
                     , fdSchemaErrors = []
                     , fdSchemaDiff = Nothing
+                    , fdMutation = Nothing
                     }
             rendered = renderFailureDetailAnsi Nothing (Just "seed-xyz") detail
         assert ("Seed: seed-xyz" `T.isInfixOf` rendered)
@@ -160,6 +189,7 @@ prop_render_failure_includes_request_and_response =
                     , fdOperation = "GET /items"
                     , fdSchemaErrors = []
                     , fdSchemaDiff = Nothing
+                    , fdMutation = Nothing
                     }
             rendered = renderFailureDetail Nothing Nothing detail
         assert ("Request: GET /items?q=a" `T.isInfixOf` rendered)

@@ -219,6 +219,7 @@ failureDetail checkLabel message schemaErrors schemaDiffText req res op =
         , fdOperation = operationLabel op
         , fdSchemaErrors = schemaErrors
         , fdSchemaDiff = schemaDiffText
+        , fdMutation = Nothing
         }
 
 schemaDiff :: Schema -> Value -> [Text] -> Text

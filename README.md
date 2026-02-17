@@ -78,18 +78,33 @@ let config =
         }
 ```
 
+## Negative Testing
+
+Enable negative testing (mutations that should result in a 4xx response) by
+turning on `tcNegativeTesting` or using the `*Negative` helpers.
+
+```haskell
+import Haskemathesis.Config (defaultTestConfig)
+import Haskemathesis.Integration.Hspec (specForAppNegative)
+
+let config = defaultTestConfig { tcNegativeTesting = True }
+hspec (specForAppNegative config spec app)
+```
+
 ## Examples
 
 The repo includes runnable examples:
 
 - `examples/HspecExample.hs`
 - `examples/TastyExample.hs`
+- `examples/HspecNegativeExample.hs`
 - `examples/openapi.yaml`
 
 Run them with cabal:
 
 ```bash
 cabal run haskemathesis-hspec-example
+cabal run haskemathesis-hspec-negative-example
 cabal run haskemathesis-tasty-example
 ```
 

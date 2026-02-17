@@ -6,6 +6,9 @@ module Haskemathesis.Integration.Hspec (
     specForExecutorWithConfig,
     specForAppWithConfig,
     specForUrl,
+    specForExecutorNegative,
+    specForAppNegative,
+    specForUrlNegative,
 ) where
 
 import Data.Text (Text)
@@ -72,6 +75,33 @@ specForUrl ::
 specForUrl config openApi manager baseUrl =
     let config' = config{tcBaseUrl = Just baseUrl}
      in specForExecutorWithConfig openApi config' (executeHttp manager baseUrl) (resolveOperations openApi)
+
+specForExecutorNegative ::
+    OpenApi ->
+    TestConfig ->
+    (ApiRequest -> IO ApiResponse) ->
+    [ResolvedOperation] ->
+    Spec
+specForExecutorNegative openApi config execute ops =
+    let config' = config{tcNegativeTesting = True}
+     in specForExecutorWithConfig openApi config' execute ops
+
+specForAppNegative ::
+    TestConfig ->
+    OpenApi ->
+    Application ->
+    Spec
+specForAppNegative config openApi app =
+    specForExecutorNegative openApi config (executeWai app) (resolveOperations openApi)
+
+specForUrlNegative ::
+    TestConfig ->
+    OpenApi ->
+    Manager ->
+    BaseUrl ->
+    Spec
+specForUrlNegative config openApi manager baseUrl =
+    specForExecutorNegative openApi (config{tcBaseUrl = Just baseUrl}) (executeHttp manager baseUrl) (resolveOperations openApi)
 
 specForOperation ::
     Maybe BaseUrl ->

@@ -7,6 +7,7 @@ import qualified Haskemathesis.Test.Properties.Config as Config
 import qualified Haskemathesis.Test.Properties.ContentType as ContentType
 import qualified Haskemathesis.Test.Properties.Curl as Curl
 import qualified Haskemathesis.Test.Properties.Gen as Gen
+import qualified Haskemathesis.Test.Properties.Negative as Negative
 import qualified Haskemathesis.Test.Properties.Render as Render
 import qualified Haskemathesis.Test.Properties.Request as Request
 import qualified Haskemathesis.Test.Properties.ResponseHeaders as ResponseHeaders
@@ -22,6 +23,7 @@ spec =
         Curl.spec
         Auth.spec
         Config.spec
+        Negative.spec
         ContentType.spec
         ResponseHeaders.spec
         StatusCode.spec

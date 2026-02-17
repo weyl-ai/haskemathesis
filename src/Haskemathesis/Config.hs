@@ -23,6 +23,7 @@ data TestConfig = TestConfig
     , tcAuthConfig :: !(Maybe AuthConfig)
     , tcBaseUrl :: !(Maybe BaseUrl)
     , tcPropertyCount :: !Int
+    , tcNegativeTesting :: !Bool
     , tcOperationFilter :: !(ResolvedOperation -> Bool)
     }
 
@@ -34,6 +35,7 @@ defaultTestConfig =
         , tcAuthConfig = Nothing
         , tcBaseUrl = Nothing
         , tcPropertyCount = 100
+        , tcNegativeTesting = False
         , tcOperationFilter = const True
         }
 

@@ -23,6 +23,7 @@ renderFailureDetail mBase mSeed detail =
           ]
             <> renderSchemaErrors detail
             <> renderSchemaDiff detail
+            <> renderMutation detail
             <> renderSeed mSeed
             <> [ "Request: " <> renderRequest (fdRequest detail)
                , "Response: " <> renderResponse (fdResponse detail)
@@ -40,6 +41,7 @@ renderFailureDetailAnsi mBase mSeed detail =
           ]
             <> map (ansi Red) (renderSchemaErrors detail)
             <> map (ansi Red) (renderSchemaDiff detail)
+            <> map (ansi Red) (renderMutation detail)
             <> map (ansi Yellow) (renderSeed mSeed)
             <> [ ansi Green ("Request: " <> renderRequest (fdRequest detail))
                , ansi Green ("Response: " <> renderResponse (fdResponse detail))
@@ -78,6 +80,12 @@ renderSchemaDiff detail =
         Nothing -> []
         Just diffText ->
             "Schema diff:" : map ("  " <>) (T.lines diffText)
+
+renderMutation :: FailureDetail -> [Text]
+renderMutation detail =
+    case fdMutation detail of
+        Nothing -> []
+        Just mutation -> ["Mutation: " <> mutation]
 
 renderSeed :: Maybe Text -> [Text]
 renderSeed mSeed =
