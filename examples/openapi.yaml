@@ -2,9 +2,16 @@ openapi: 3.0.3
 info:
   title: Ping API
   version: 1.0.0
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+servers:
+  - url: https://api.example.com
+security: []
 paths:
   /ping:
     get:
+      summary: Ping the service
       operationId: getPing
       responses:
         "200":
@@ -18,3 +25,5 @@ paths:
             application/json:
               schema:
                 type: string
+        "4XX":
+          description: Client error

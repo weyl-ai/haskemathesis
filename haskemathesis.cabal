@@ -51,17 +51,17 @@ library
     , aeson
     , base
     , base64-bytestring
-    , bytestring >=0.11 && <0.13
+    , bytestring                 >=0.11 && <0.13
     , case-insensitive
     , containers
     , hedgehog
-    , hspec >=2.8 && <3
+    , hspec                      >=2.8  && <3
     , hspec-hedgehog
     , http-client
     , http-media
-    , http-types >=0.12 && <0.13
+    , http-types                 >=0.12 && <0.13
     , insert-ordered-containers
-    , openapi3 >=3.2 && <3.3
+    , openapi3                   >=3.2  && <3.3
     , regex-tdfa
     , scientific
     , tasty
@@ -69,7 +69,7 @@ library
     , text
     , time
     , vector
-    , wai >=3.2 && <4
+    , wai                        >=3.2  && <4
     , wai-extra
     , yaml
 
@@ -127,11 +127,12 @@ executable haskemathesis-hspec-example
   hs-source-dirs:   examples
   build-depends:
     , base
-    , bytestring >=0.11 && <0.13
+    , bytestring     >=0.11 && <0.13
     , haskemathesis
-    , hspec >=2.8 && <3
-    , http-types >=0.12 && <0.13
-    , wai >=3.2 && <4
+    , hspec          >=2.8  && <3
+    , http-types     >=0.12 && <0.13
+    , time
+    , wai            >=3.2  && <4
 
   default-language: Haskell2010
 
@@ -141,12 +142,12 @@ executable haskemathesis-hspec-negative-example
   hs-source-dirs:   examples
   build-depends:
     , base
-    , bytestring >=0.11 && <0.13
+    , bytestring     >=0.11 && <0.13
     , haskemathesis
-    , hspec >=2.8 && <3
-    , http-types >=0.12 && <0.13
-    , openapi3 >=3.2 && <3.3
-    , wai >=3.2 && <4
+    , hspec          >=2.8  && <3
+    , http-types     >=0.12 && <0.13
+    , openapi3       >=3.2  && <3.3
+    , wai            >=3.2  && <4
 
   default-language: Haskell2010
 
@@ -155,8 +156,10 @@ executable bench-properties
   hs-source-dirs:   examples
   build-depends:
     , base
-    , bytestring >=0.11 && <0.13
+    , bytestring     >=0.11 && <0.13
     , haskemathesis
+    , time
+
   default-language: Haskell2010
 
 executable haskemathesis-tasty-example

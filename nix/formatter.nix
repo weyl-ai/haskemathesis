@@ -19,6 +19,8 @@
       fourmolu.enable = true;
       hlint.enable = true;
       cabal-fmt.enable = true;
+
+      yamlfmt.enable = true;
     };
   };
 }

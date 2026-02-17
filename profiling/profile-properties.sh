@@ -12,14 +12,14 @@ generated=$(printf "%s" "$output" | awk -F': ' '/generated properties/ {print $2
 elapsed=$(printf "%s" "$output" | awk -F': ' '/generation time/ {print $2}')
 timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
-if [[ -z "$generated" || -z "$elapsed" ]]; then
+if [[ -z $generated || -z $elapsed ]]; then
   echo "failed to parse bench output" >&2
   exit 1
 fi
 
 if [[ ! -f $PROFILE_LOG ]]; then
-  printf "timestamp,properties,generation_time\n" > "$PROFILE_LOG"
+  printf "timestamp,properties,generation_time\n" >"$PROFILE_LOG"
 fi
 
-printf "%s,%s,%s\n" "$timestamp" "$generated" "$elapsed" >> "$PROFILE_LOG"
+printf "%s,%s,%s\n" "$timestamp" "$generated" "$elapsed" >>"$PROFILE_LOG"
 echo "appended profile data to $PROFILE_LOG"
