@@ -23,6 +23,7 @@ import Data.Text.Encoding (decodeUtf8)
 import Hedgehog (Gen)
 import qualified Hedgehog.Gen as Gen
 import qualified Hedgehog.Range as Range
+import Text.Printf (printf)
 
 type FormatRegistry = Map Text (Gen Value)
 
@@ -110,7 +111,5 @@ hexN n =
         (Gen.element (['0' .. '9'] <> ['a' .. 'f']))
 
 pad :: Int -> Int -> String
-pad width n =
-    let s = show n
-        zeros = replicate (max 0 (width - length s)) '0'
-     in zeros <> s
+pad width =
+    printf ("%0" <> show width <> "d")

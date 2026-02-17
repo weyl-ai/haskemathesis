@@ -21,7 +21,7 @@ genString :: Schema -> Gen Value
 genString schema =
     case schemaEnum schema of
         Just xs | not (null xs) -> Gen.element xs
-        _ ->
+        _otherEnum ->
             case schemaConst schema of
                 Just v -> pure v
                 Nothing ->
@@ -74,4 +74,4 @@ matchesPattern :: Text -> Value -> Bool
 matchesPattern pat value =
     case value of
         String txt -> T.unpack txt =~ T.unpack pat
-        _ -> False
+        _otherValue -> False

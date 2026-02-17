@@ -7,8 +7,9 @@ module Haskemathesis.Test.Properties (
 import Data.Aeson (Value (..))
 import qualified Data.Aeson.Key as Key
 import qualified Data.Aeson.KeyMap as KeyMap
+import qualified Data.ByteString as BS
 import qualified Data.Map.Strict as Map
-import qualified Data.Text as T
+import Data.Text.Encoding (encodeUtf8)
 import qualified Data.Vector as Vector
 import Hedgehog
 import qualified Hedgehog.Gen as Gen
@@ -54,9 +55,10 @@ prop_string_length =
         value <- forAll (genFromSchema schema)
         case value of
             String txt -> do
-                assert (T.length txt >= minL)
-                assert (T.length txt <= maxL)
-            _ -> failure
+                let len = BS.length (encodeUtf8 txt)
+                assert (len >= minL)
+                assert (len <= maxL)
+            _otherValue -> failure
 
 prop_integer_bounds :: Property
 prop_integer_bounds =
@@ -86,7 +88,7 @@ prop_integer_bounds =
                     else do
                         assert (d >= fromIntegral lo)
                         assert (d <= fromIntegral hi)
-            _ -> failure
+            _otherValue -> failure
 
 prop_number_bounds :: Property
 prop_number_bounds =
@@ -116,7 +118,7 @@ prop_number_bounds =
                     else do
                         assert (d >= lo)
                         assert (d <= hi)
-            _ -> failure
+            _otherValue -> failure
 
 prop_array_bounds :: Property
 prop_array_bounds =
@@ -141,7 +143,7 @@ prop_array_bounds =
                 if unique
                     then assert (validateValue schema value)
                     else success
-            _ -> failure
+            _otherValue -> failure
 
 prop_object_required :: Property
 prop_object_required =
@@ -161,7 +163,7 @@ prop_object_required =
         case value of
             Object obj ->
                 assert (KeyMap.member (Key.fromText "a") obj)
-            _ -> failure
+            _otherValue -> failure
 
 prop_nullable_allows_null :: Property
 prop_nullable_allows_null =

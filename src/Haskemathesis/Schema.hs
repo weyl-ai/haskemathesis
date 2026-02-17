@@ -1,3 +1,5 @@
+{-# LANGUAGE StrictData #-}
+
 module Haskemathesis.Schema (
     Schema (..),
     SchemaType (..),

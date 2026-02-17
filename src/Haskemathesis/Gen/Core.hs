@@ -6,9 +6,9 @@ module Haskemathesis.Gen.Core (
 import Data.Aeson (Value (..))
 import Data.Aeson.Key (Key, fromText)
 import qualified Data.Aeson.KeyMap as KeyMap
-import Data.List (nub)
 import qualified Data.Map.Strict as Map
 import Data.Maybe (fromMaybe)
+import qualified Data.Set as Set
 import qualified Data.Vector as Vector
 import Hedgehog (Gen)
 import qualified Hedgehog.Gen as Gen
@@ -52,7 +52,7 @@ genBase depth schema =
         Nothing ->
             case schemaEnum schema of
                 Just xs | not (null xs) -> Gen.element xs
-                _ ->
+                _otherEnum ->
                     case schemaType schema of
                         Just SString -> genString schema
                         Just SInteger -> genInteger schema
@@ -84,7 +84,7 @@ genArray depth schema = do
         listGen = Gen.list (Range.linear minI maxI) itemGen
     items <-
         if schemaUniqueItems schema
-            then Gen.filter (\xs -> length (nub xs) == length xs) listGen
+            then Gen.filter hasUniqueItems listGen
             else listGen
     pure (Array (Vector.fromList items))
 
@@ -146,3 +146,11 @@ genLeafFallback schema =
         Just SObject -> genObject 0 schema
         Just SNull -> pure Null
         Nothing -> genFromConstraints 0 schema
+
+hasUniqueItems :: [Value] -> Bool
+hasUniqueItems = go Set.empty
+  where
+    go _seen [] = True
+    go seen (item : rest)
+        | Set.member item seen = False
+        | otherwise = go (Set.insert item seen) rest

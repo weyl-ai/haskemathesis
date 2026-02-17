@@ -8,14 +8,15 @@ module Haskemathesis.Validate (
 import Data.Aeson (Value (..))
 import Data.Aeson.Key (Key, fromText, toText)
 import qualified Data.Aeson.KeyMap as KeyMap
-import Data.List (nub)
+import qualified Data.ByteString as BS
 import qualified Data.Map.Strict as Map
 import Data.Maybe (isNothing)
 import Data.Scientific (isInteger, toRealFloat)
 import qualified Data.Set as Set
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Vector (toList)
+import Data.Text.Encoding (encodeUtf8)
+import qualified Data.Vector as Vector
 import Text.Regex.TDFA ((=~))
 
 import Haskemathesis.Schema
@@ -45,31 +46,31 @@ validateType schema value
             Just SString ->
                 case value of
                     String _ -> []
-                    _ -> ["expected string"]
+                    _otherValue -> ["expected string"]
             Just SInteger ->
                 case value of
                     Number n | isInteger n -> []
-                    _ -> ["expected integer"]
+                    _otherValue -> ["expected integer"]
             Just SNumber ->
                 case value of
                     Number _ -> []
-                    _ -> ["expected number"]
+                    _otherValue -> ["expected number"]
             Just SBoolean ->
                 case value of
                     Bool _ -> []
-                    _ -> ["expected boolean"]
+                    _otherValue -> ["expected boolean"]
             Just SArray ->
                 case value of
                     Array _ -> []
-                    _ -> ["expected array"]
+                    _otherValue -> ["expected array"]
             Just SObject ->
                 case value of
                     Object _ -> []
-                    _ -> ["expected object"]
+                    _otherValue -> ["expected object"]
             Just SNull ->
                 case value of
                     Null -> []
-                    _ -> ["expected null"]
+                    _otherValue -> ["expected null"]
 
 validateEnum :: Schema -> Value -> [Text]
 validateEnum schema value =
@@ -93,17 +94,17 @@ validateString schema value =
                 [ case schemaMinLength schema of
                     Nothing -> []
                     Just minL ->
-                        ["string shorter than minLength" | T.length txt < minL]
+                        ["string shorter than minLength" | textLength txt < minL]
                 , case schemaMaxLength schema of
                     Nothing -> []
                     Just maxL ->
-                        ["string longer than maxLength" | T.length txt > maxL]
+                        ["string longer than maxLength" | textLength txt > maxL]
                 , case schemaPattern schema of
                     Nothing -> []
                     Just pat ->
                         ["string does not match pattern" | not (T.unpack txt =~ T.unpack pat)]
                 ]
-        _ -> []
+        _otherValue -> []
 
 validateNumber :: Schema -> Value -> [Text]
 validateNumber schema value =
@@ -128,14 +129,14 @@ validateNumber schema value =
                         Just maxV ->
                             ["number above or equal exclusiveMaximum" | d >= maxV]
                     ]
-        _ -> []
+        _otherValue -> []
 
 validateArray :: Schema -> Value -> [Text]
 validateArray schema value =
     case value of
         Array vec ->
-            let items = toList vec
-                len = length items
+            let items = Vector.toList vec
+                len = Vector.length vec
              in concat
                     [ case schemaMinItems schema of
                         Nothing -> []
@@ -145,13 +146,13 @@ validateArray schema value =
                         Nothing -> []
                         Just maxI ->
                             ["array longer than maxItems" | len > maxI]
-                    , ["array has duplicate items" | schemaUniqueItems schema && length (nub items) /= len]
+                    , ["array has duplicate items" | schemaUniqueItems schema && hasDuplicateValues vec]
                     , case schemaItems schema of
                         Nothing -> []
                         Just itemSchema ->
                             concatMap (validateErrors itemSchema) items
                     ]
-        _ -> []
+        _otherValue -> []
 
 validateObject :: Schema -> Value -> [Text]
 validateObject schema value =
@@ -162,7 +163,7 @@ validateObject schema value =
                 , validateProperties obj
                 , validateAdditional obj
                 ]
-        _ -> []
+        _otherValue -> []
   where
     validateRequired obj =
         [ "missing required property: " <> req
@@ -214,9 +215,27 @@ validateCombinators schema value =
         , if null (schemaOneOf schema)
             then []
             else
-                let matches = length (filter (null . (`validateErrors` value)) (schemaOneOf schema))
+                let matches = countMatches value (schemaOneOf schema)
                  in ["value does not satisfy oneOf" | matches /= 1]
         ]
 
 toKey :: Text -> Key
 toKey = fromText
+
+textLength :: Text -> Int
+textLength = BS.length . encodeUtf8
+
+hasDuplicateValues :: Vector.Vector Value -> Bool
+hasDuplicateValues = snd . Vector.foldl' step (Set.empty, False)
+  where
+    step (seen, True) _item = (seen, True)
+    step (seen, False) item
+        | Set.member item seen = (seen, True)
+        | otherwise = (Set.insert item seen, False)
+
+countMatches :: Value -> [Schema] -> Int
+countMatches value = foldl' step 0
+  where
+    step acc schema
+        | null (validateErrors schema value) = acc + 1
+        | otherwise = acc
