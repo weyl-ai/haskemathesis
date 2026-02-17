@@ -1,5 +1,6 @@
 {-# LANGUAGE StrictData #-}
 
+-- | Internal JSON Schema representation.
 module Haskemathesis.Schema (
     Schema (..),
     SchemaType (..),

@@ -1,5 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
+-- | Built-in format generators and registry helpers.
 module Haskemathesis.Gen.Format (
     FormatRegistry,
     defaultFormatRegistry,

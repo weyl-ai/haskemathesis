@@ -1,5 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
+-- | Pretty rendering for failure details.
 module Haskemathesis.Report.Render (
     renderFailureDetail,
     renderFailureDetailAnsi,

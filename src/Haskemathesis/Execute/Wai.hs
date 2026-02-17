@@ -1,3 +1,4 @@
+-- | WAI executor for running requests directly against an Application.
 module Haskemathesis.Execute.Wai (
     executeWai,
 ) where

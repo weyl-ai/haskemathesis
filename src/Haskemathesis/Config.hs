@@ -1,5 +1,6 @@
 {-# LANGUAGE StrictData #-}
 
+-- | Top-level configuration for property generation and execution.
 module Haskemathesis.Config (
     TestConfig (..),
     defaultTestConfig,

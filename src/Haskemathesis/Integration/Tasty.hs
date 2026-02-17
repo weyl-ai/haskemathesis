@@ -1,5 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
+-- | Tasty integration helpers for generated properties.
 module Haskemathesis.Integration.Tasty (
     testTreeForExecutor,
     testTreeForApp,

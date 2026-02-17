@@ -1,3 +1,4 @@
+-- | Public generator entry points and default format registry.
 module Haskemathesis.Gen (
     FormatRegistry,
     defaultFormatRegistry,

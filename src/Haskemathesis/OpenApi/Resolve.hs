@@ -1,3 +1,4 @@
+-- | Resolve OpenAPI specs into a normalized operation list.
 module Haskemathesis.OpenApi.Resolve (
     resolveOperations,
 ) where

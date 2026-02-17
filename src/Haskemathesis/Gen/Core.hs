@@ -1,3 +1,4 @@
+-- | Core JSON Schema to JSON value generators.
 module Haskemathesis.Gen.Core (
     genFromSchema,
     genFromSchemaWithDepth,

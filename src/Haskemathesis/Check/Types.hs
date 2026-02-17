@@ -1,5 +1,6 @@
 {-# LANGUAGE StrictData #-}
 
+-- | Core types for checks and failure reporting.
 module Haskemathesis.Check.Types (
     Check (..),
     CheckResult (..),

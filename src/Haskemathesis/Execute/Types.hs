@@ -1,5 +1,6 @@
 {-# LANGUAGE StrictData #-}
 
+-- | Request/response types shared by executors and checks.
 module Haskemathesis.Execute.Types (
     ApiRequest (..),
     ApiResponse (..),

@@ -1,5 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
+-- | Checks that assert negative (invalid) requests are rejected.
 module Haskemathesis.Check.Negative (
     negativeTestRejection,
 ) where

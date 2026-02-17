@@ -1,3 +1,4 @@
+-- | HTTP executor for running generated requests against a base URL.
 module Haskemathesis.Execute.Http (
     executeHttp,
 ) where

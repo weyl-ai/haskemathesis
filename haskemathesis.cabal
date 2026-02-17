@@ -38,21 +38,30 @@ library
     Haskemathesis.Schema
     Haskemathesis.Validate
 
+  other-modules:
+    Haskemathesis.Check.Standard.ContentType
+    Haskemathesis.Check.Standard.Headers
+    Haskemathesis.Check.Standard.Helpers
+    Haskemathesis.Check.Standard.ResponseSchema
+    Haskemathesis.Check.Standard.Status
+    Haskemathesis.Gen.Negative.Mutations
+    Haskemathesis.Gen.Negative.Types
+
   build-depends:
     , aeson
     , base
     , base64-bytestring
-    , bytestring
+    , bytestring >=0.11 && <0.13
     , case-insensitive
     , containers
     , hedgehog
-    , hspec
+    , hspec >=2.8 && <3
     , hspec-hedgehog
     , http-client
     , http-media
-    , http-types
+    , http-types >=0.12 && <0.13
     , insert-ordered-containers
-    , openapi3
+    , openapi3 >=3.2 && <3.3
     , regex-tdfa
     , scientific
     , tasty
@@ -60,7 +69,7 @@ library
     , text
     , time
     , vector
-    , wai
+    , wai >=3.2 && <4
     , wai-extra
     , yaml
 
@@ -80,6 +89,9 @@ test-suite haskemathesis-test
     Haskemathesis.Test.Properties.Curl
     Haskemathesis.Test.Properties.Gen
     Haskemathesis.Test.Properties.Negative
+    Haskemathesis.Test.Properties.Negative.Checks
+    Haskemathesis.Test.Properties.Negative.Generation
+    Haskemathesis.Test.Properties.Negative.Mutations
     Haskemathesis.Test.Properties.Render
     Haskemathesis.Test.Properties.Request
     Haskemathesis.Test.Properties.ResponseHeaders
@@ -115,11 +127,11 @@ executable haskemathesis-hspec-example
   hs-source-dirs:   examples
   build-depends:
     , base
-    , bytestring
+    , bytestring >=0.11 && <0.13
     , haskemathesis
-    , hspec
-    , http-types
-    , wai
+    , hspec >=2.8 && <3
+    , http-types >=0.12 && <0.13
+    , wai >=3.2 && <4
 
   default-language: Haskell2010
 
@@ -129,13 +141,22 @@ executable haskemathesis-hspec-negative-example
   hs-source-dirs:   examples
   build-depends:
     , base
-    , bytestring
+    , bytestring >=0.11 && <0.13
     , haskemathesis
-    , hspec
-    , http-types
-    , openapi3
-    , wai
+    , hspec >=2.8 && <3
+    , http-types >=0.12 && <0.13
+    , openapi3 >=3.2 && <3.3
+    , wai >=3.2 && <4
 
+  default-language: Haskell2010
+
+executable bench-properties
+  main-is:          BenchProperties.hs
+  hs-source-dirs:   examples
+  build-depends:
+    , base
+    , bytestring >=0.11 && <0.13
+    , haskemathesis
   default-language: Haskell2010
 
 executable haskemathesis-tasty-example

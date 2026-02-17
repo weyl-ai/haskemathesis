@@ -1,3 +1,4 @@
+-- | Convert OpenAPI schemas into the internal schema representation.
 module Haskemathesis.OpenApi.Convert (
     convertSchema,
 ) where

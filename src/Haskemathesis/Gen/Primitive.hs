@@ -1,3 +1,4 @@
+-- | Primitive generators for schema leaf types.
 module Haskemathesis.Gen.Primitive (
     genString,
     genInteger,

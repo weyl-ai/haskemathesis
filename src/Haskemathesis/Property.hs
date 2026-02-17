@@ -1,5 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
+-- | High-level property generation for resolved operations and specs.
 module Haskemathesis.Property (
     propertyForOperation,
     propertyForOperationWithConfig,

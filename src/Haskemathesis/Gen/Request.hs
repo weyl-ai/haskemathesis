@@ -1,5 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
+-- | Generate API requests from resolved operations.
 module Haskemathesis.Gen.Request (
     genApiRequest,
     genParam,

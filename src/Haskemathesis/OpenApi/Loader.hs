@@ -1,3 +1,4 @@
+-- | Load OpenAPI specs from YAML or JSON files.
 module Haskemathesis.OpenApi.Loader (
     loadOpenApiFile,
 ) where

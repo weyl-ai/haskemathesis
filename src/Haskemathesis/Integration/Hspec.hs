@@ -1,5 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
+-- | Hspec integration helpers for generated properties.
 module Haskemathesis.Integration.Hspec (
     specForExecutor,
     specForApp,

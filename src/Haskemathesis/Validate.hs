@@ -1,5 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
+-- | Validation utilities for JSON values against schemas.
 module Haskemathesis.Validate (
     validateValue,
     validateErrors,

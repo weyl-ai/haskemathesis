@@ -99,6 +99,7 @@ The repo includes runnable examples:
 - `examples/TastyExample.hs`
 - `examples/HspecNegativeExample.hs`
 - `examples/openapi.yaml`
+- `examples/medium-spec.yaml` (used for profiling `propertiesForSpec`)
 
 Run them with cabal:
 
@@ -128,6 +129,8 @@ Run tests:
 ```bash
 cabal test
 ```
+
+Use `profiling/profile-properties.sh` to measure property generation for the medium spec; it runs the new `bench-properties` executable, reports the property count/time, and appends the timestamped metrics to `profiling/results/properties-for-spec.csv`.
 
 Nix users can use the devshell or `nix build` / `nix flake check`.
 

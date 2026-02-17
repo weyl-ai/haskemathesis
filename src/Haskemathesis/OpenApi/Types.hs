@@ -1,5 +1,6 @@
 {-# LANGUAGE StrictData #-}
 
+-- | Resolved OpenAPI types used by generators and checks.
 module Haskemathesis.OpenApi.Types (
     ParamLocation (..),
     ResolvedParam (..),

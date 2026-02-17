@@ -1,6 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE StrictData #-}
 
+-- | Authentication configuration and request mutation helpers.
 module Haskemathesis.Auth.Config (
     AuthConfig (..),
     AuthValue (..),

@@ -1,5 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
+-- | Render API requests as reproducible curl commands.
 module Haskemathesis.Report.Curl (
     toCurl,
 ) where
