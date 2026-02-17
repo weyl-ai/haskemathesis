@@ -2,7 +2,7 @@
 
 **A Haskell library for property-based API testing driven by OpenAPI 3.0/3.1 schemas, powered by Hedgehog.**
 
-Working name: `hedgehog-openapi` (alternatives: `openapi-hedgehog`, `schemahog`)
+Project name: `haskemathesis`
 
 ______________________________________________________________________
 
@@ -35,7 +35,7 @@ ______________________________________________________________________
 └──────────────┬───────────────────────────────────────────────┘
                │  uses
 ┌──────────────▼───────────────────────────────────────────────┐
-│                   hedgehog-openapi                            │
+│                     haskemathesis                              │
 │                                                              │
 │  ┌─────────────┐  ┌──────────────┐  ┌────────────────────┐  │
 │  │ Schema       │  │ Generator    │  │ Check / Assertion  │  │
@@ -92,7 +92,7 @@ ______________________________________________________________________
 ## 4. Module Structure
 
 ```
-HedgehogOpenApi
+Haskemathesis
 ├── Schema
 │   ├── Loader          -- Load from file, URL, or Aeson Value
 │   ├── Resolve         -- $ref resolution, component inlining
@@ -464,7 +464,7 @@ toCurl req mBase =
 Terminal output for a failure looks like:
 
 ```
-━━━ hedgehog-openapi ━━━
+━━━ haskemathesis ━━━
 
   ✗ POST /bookings — response_schema_conformance
 

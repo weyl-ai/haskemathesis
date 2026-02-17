@@ -9,6 +9,11 @@
         settings = {
           haskemathesis.stan = true;
         };
+        devShell = {
+          tools = hp: {
+            cabal = hp.cabal-install;
+          };
+        };
       };
 
       packages.default = self'.packages.haskemathesis;
