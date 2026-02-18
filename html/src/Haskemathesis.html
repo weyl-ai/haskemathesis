@@ -1,0 +1,115 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="annot"><span class="hs-comment">{- |
+Module      : Haskemathesis
+Description : OpenAPI 3.0 Property-Based Testing
+Copyright   : (c) 2026 Weyl AI
+License     : MIT
+Maintainer  : luke@weyl.ai
+Stability   : experimental
+
+= Haskemathesis: OpenAPI Property-Based Testing
+
+Haskemathesis is a property-based testing library that automatically generates test cases
+from your OpenAPI 3.0 specification. It validates that your API implementation conforms
+to its specification by generating random requests and verifying the responses.
+
+== Key Features
+
+* __Automatic Request Generation__: Generates valid random requests based on your OpenAPI schema
+* __Comprehensive Validation__: Validates status codes, response bodies, headers, and content types
+* __Negative Testing__: Automatically generates invalid requests to test error handling
+* __Framework Integration__: Seamlessly integrates with Hspec and Tasty
+* __Flexible Execution__: Test WAI applications directly or remote HTTP servers
+
+== Quick Start
+
+=== 1. Define your API
+
+Ensure you have an OpenAPI 3.0 specification for your API. This can be a YAML or JSON file,
+or generated from code.
+
+=== 2. Create a Test Suite
+
+Use the integration modules to create a test suite. Here's an example using Hspec and a WAI application:
+
+@
+import Test.Hspec
+import Haskemathesis.Integration.Hspec
+import Haskemathesis.Config (defaultConfig)
+import Haskemathesis.OpenApi.Loader (loadOpenApi)
+import MyApp (myApp) -- Your WAI application
+
+main :: IO ()
+main = do
+    -- Load the OpenAPI specification
+    openApi &lt;- loadOpenApi &quot;openapi.yaml&quot;
+
+    hspec $ do
+        describe &quot;API Conformance&quot; $ do
+            -- Test all operations defined in the spec
+            specForApp defaultConfig openApi myApp
+
+            -- Run negative tests (send invalid data)
+            specForAppNegative defaultConfig openApi myApp
+@
+
+== Configuration
+
+You can customize the testing behavior using 'TestConfig':
+
+@
+import Haskemathesis.Config
+
+myConfig :: TestConfig
+myConfig = defaultConfig
+    { tcTestCount = 50           -- Number of tests per operation
+    , tcExcludeOperations =      -- Skip specific operations
+        [ &quot;deleteUser&quot;           -- By operationId
+        , &quot;POST /admin/reset&quot;    -- By method and path
+        ]
+    , tcHeaders =                -- Add global headers (e.g., auth)
+        [ (&quot;Authorization&quot;, &quot;Bearer token123&quot;) ]
+    }
+@
+
+== Core Concepts
+
+=== Generators
+
+Haskemathesis uses 'Hedgehog' to generate random data. The generation logic is handled by:
+
+* &quot;Haskemathesis.Gen.Request&quot; - Generates full API requests
+* &quot;Haskemathesis.Gen.Core&quot; - Generates JSON values from schemas
+* &quot;Haskemathesis.Gen.Negative&quot; - Generates invalid requests for negative testing
+
+=== Checks
+
+Validation is performed by 'Check' functions. The standard checks are:
+
+* &quot;Haskemathesis.Check.Standard.Status&quot; - Validates status codes
+* &quot;Haskemathesis.Check.Standard.ResponseSchema&quot; - Validates response bodies against schemas
+* &quot;Haskemathesis.Check.Standard.Headers&quot; - Validates response headers
+* &quot;Haskemathesis.Check.Standard.ContentType&quot; - Validates Content-Type headers
+
+=== Integrations
+
+* &quot;Haskemathesis.Integration.Hspec&quot; - Integration with Hspec
+* &quot;Haskemathesis.Integration.Tasty&quot; - Integration with Tasty
+-}</span></span><span>
+</span><span id="line-98"></span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="Haskemathesis.html"><span class="hs-identifier">Haskemathesis</span></a></span><span> </span><span class="hs-special">(</span><span>
+</span><span id="line-99"></span><span>    </span><span class="annot"><span class="hs-comment">-- * Configuration</span></span><span>
+</span><span id="line-100"></span><span>    </span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="Haskemathesis.Config.html"><span class="hs-identifier">Haskemathesis.Config</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-101"></span><span>
+</span><span id="line-102"></span><span>    </span><span class="annot"><span class="hs-comment">-- * Integration</span></span><span>
+</span><span id="line-103"></span><span>    </span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="Haskemathesis.Integration.Hspec.html"><span class="hs-identifier">Haskemathesis.Integration.Hspec</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-104"></span><span>    </span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="Haskemathesis.Integration.Tasty.html"><span class="hs-identifier">Haskemathesis.Integration.Tasty</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-105"></span><span>
+</span><span id="line-106"></span><span>    </span><span class="annot"><span class="hs-comment">-- * Loading Specifications</span></span><span>
+</span><span id="line-107"></span><span>    </span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="Haskemathesis.OpenApi.Loader.html"><span class="hs-identifier">Haskemathesis.OpenApi.Loader</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-108"></span><span class="hs-special">)</span><span>
+</span><span id="line-109"></span><span class="hs-keyword">where</span><span>
+</span><span id="line-110"></span><span>
+</span><span id="line-111"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Haskemathesis.Config.html"><span class="hs-identifier">Haskemathesis.Config</span></a></span><span>
+</span><span id="line-112"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Haskemathesis.Integration.Hspec.html"><span class="hs-identifier">Haskemathesis.Integration.Hspec</span></a></span><span>
+</span><span id="line-113"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Haskemathesis.Integration.Tasty.html"><span class="hs-identifier">Haskemathesis.Integration.Tasty</span></a></span><span>
+</span><span id="line-114"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Haskemathesis.OpenApi.Loader.html"><span class="hs-identifier">Haskemathesis.OpenApi.Loader</span></a></span><span>
+</span><span id="line-115"></span></pre></body></html>

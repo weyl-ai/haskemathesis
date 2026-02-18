@@ -1,0 +1,273 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE OverloadedStrings #-}</span><span>
+</span><span id="line-2"></span><span>
+</span><span id="line-3"></span><span class="annot"><span class="hs-comment">{- | Render API requests as reproducible curl commands.
+
+This module provides functionality to convert 'ApiRequest' values into
+equivalent curl command strings. This is useful for debugging failed
+tests by providing developers with a command they can run manually to
+reproduce the exact request.
+
+=== Basic Usage
+
+@
+import Haskemathesis.Report.Curl (toCurl)
+import Haskemathesis.Execute.Types (ApiRequest(..))
+
+let request = ApiRequest { ... }
+    curlCommand = toCurl (Just &quot;http://localhost:8080&quot;) request
+putStrLn (T.unpack curlCommand)
+-- Output: curl -X GET 'http://localhost:8080/api/users'
+@
+-}</span></span><span>
+</span><span id="line-22"></span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="Haskemathesis.Report.Curl.html"><span class="hs-identifier">Haskemathesis.Report.Curl</span></a></span><span> </span><span class="hs-special">(</span><span>
+</span><span id="line-23"></span><span>    </span><span class="annot"><a href="Haskemathesis.Report.Curl.html#toCurl"><span class="hs-identifier">toCurl</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-24"></span><span class="hs-special">)</span><span>
+</span><span id="line-25"></span><span class="hs-keyword">where</span><span>
+</span><span id="line-26"></span><span>
+</span><span id="line-27"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.ByteString</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">ByteString</span></span><span class="hs-special">)</span><span>
+</span><span id="line-28"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><a href="file:///nix/store/j3bcnc7r5q4sz7xij5naq8pf2zh1xr44-case-insensitive-1.2.1.0-doc/share/doc/case-insensitive-1.2.1.0/html/src/Data.CaseInsensitive.html"><span class="hs-identifier">Data.CaseInsensitive</span></a></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">CI</span></span><span>
+</span><span id="line-29"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Maybe</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">fromMaybe</span></span><span class="hs-special">)</span><span>
+</span><span id="line-30"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Text</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Text</span></span><span class="hs-special">)</span><span>
+</span><span id="line-31"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.Text</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">T</span></span><span>
+</span><span id="line-32"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Text.Encoding</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">decodeUtf8</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">encodeUtf8</span></span><span class="hs-special">)</span><span>
+</span><span id="line-33"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Haskemathesis.Execute.Types.html"><span class="hs-identifier">Haskemathesis.Execute.Types</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Haskemathesis.Execute.Types.html#ApiRequest"><span class="hs-identifier">ApiRequest</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Haskemathesis.Execute.Types.html#BaseUrl"><span class="hs-identifier">BaseUrl</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-34"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="file:///nix/store/fsi2cvnm3mdngjk22hkkpyl0q5h66sjj-http-types-0.12.4-doc/share/doc/http-types-0.12.4/html/src/Network.HTTP.Types.html"><span class="hs-identifier">Network.HTTP.Types</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="file:///nix/store/fsi2cvnm3mdngjk22hkkpyl0q5h66sjj-http-types-0.12.4-doc/share/doc/http-types-0.12.4/html/src/Network.HTTP.Types.Header.html#hContentType"><span class="hs-identifier">hContentType</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="file:///nix/store/fsi2cvnm3mdngjk22hkkpyl0q5h66sjj-http-types-0.12.4-doc/share/doc/http-types-0.12.4/html/src/Network.HTTP.Types.URI.html#renderSimpleQuery"><span class="hs-identifier">renderSimpleQuery</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-35"></span><span>
+</span><span id="line-36"></span><span class="annot"><span class="hs-comment">{- | Convert an API request to a curl command string.
+
+This function renders an 'ApiRequest' as a curl command that can be
+executed to reproduce the request. The command includes the HTTP method,
+headers, request body, and full URL.
+
+=== Parameters
+
+* @mBase@ - Optional base URL (if not provided, the path alone is used)
+* @req@ - The 'ApiRequest' to convert
+
+=== Return Value
+
+Returns a 'Text' containing the curl command.
+
+=== Example
+
+@
+let request = ApiRequest
+        { reqMethod = &quot;POST&quot;
+        , reqPath = &quot;/api/users&quot;
+        , reqQueryParams = [(&quot;page&quot;, &quot;1&quot;)]
+        , reqHeaders = [(&quot;Authorization&quot;, &quot;Bearer token123&quot;)]
+        , reqBody = Just (&quot;application/json&quot;, &quot;{\\&quot;name\\&quot;:\\&quot;John\\&quot;}&quot;)
+        }
+    curlCmd = toCurl (Just &quot;http://localhost:8080&quot;) request
+-- Result: curl -X POST -H 'Authorization: Bearer token123' -d '{&quot;name&quot;:&quot;John&quot;}' 'http://localhost:8080/api/users?page=1'
+@
+-}</span></span><span>
+</span><span id="line-65"></span><span class="annot"><a href="Haskemathesis.Report.Curl.html#toCurl"><span class="hs-identifier hs-type">toCurl</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="Haskemathesis.Execute.Types.html#BaseUrl"><span class="hs-identifier hs-type">BaseUrl</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Haskemathesis.Execute.Types.html#ApiRequest"><span class="hs-identifier hs-type">ApiRequest</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
+</span><span id="line-66"></span><span id="toCurl"><span class="annot"><span class="annottext">toCurl :: Maybe Text -&gt; ApiRequest -&gt; Text
+</span><a href="Haskemathesis.Report.Curl.html#toCurl"><span class="hs-identifier hs-var hs-var">toCurl</span></a></span></span><span> </span><span id="local-6989586621679199172"><span class="annot"><span class="annottext">Maybe Text
+</span><a href="#local-6989586621679199172"><span class="hs-identifier hs-var">mBase</span></a></span></span><span> </span><span id="local-6989586621679199173"><span class="annot"><span class="annottext">ApiRequest
+</span><a href="#local-6989586621679199173"><span class="hs-identifier hs-var">req</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-67"></span><span>    </span><span class="annot"><span class="annottext">Text -&gt; [Text] -&gt; Text
+</span><span class="hs-identifier hs-var">T.intercalate</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot; &quot;</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">(Text -&gt; Bool) -&gt; [Text] -&gt; [Text]
+forall a. (a -&gt; Bool) -&gt; [a] -&gt; [a]
+</span><span class="hs-identifier hs-var">filter</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Bool -&gt; Bool
+</span><span class="hs-identifier hs-var">not</span></span><span> </span><span class="annot"><span class="annottext">(Bool -&gt; Bool) -&gt; (Text -&gt; Bool) -&gt; Text -&gt; Bool
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Bool
+</span><span class="hs-identifier hs-var">T.null</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[Text]
+</span><a href="#local-6989586621679199178"><span class="hs-identifier hs-var">parts</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-68"></span><span>  </span><span class="hs-keyword">where</span><span>
+</span><span id="line-69"></span><span>    </span><span id="local-6989586621679199178"><span class="annot"><span class="annottext">parts :: [Text]
+</span><a href="#local-6989586621679199178"><span class="hs-identifier hs-var hs-var">parts</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-70"></span><span>        </span><span class="hs-special">[</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;curl&quot;</span></span><span>
+</span><span id="line-71"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;-X&quot;</span></span><span>
+</span><span id="line-72"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text
+</span><a href="Haskemathesis.Report.Curl.html#quote"><span class="hs-identifier hs-var">quote</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">ByteString -&gt; Text
+</span><span class="hs-identifier hs-var">decodeUtf8</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">ApiRequest -&gt; ByteString
+</span><a href="Haskemathesis.Execute.Types.html#reqMethod"><span class="hs-identifier hs-var">reqMethod</span></a></span><span> </span><span class="annot"><span class="annottext">ApiRequest
+</span><a href="#local-6989586621679199173"><span class="hs-identifier hs-var">req</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-73"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679199183"><span class="hs-identifier hs-var">headerFlags</span></a></span><span>
+</span><span id="line-74"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679199184"><span class="hs-identifier hs-var">bodyFlag</span></a></span><span>
+</span><span id="line-75"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text
+</span><a href="Haskemathesis.Report.Curl.html#quote"><span class="hs-identifier hs-var">quote</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">ApiRequest -&gt; Text
+</span><a href="#local-6989586621679199185"><span class="hs-identifier hs-var">fullUrl</span></a></span><span> </span><span class="annot"><span class="annottext">ApiRequest
+</span><a href="#local-6989586621679199173"><span class="hs-identifier hs-var">req</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-76"></span><span>        </span><span class="hs-special">]</span><span>
+</span><span id="line-77"></span><span>
+</span><span id="line-78"></span><span>    </span><span id="local-6989586621679199183"><span class="annot"><span class="annottext">headerFlags :: Text
+</span><a href="#local-6989586621679199183"><span class="hs-identifier hs-var hs-var">headerFlags</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-79"></span><span>        </span><span class="annot"><span class="annottext">Text -&gt; [Text] -&gt; Text
+</span><span class="hs-identifier hs-var">T.intercalate</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot; &quot;</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">((HeaderName, ByteString) -&gt; Text)
+-&gt; [(HeaderName, ByteString)] -&gt; [Text]
+forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
+</span><span class="hs-identifier hs-var">map</span></span><span> </span><span class="annot"><span class="annottext">(HeaderName, ByteString) -&gt; Text
+</span><a href="Haskemathesis.Report.Curl.html#renderHeader"><span class="hs-identifier hs-var">renderHeader</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">ApiRequest -&gt; [(HeaderName, ByteString)]
+</span><a href="Haskemathesis.Report.Curl.html#headersWithContentType"><span class="hs-identifier hs-var">headersWithContentType</span></a></span><span> </span><span class="annot"><span class="annottext">ApiRequest
+</span><a href="#local-6989586621679199173"><span class="hs-identifier hs-var">req</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-80"></span><span>
+</span><span id="line-81"></span><span>    </span><span id="local-6989586621679199184"><span class="annot"><span class="annottext">bodyFlag :: Text
+</span><a href="#local-6989586621679199184"><span class="hs-identifier hs-var hs-var">bodyFlag</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-82"></span><span>        </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">ApiRequest -&gt; Maybe (Text, ByteString)
+</span><a href="Haskemathesis.Execute.Types.html#reqBody"><span class="hs-identifier hs-var">reqBody</span></a></span><span> </span><span class="annot"><span class="annottext">ApiRequest
+</span><a href="#local-6989586621679199173"><span class="hs-identifier hs-var">req</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-83"></span><span>            </span><span class="annot"><span class="annottext">Maybe (Text, ByteString)
+</span><span class="hs-identifier hs-var">Nothing</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;&quot;</span></span><span>
+</span><span id="line-84"></span><span>            </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621679199193"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679199193"><span class="hs-identifier hs-var">_mediaType</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679199194"><span class="annot"><span class="annottext">ByteString
+</span><a href="#local-6989586621679199194"><span class="hs-identifier hs-var">body</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;-d &quot;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text
+</span><a href="Haskemathesis.Report.Curl.html#quote"><span class="hs-identifier hs-var">quote</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">ByteString -&gt; Text
+</span><span class="hs-identifier hs-var">decodeUtf8</span></span><span> </span><span class="annot"><span class="annottext">ByteString
+</span><a href="#local-6989586621679199194"><span class="hs-identifier hs-var">body</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-85"></span><span>
+</span><span id="line-86"></span><span>    </span><span id="local-6989586621679199185"><span class="annot"><span class="annottext">fullUrl :: ApiRequest -&gt; Text
+</span><a href="#local-6989586621679199185"><span class="hs-identifier hs-var hs-var">fullUrl</span></a></span></span><span> </span><span id="local-6989586621679199197"><span class="annot"><span class="annottext">ApiRequest
+</span><a href="#local-6989586621679199197"><span class="hs-identifier hs-var">request</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-87"></span><span>        </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621679199199"><span class="annot"><span class="annottext">base :: Text
+</span><a href="#local-6989586621679199199"><span class="hs-identifier hs-var hs-var">base</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Text -&gt; Maybe Text -&gt; Text
+forall a. a -&gt; Maybe a -&gt; a
+</span><span class="hs-identifier hs-var">fromMaybe</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;&quot;</span></span><span> </span><span class="annot"><span class="annottext">Maybe Text
+</span><a href="#local-6989586621679199172"><span class="hs-identifier hs-var">mBase</span></a></span><span>
+</span><span id="line-88"></span><span>            </span><span id="local-6989586621679199200"><span class="annot"><span class="annottext">path :: Text
+</span><a href="#local-6989586621679199200"><span class="hs-identifier hs-var hs-var">path</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">ApiRequest -&gt; Text
+</span><a href="Haskemathesis.Execute.Types.html#reqPath"><span class="hs-identifier hs-var">reqPath</span></a></span><span> </span><span class="annot"><span class="annottext">ApiRequest
+</span><a href="#local-6989586621679199197"><span class="hs-identifier hs-var">request</span></a></span><span>
+</span><span id="line-89"></span><span>            </span><span id="local-6989586621679199202"><span class="annot"><span class="annottext">query :: Text
+</span><a href="#local-6989586621679199202"><span class="hs-identifier hs-var hs-var">query</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[(Text, Text)] -&gt; Text
+</span><a href="Haskemathesis.Report.Curl.html#renderQuery"><span class="hs-identifier hs-var">renderQuery</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">ApiRequest -&gt; [(Text, Text)]
+</span><a href="Haskemathesis.Execute.Types.html#reqQueryParams"><span class="hs-identifier hs-var">reqQueryParams</span></a></span><span> </span><span class="annot"><span class="annottext">ApiRequest
+</span><a href="#local-6989586621679199197"><span class="hs-identifier hs-var">request</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-90"></span><span>         </span><span class="hs-keyword">in</span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679199199"><span class="hs-identifier hs-var">base</span></a></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679199200"><span class="hs-identifier hs-var">path</span></a></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679199202"><span class="hs-identifier hs-var">query</span></a></span><span>
+</span><span id="line-91"></span><span>
+</span><span id="line-92"></span><span class="annot"><a href="Haskemathesis.Report.Curl.html#renderHeader"><span class="hs-identifier hs-type">renderHeader</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="file:///nix/store/j3bcnc7r5q4sz7xij5naq8pf2zh1xr44-case-insensitive-1.2.1.0-doc/share/doc/case-insensitive-1.2.1.0/html/src/Data.CaseInsensitive.Internal.html#CI"><span class="hs-identifier hs-type">CI.CI</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">ByteString</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">ByteString</span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
+</span><span id="line-93"></span><span id="renderHeader"><span class="annot"><span class="annottext">renderHeader :: (HeaderName, ByteString) -&gt; Text
+</span><a href="Haskemathesis.Report.Curl.html#renderHeader"><span class="hs-identifier hs-var hs-var">renderHeader</span></a></span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621679199205"><span class="annot"><span class="annottext">HeaderName
+</span><a href="#local-6989586621679199205"><span class="hs-identifier hs-var">name</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679199206"><span class="annot"><span class="annottext">ByteString
+</span><a href="#local-6989586621679199206"><span class="hs-identifier hs-var">value</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-94"></span><span>    </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;-H &quot;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text
+</span><a href="Haskemathesis.Report.Curl.html#quote"><span class="hs-identifier hs-var">quote</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">ByteString -&gt; Text
+</span><span class="hs-identifier hs-var">decodeUtf8</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">HeaderName -&gt; ByteString
+forall s. CI s -&gt; s
+</span><a href="file:///nix/store/j3bcnc7r5q4sz7xij5naq8pf2zh1xr44-case-insensitive-1.2.1.0-doc/share/doc/case-insensitive-1.2.1.0/html/src/Data.CaseInsensitive.Internal.html#original"><span class="hs-identifier hs-var">CI.original</span></a></span><span> </span><span class="annot"><span class="annottext">HeaderName
+</span><a href="#local-6989586621679199205"><span class="hs-identifier hs-var">name</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;: &quot;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">ByteString -&gt; Text
+</span><span class="hs-identifier hs-var">decodeUtf8</span></span><span> </span><span class="annot"><span class="annottext">ByteString
+</span><a href="#local-6989586621679199206"><span class="hs-identifier hs-var">value</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-95"></span><span>
+</span><span id="line-96"></span><span class="annot"><a href="Haskemathesis.Report.Curl.html#headersWithContentType"><span class="hs-identifier hs-type">headersWithContentType</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Haskemathesis.Execute.Types.html#ApiRequest"><span class="hs-identifier hs-type">ApiRequest</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="hs-special">(</span><span class="annot"><a href="file:///nix/store/j3bcnc7r5q4sz7xij5naq8pf2zh1xr44-case-insensitive-1.2.1.0-doc/share/doc/case-insensitive-1.2.1.0/html/src/Data.CaseInsensitive.Internal.html#CI"><span class="hs-identifier hs-type">CI.CI</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">ByteString</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">ByteString</span></span><span class="hs-special">)</span><span class="hs-special">]</span><span>
+</span><span id="line-97"></span><span id="headersWithContentType"><span class="annot"><span class="annottext">headersWithContentType :: ApiRequest -&gt; [(HeaderName, ByteString)]
+</span><a href="Haskemathesis.Report.Curl.html#headersWithContentType"><span class="hs-identifier hs-var hs-var">headersWithContentType</span></a></span></span><span> </span><span id="local-6989586621679199208"><span class="annot"><span class="annottext">ApiRequest
+</span><a href="#local-6989586621679199208"><span class="hs-identifier hs-var">req</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-98"></span><span>    </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">ApiRequest -&gt; Maybe (Text, ByteString)
+</span><a href="Haskemathesis.Execute.Types.html#reqBody"><span class="hs-identifier hs-var">reqBody</span></a></span><span> </span><span class="annot"><span class="annottext">ApiRequest
+</span><a href="#local-6989586621679199208"><span class="hs-identifier hs-var">req</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-99"></span><span>        </span><span class="annot"><span class="annottext">Maybe (Text, ByteString)
+</span><span class="hs-identifier hs-var">Nothing</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">ApiRequest -&gt; [(HeaderName, ByteString)]
+</span><a href="Haskemathesis.Execute.Types.html#reqHeaders"><span class="hs-identifier hs-var">reqHeaders</span></a></span><span> </span><span class="annot"><span class="annottext">ApiRequest
+</span><a href="#local-6989586621679199208"><span class="hs-identifier hs-var">req</span></a></span><span>
+</span><span id="line-100"></span><span>        </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621679199210"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679199210"><span class="hs-identifier hs-var">mediaType</span></a></span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">ByteString
+</span><span class="hs-identifier">_</span></span><span class="hs-special">)</span><span>
+</span><span id="line-101"></span><span>            </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">[(HeaderName, ByteString)] -&gt; Bool
+</span><a href="Haskemathesis.Report.Curl.html#hasContentType"><span class="hs-identifier hs-var">hasContentType</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">ApiRequest -&gt; [(HeaderName, ByteString)]
+</span><a href="Haskemathesis.Execute.Types.html#reqHeaders"><span class="hs-identifier hs-var">reqHeaders</span></a></span><span> </span><span class="annot"><span class="annottext">ApiRequest
+</span><a href="#local-6989586621679199208"><span class="hs-identifier hs-var">req</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">ApiRequest -&gt; [(HeaderName, ByteString)]
+</span><a href="Haskemathesis.Execute.Types.html#reqHeaders"><span class="hs-identifier hs-var">reqHeaders</span></a></span><span> </span><span class="annot"><span class="annottext">ApiRequest
+</span><a href="#local-6989586621679199208"><span class="hs-identifier hs-var">req</span></a></span><span>
+</span><span id="line-102"></span><span>            </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">otherwise</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">HeaderName
+</span><a href="file:///nix/store/fsi2cvnm3mdngjk22hkkpyl0q5h66sjj-http-types-0.12.4-doc/share/doc/http-types-0.12.4/html/src/Network.HTTP.Types.Header.html#hContentType"><span class="hs-identifier hs-var">hContentType</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text -&gt; ByteString
+</span><span class="hs-identifier hs-var">encodeUtf8</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679199210"><span class="hs-identifier hs-var">mediaType</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">(HeaderName, ByteString)
+-&gt; [(HeaderName, ByteString)] -&gt; [(HeaderName, ByteString)]
+forall a. a -&gt; [a] -&gt; [a]
+</span><span class="hs-glyph hs-var">:</span></span><span> </span><span class="annot"><span class="annottext">ApiRequest -&gt; [(HeaderName, ByteString)]
+</span><a href="Haskemathesis.Execute.Types.html#reqHeaders"><span class="hs-identifier hs-var">reqHeaders</span></a></span><span> </span><span class="annot"><span class="annottext">ApiRequest
+</span><a href="#local-6989586621679199208"><span class="hs-identifier hs-var">req</span></a></span><span>
+</span><span id="line-103"></span><span>
+</span><span id="line-104"></span><span class="annot"><a href="Haskemathesis.Report.Curl.html#hasContentType"><span class="hs-identifier hs-type">hasContentType</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="hs-special">(</span><span class="annot"><a href="file:///nix/store/j3bcnc7r5q4sz7xij5naq8pf2zh1xr44-case-insensitive-1.2.1.0-doc/share/doc/case-insensitive-1.2.1.0/html/src/Data.CaseInsensitive.Internal.html#CI"><span class="hs-identifier hs-type">CI.CI</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">ByteString</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">ByteString</span></span><span class="hs-special">)</span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span>
+</span><span id="line-105"></span><span id="hasContentType"><span class="annot"><span class="annottext">hasContentType :: [(HeaderName, ByteString)] -&gt; Bool
+</span><a href="Haskemathesis.Report.Curl.html#hasContentType"><span class="hs-identifier hs-var hs-var">hasContentType</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">((HeaderName, ByteString) -&gt; Bool)
+-&gt; [(HeaderName, ByteString)] -&gt; Bool
+forall (t :: * -&gt; *) a. Foldable t =&gt; (a -&gt; Bool) -&gt; t a -&gt; Bool
+</span><span class="hs-identifier hs-var">any</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">(</span><span class="annot"><span class="annottext">HeaderName -&gt; HeaderName -&gt; Bool
+forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">HeaderName
+</span><a href="file:///nix/store/fsi2cvnm3mdngjk22hkkpyl0q5h66sjj-http-types-0.12.4-doc/share/doc/http-types-0.12.4/html/src/Network.HTTP.Types.Header.html#hContentType"><span class="hs-identifier hs-var">hContentType</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">(HeaderName -&gt; Bool)
+-&gt; ((HeaderName, ByteString) -&gt; HeaderName)
+-&gt; (HeaderName, ByteString)
+-&gt; Bool
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">(HeaderName, ByteString) -&gt; HeaderName
+forall a b. (a, b) -&gt; a
+</span><span class="hs-identifier hs-var">fst</span></span><span class="hs-special">)</span><span>
+</span><span id="line-106"></span><span>
+</span><span id="line-107"></span><span class="annot"><a href="Haskemathesis.Report.Curl.html#renderQuery"><span class="hs-identifier hs-type">renderQuery</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span class="hs-special">)</span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
+</span><span id="line-108"></span><span id="renderQuery"><span class="annot"><span class="annottext">renderQuery :: [(Text, Text)] -&gt; Text
+</span><a href="Haskemathesis.Report.Curl.html#renderQuery"><span class="hs-identifier hs-var hs-var">renderQuery</span></a></span></span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;&quot;</span></span><span>
+</span><span id="line-109"></span><span class="annot"><a href="Haskemathesis.Report.Curl.html#renderQuery"><span class="hs-identifier hs-var">renderQuery</span></a></span><span> </span><span id="local-6989586621679199214"><span class="annot"><span class="annottext">[(Text, Text)]
+</span><a href="#local-6989586621679199214"><span class="hs-identifier hs-var">params</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-110"></span><span>    </span><span class="annot"><span class="annottext">ByteString -&gt; Text
+</span><span class="hs-identifier hs-var">decodeUtf8</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Bool -&gt; SimpleQuery -&gt; ByteString
+</span><a href="file:///nix/store/fsi2cvnm3mdngjk22hkkpyl0q5h66sjj-http-types-0.12.4-doc/share/doc/http-types-0.12.4/html/src/Network.HTTP.Types.URI.html#renderSimpleQuery"><span class="hs-identifier hs-var">renderSimpleQuery</span></a></span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">True</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">((Text, Text) -&gt; SimpleQueryItem) -&gt; [(Text, Text)] -&gt; SimpleQuery
+forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
+</span><span class="hs-identifier hs-var">map</span></span><span> </span><span class="annot"><span class="annottext">(Text, Text) -&gt; SimpleQueryItem
+</span><a href="#local-6989586621679199215"><span class="hs-identifier hs-var">toQuery</span></a></span><span> </span><span class="annot"><span class="annottext">[(Text, Text)]
+</span><a href="#local-6989586621679199214"><span class="hs-identifier hs-var">params</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-111"></span><span>  </span><span class="hs-keyword">where</span><span>
+</span><span id="line-112"></span><span>    </span><span id="local-6989586621679199215"><span class="annot"><span class="annottext">toQuery :: (Text, Text) -&gt; SimpleQueryItem
+</span><a href="#local-6989586621679199215"><span class="hs-identifier hs-var hs-var">toQuery</span></a></span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621679199216"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679199216"><span class="hs-identifier hs-var">name</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679199217"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679199217"><span class="hs-identifier hs-var">value</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Text -&gt; ByteString
+</span><span class="hs-identifier hs-var">encodeUtf8</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679199216"><span class="hs-identifier hs-var">name</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text -&gt; ByteString
+</span><span class="hs-identifier hs-var">encodeUtf8</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679199217"><span class="hs-identifier hs-var">value</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-113"></span><span>
+</span><span id="line-114"></span><span class="annot"><a href="Haskemathesis.Report.Curl.html#quote"><span class="hs-identifier hs-type">quote</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
+</span><span id="line-115"></span><span id="quote"><span class="annot"><span class="annottext">quote :: Text -&gt; Text
+</span><a href="Haskemathesis.Report.Curl.html#quote"><span class="hs-identifier hs-var hs-var">quote</span></a></span></span><span> </span><span id="local-6989586621679199218"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679199218"><span class="hs-identifier hs-var">txt</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;'&quot;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text
+</span><a href="Haskemathesis.Report.Curl.html#escapeQuotes"><span class="hs-identifier hs-var">escapeQuotes</span></a></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679199218"><span class="hs-identifier hs-var">txt</span></a></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;'&quot;</span></span><span>
+</span><span id="line-116"></span><span>
+</span><span id="line-117"></span><span class="annot"><a href="Haskemathesis.Report.Curl.html#escapeQuotes"><span class="hs-identifier hs-type">escapeQuotes</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
+</span><span id="line-118"></span><span id="escapeQuotes"><span class="annot"><span class="annottext">escapeQuotes :: Text -&gt; Text
+</span><a href="Haskemathesis.Report.Curl.html#escapeQuotes"><span class="hs-identifier hs-var hs-var">escapeQuotes</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">HasCallStack =&gt; Text -&gt; Text -&gt; Text -&gt; Text
+Text -&gt; Text -&gt; Text -&gt; Text
+</span><span class="hs-identifier hs-var">T.replace</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;'&quot;</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;'\\''&quot;</span></span><span>
+</span><span id="line-119"></span></pre></body></html>

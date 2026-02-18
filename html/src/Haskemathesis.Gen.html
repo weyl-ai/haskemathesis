@@ -1,0 +1,45 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="annot"><span class="hs-comment">{- | Public generator entry points and default format registry.
+
+This module provides the main interface for generating JSON values
+from JSON Schema definitions. It re-exports the core generation functions
+and types needed for custom generators.
+
+=== Basic Usage
+
+Generate a random JSON value from a schema:
+
+@
+import Haskemathesis.Gen (genFromSchema)
+import Haskemathesis.Schema (emptySchema, schemaType, SString)
+
+mySchema :: Schema
+mySchema = emptySchema { schemaType = Just SString }
+
+-- In a Hedgehog property
+value &lt;- forAll (genFromSchema mySchema)
+@
+
+=== Custom Format Registry
+
+For schemas with custom format annotations, you can provide a custom
+'FormatRegistry':
+
+@
+import Haskemathesis.Gen.Format (FormatRegistry)
+import Haskemathesis.Gen (genFromSchema, defaultFormatRegistry)
+
+myRegistry :: FormatRegistry
+myRegistry = defaultFormatRegistry  -- or custom registry
+@
+-}</span></span><span>
+</span><span id="line-35"></span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="Haskemathesis.Gen.html"><span class="hs-identifier">Haskemathesis.Gen</span></a></span><span> </span><span class="hs-special">(</span><span>
+</span><span id="line-36"></span><span>    </span><span class="annot"><a href="Haskemathesis.Gen.Format.html#FormatRegistry"><span class="hs-identifier">FormatRegistry</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-37"></span><span>    </span><span class="annot"><a href="Haskemathesis.Gen.Format.html#defaultFormatRegistry"><span class="hs-identifier">defaultFormatRegistry</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-38"></span><span>    </span><span class="annot"><a href="Haskemathesis.Gen.Core.html#genFromSchema"><span class="hs-identifier">genFromSchema</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-39"></span><span>    </span><span class="annot"><a href="Haskemathesis.Gen.Core.html#genFromSchemaWithDepth"><span class="hs-identifier">genFromSchemaWithDepth</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-40"></span><span class="hs-special">)</span><span>
+</span><span id="line-41"></span><span class="hs-keyword">where</span><span>
+</span><span id="line-42"></span><span>
+</span><span id="line-43"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Haskemathesis.Gen.Core.html"><span class="hs-identifier">Haskemathesis.Gen.Core</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Haskemathesis.Gen.Core.html#genFromSchema"><span class="hs-identifier">genFromSchema</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Haskemathesis.Gen.Core.html#genFromSchemaWithDepth"><span class="hs-identifier">genFromSchemaWithDepth</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-44"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Haskemathesis.Gen.Format.html"><span class="hs-identifier">Haskemathesis.Gen.Format</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Haskemathesis.Gen.Format.html#FormatRegistry"><span class="hs-identifier">FormatRegistry</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Haskemathesis.Gen.Format.html#defaultFormatRegistry"><span class="hs-identifier">defaultFormatRegistry</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-45"></span></pre></body></html>

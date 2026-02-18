@@ -1,0 +1,107 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="annot"><span class="hs-comment">{- | Built-in response checks and default check sets.
+
+This module provides a collection of standard checks for validating
+API responses against OpenAPI specifications. These checks cover
+common validation scenarios like status codes, response schemas,
+content types, and headers.
+
+=== Using Default Check Sets
+
+For most use cases, you can use one of the predefined check sets:
+
+@
+import Haskemathesis.Check.Standard (defaultChecks)
+import Haskemathesis.Property (propertiesForSpec)
+
+props = propertiesForSpec Nothing defaultChecks executor ops
+@
+
+=== Available Check Sets
+
+* 'defaultChecks' - Essential checks (server errors, schema conformance, status codes)
+* 'allChecks' - All available checks including content type and header validation
+
+=== Creating Custom Check Sets
+
+You can combine individual checks to create custom check sets:
+
+@
+myChecks :: [Check]
+myChecks =
+    [ notAServerError
+    , responseSchemaConformance
+    , statusCodeConformance
+    ]
+@
+-}</span></span><span>
+</span><span id="line-37"></span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="Haskemathesis.Check.Standard.html"><span class="hs-identifier">Haskemathesis.Check.Standard</span></a></span><span> </span><span class="hs-special">(</span><span>
+</span><span id="line-38"></span><span>    </span><span class="annot"><span class="hs-comment">-- * Check Sets</span></span><span>
+</span><span id="line-39"></span><span>    </span><span class="annot"><a href="Haskemathesis.Check.Standard.html#defaultChecks"><span class="hs-identifier">defaultChecks</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-40"></span><span>    </span><span class="annot"><a href="Haskemathesis.Check.Standard.html#allChecks"><span class="hs-identifier">allChecks</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-41"></span><span>
+</span><span id="line-42"></span><span>    </span><span class="annot"><span class="hs-comment">-- * Individual Checks</span></span><span>
+</span><span id="line-43"></span><span>    </span><span class="annot"><a href="Haskemathesis.Check.Standard.Status.html#notAServerError"><span class="hs-identifier">notAServerError</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-44"></span><span>    </span><span class="annot"><a href="Haskemathesis.Check.Standard.ResponseSchema.html#responseSchemaConformance"><span class="hs-identifier">responseSchemaConformance</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-45"></span><span>    </span><span class="annot"><a href="Haskemathesis.Check.Standard.Status.html#statusCodeConformance"><span class="hs-identifier">statusCodeConformance</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-46"></span><span>    </span><span class="annot"><a href="Haskemathesis.Check.Standard.ContentType.html#contentTypeConformance"><span class="hs-identifier">contentTypeConformance</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-47"></span><span>    </span><span class="annot"><a href="Haskemathesis.Check.Standard.Headers.html#responseHeadersConformance"><span class="hs-identifier">responseHeadersConformance</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-48"></span><span class="hs-special">)</span><span>
+</span><span id="line-49"></span><span class="hs-keyword">where</span><span>
+</span><span id="line-50"></span><span>
+</span><span id="line-51"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Haskemathesis.Check.Standard.ContentType.html"><span class="hs-identifier">Haskemathesis.Check.Standard.ContentType</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Haskemathesis.Check.Standard.ContentType.html#contentTypeConformance"><span class="hs-identifier">contentTypeConformance</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-52"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Haskemathesis.Check.Standard.Headers.html"><span class="hs-identifier">Haskemathesis.Check.Standard.Headers</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Haskemathesis.Check.Standard.Headers.html#responseHeadersConformance"><span class="hs-identifier">responseHeadersConformance</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-53"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Haskemathesis.Check.Standard.ResponseSchema.html"><span class="hs-identifier">Haskemathesis.Check.Standard.ResponseSchema</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Haskemathesis.Check.Standard.ResponseSchema.html#responseSchemaConformance"><span class="hs-identifier">responseSchemaConformance</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-54"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Haskemathesis.Check.Standard.Status.html"><span class="hs-identifier">Haskemathesis.Check.Standard.Status</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Haskemathesis.Check.Standard.Status.html#notAServerError"><span class="hs-identifier">notAServerError</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Haskemathesis.Check.Standard.Status.html#statusCodeConformance"><span class="hs-identifier">statusCodeConformance</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-55"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Haskemathesis.Check.Types.html"><span class="hs-identifier">Haskemathesis.Check.Types</span></a></span><span>
+</span><span id="line-56"></span><span>
+</span><span id="line-57"></span><span class="annot"><span class="hs-comment">{- | Default set of essential checks.
+
+This check set includes the most important validations that every
+API should pass:
+
+* 'notAServerError' - Ensures no 5xx status codes
+* 'responseSchemaConformance' - Validates response bodies against schemas
+* 'statusCodeConformance' - Ensures status codes are documented
+
+=== When to Use
+
+Use this as a starting point for most API testing scenarios. It provides
+good coverage without being overly strict.
+-}</span></span><span>
+</span><span id="line-71"></span><span class="annot"><a href="Haskemathesis.Check.Standard.html#defaultChecks"><span class="hs-identifier hs-type">defaultChecks</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="Haskemathesis.Check.Types.html#Check"><span class="hs-identifier hs-type">Check</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-72"></span><span id="defaultChecks"><span class="annot"><span class="annottext">defaultChecks :: [Check]
+</span><a href="Haskemathesis.Check.Standard.html#defaultChecks"><span class="hs-identifier hs-var hs-var">defaultChecks</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-73"></span><span>    </span><span class="hs-special">[</span><span> </span><span class="annot"><span class="annottext">Check
+</span><a href="Haskemathesis.Check.Standard.Status.html#notAServerError"><span class="hs-identifier hs-var">notAServerError</span></a></span><span>
+</span><span id="line-74"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Check
+</span><a href="Haskemathesis.Check.Standard.ResponseSchema.html#responseSchemaConformance"><span class="hs-identifier hs-var">responseSchemaConformance</span></a></span><span>
+</span><span id="line-75"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Check
+</span><a href="Haskemathesis.Check.Standard.Status.html#statusCodeConformance"><span class="hs-identifier hs-var">statusCodeConformance</span></a></span><span>
+</span><span id="line-76"></span><span>    </span><span class="hs-special">]</span><span>
+</span><span id="line-77"></span><span>
+</span><span id="line-78"></span><span class="annot"><span class="hs-comment">{- | Complete set of all available standard checks.
+
+This check set includes all validations from 'defaultChecks' plus:
+
+* 'contentTypeConformance' - Validates Content-Type headers
+* 'responseHeadersConformance' - Validates response headers against schemas
+
+=== When to Use
+
+Use this when you want maximum validation coverage. Note that some
+APIs may need to relax certain checks (e.g., if they intentionally
+return non-standard content types).
+-}</span></span><span>
+</span><span id="line-91"></span><span class="annot"><a href="Haskemathesis.Check.Standard.html#allChecks"><span class="hs-identifier hs-type">allChecks</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="Haskemathesis.Check.Types.html#Check"><span class="hs-identifier hs-type">Check</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-92"></span><span id="allChecks"><span class="annot"><span class="annottext">allChecks :: [Check]
+</span><a href="Haskemathesis.Check.Standard.html#allChecks"><span class="hs-identifier hs-var hs-var">allChecks</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-93"></span><span>    </span><span class="annot"><span class="annottext">[Check]
+</span><a href="Haskemathesis.Check.Standard.html#defaultChecks"><span class="hs-identifier hs-var">defaultChecks</span></a></span><span>
+</span><span id="line-94"></span><span>        </span><span class="annot"><span class="annottext">[Check] -&gt; [Check] -&gt; [Check]
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="hs-special">[</span><span> </span><span class="annot"><span class="annottext">Check
+</span><a href="Haskemathesis.Check.Standard.ContentType.html#contentTypeConformance"><span class="hs-identifier hs-var">contentTypeConformance</span></a></span><span>
+</span><span id="line-95"></span><span>           </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Check
+</span><a href="Haskemathesis.Check.Standard.Headers.html#responseHeadersConformance"><span class="hs-identifier hs-var">responseHeadersConformance</span></a></span><span>
+</span><span id="line-96"></span><span>           </span><span class="hs-special">]</span><span>
+</span><span id="line-97"></span></pre></body></html>

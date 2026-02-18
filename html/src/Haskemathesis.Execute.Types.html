@@ -1,0 +1,150 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE StrictData #-}</span><span>
+</span><span id="line-2"></span><span>
+</span><span id="line-3"></span><span class="annot"><span class="hs-comment">{- | Request/response types shared by executors and checks.
+
+This module defines the core data types used for representing
+API requests and responses throughout Haskemathesis. These types
+are used by executors to perform HTTP calls and by checks to
+validate responses.
+
+=== Building Requests
+
+Construct a request for execution:
+
+@
+import Network.HTTP.Types (methodPost)
+
+request :: ApiRequest
+request = ApiRequest
+    { reqMethod = methodPost
+    , reqPath = &quot;/api/users&quot;
+    , reqQueryParams = [(&quot;page&quot;, &quot;1&quot;)]
+    , reqHeaders = [(&quot;Content-Type&quot;, &quot;application/json&quot;)]
+    , reqBody = Just (&quot;application/json&quot;, &quot;{\\&quot;name\\&quot;:\\&quot;test\\&quot;}&quot;)
+    }
+@
+
+=== Creating Responses
+
+When writing custom executors or mocks:
+
+@
+response :: ApiResponse
+response = ApiResponse
+    { resStatusCode = 200
+    , resHeaders = [(&quot;Content-Type&quot;, &quot;application/json&quot;)]
+    , resBody = &quot;{\\&quot;id\\&quot;: 1}&quot;
+    , resTime = 0.1
+    }
+@
+-}</span></span><span>
+</span><span id="line-41"></span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="Haskemathesis.Execute.Types.html"><span class="hs-identifier">Haskemathesis.Execute.Types</span></a></span><span> </span><span class="hs-special">(</span><span>
+</span><span id="line-42"></span><span>    </span><span class="annot"><a href="Haskemathesis.Execute.Types.html#ApiRequest"><span class="hs-identifier">ApiRequest</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-43"></span><span>    </span><span class="annot"><a href="Haskemathesis.Execute.Types.html#ApiResponse"><span class="hs-identifier">ApiResponse</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-44"></span><span>    </span><span class="annot"><a href="Haskemathesis.Execute.Types.html#MediaType"><span class="hs-identifier">MediaType</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-45"></span><span>    </span><span class="annot"><a href="Haskemathesis.Execute.Types.html#BaseUrl"><span class="hs-identifier">BaseUrl</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-46"></span><span class="hs-special">)</span><span>
+</span><span id="line-47"></span><span class="hs-keyword">where</span><span>
+</span><span id="line-48"></span><span>
+</span><span id="line-49"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.ByteString</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">ByteString</span></span><span class="hs-special">)</span><span>
+</span><span id="line-50"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Text</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Text</span></span><span class="hs-special">)</span><span>
+</span><span id="line-51"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Time</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">NominalDiffTime</span></span><span class="hs-special">)</span><span>
+</span><span id="line-52"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="file:///nix/store/fsi2cvnm3mdngjk22hkkpyl0q5h66sjj-http-types-0.12.4-doc/share/doc/http-types-0.12.4/html/src/Network.HTTP.Types.html"><span class="hs-identifier">Network.HTTP.Types</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="file:///nix/store/fsi2cvnm3mdngjk22hkkpyl0q5h66sjj-http-types-0.12.4-doc/share/doc/http-types-0.12.4/html/src/Network.HTTP.Types.Header.html#HeaderName"><span class="hs-identifier">HeaderName</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="file:///nix/store/fsi2cvnm3mdngjk22hkkpyl0q5h66sjj-http-types-0.12.4-doc/share/doc/http-types-0.12.4/html/src/Network.HTTP.Types.Method.html#Method"><span class="hs-identifier">Method</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-53"></span><span>
+</span><span id="line-54"></span><span class="annot"><span class="hs-comment">-- | Media type as a text string (e.g., &quot;application/json&quot;).</span></span><span>
+</span><span id="line-55"></span><span class="hs-keyword">type</span><span> </span><span id="MediaType"><span class="annot"><a href="Haskemathesis.Execute.Types.html#MediaType"><span class="hs-identifier hs-var">MediaType</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
+</span><span id="line-56"></span><span>
+</span><span id="line-57"></span><span class="annot"><span class="hs-comment">-- | Base URL for the API as a text string (e.g., &quot;http://localhost:8080&quot;).</span></span><span>
+</span><span id="line-58"></span><span class="hs-keyword">type</span><span> </span><span id="BaseUrl"><span class="annot"><a href="Haskemathesis.Execute.Types.html#BaseUrl"><span class="hs-identifier hs-var">BaseUrl</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
+</span><span id="line-59"></span><span>
+</span><span id="line-60"></span><span class="annot"><span class="hs-comment">{- | Represents an HTTP request to be sent to the API.
+
+This type captures all the information needed to make an API call,
+including the HTTP method, path, query parameters, headers, and body.
+-}</span></span><span>
+</span><span id="line-65"></span><span class="hs-keyword">data</span><span> </span><span id="ApiRequest"><span class="annot"><a href="Haskemathesis.Execute.Types.html#ApiRequest"><span class="hs-identifier hs-var">ApiRequest</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="ApiRequest"><span class="annot"><a href="Haskemathesis.Execute.Types.html#ApiRequest"><span class="hs-identifier hs-var">ApiRequest</span></a></span></span><span>
+</span><span id="line-66"></span><span>    </span><span class="hs-special">{</span><span> </span><span id="reqMethod"><span class="annot"><span class="annottext">ApiRequest -&gt; Method
+</span><a href="Haskemathesis.Execute.Types.html#reqMethod"><span class="hs-identifier hs-var hs-var">reqMethod</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="file:///nix/store/fsi2cvnm3mdngjk22hkkpyl0q5h66sjj-http-types-0.12.4-doc/share/doc/http-types-0.12.4/html/src/Network.HTTP.Types.Method.html#Method"><span class="hs-identifier hs-type">Method</span></a></span><span>
+</span><span id="line-67"></span><span>    </span><span class="annot"><span class="hs-comment">-- ^ HTTP method (e.g., GET, POST, PUT, DELETE).</span></span><span>
+</span><span id="line-68"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="reqPath"><span class="annot"><span class="annottext">ApiRequest -&gt; Text
+</span><a href="Haskemathesis.Execute.Types.html#reqPath"><span class="hs-identifier hs-var hs-var">reqPath</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
+</span><span id="line-69"></span><span>    </span><span class="annot"><span class="hs-comment">-- ^ URL path (e.g., &quot;/api/users&quot;).</span></span><span>
+</span><span id="line-70"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="reqQueryParams"><span class="annot"><span class="annottext">ApiRequest -&gt; [(Text, Text)]
+</span><a href="Haskemathesis.Execute.Types.html#reqQueryParams"><span class="hs-identifier hs-var hs-var">reqQueryParams</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span class="hs-special">)</span><span class="hs-special">]</span><span>
+</span><span id="line-71"></span><span>    </span><span class="annot"><span class="hs-comment">-- ^ Query parameters as key-value pairs.</span></span><span>
+</span><span id="line-72"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="reqHeaders"><span class="annot"><span class="annottext">ApiRequest -&gt; [(HeaderName, Method)]
+</span><a href="Haskemathesis.Execute.Types.html#reqHeaders"><span class="hs-identifier hs-var hs-var">reqHeaders</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="hs-special">(</span><span class="annot"><a href="file:///nix/store/fsi2cvnm3mdngjk22hkkpyl0q5h66sjj-http-types-0.12.4-doc/share/doc/http-types-0.12.4/html/src/Network.HTTP.Types.Header.html#HeaderName"><span class="hs-identifier hs-type">HeaderName</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">ByteString</span></span><span class="hs-special">)</span><span class="hs-special">]</span><span>
+</span><span id="line-73"></span><span>    </span><span class="annot"><span class="hs-comment">-- ^ HTTP headers as key-value pairs.</span></span><span>
+</span><span id="line-74"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="reqBody"><span class="annot"><span class="annottext">ApiRequest -&gt; Maybe (Text, Method)
+</span><a href="Haskemathesis.Execute.Types.html#reqBody"><span class="hs-identifier hs-var hs-var">reqBody</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Haskemathesis.Execute.Types.html#MediaType"><span class="hs-identifier hs-type">MediaType</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">ByteString</span></span><span class="hs-special">)</span><span>
+</span><span id="line-75"></span><span>    </span><span class="annot"><span class="hs-comment">-- ^ Optional request body with its media type.</span></span><span>
+</span><span id="line-76"></span><span>    </span><span class="hs-special">}</span><span>
+</span><span id="line-77"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679198474"><span id="local-6989586621679198488"><span class="annot"><span class="annottext">ApiRequest -&gt; ApiRequest -&gt; Bool
+(ApiRequest -&gt; ApiRequest -&gt; Bool)
+-&gt; (ApiRequest -&gt; ApiRequest -&gt; Bool) -&gt; Eq ApiRequest
+forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
+$c== :: ApiRequest -&gt; ApiRequest -&gt; Bool
+== :: ApiRequest -&gt; ApiRequest -&gt; Bool
+$c/= :: ApiRequest -&gt; ApiRequest -&gt; Bool
+/= :: ApiRequest -&gt; ApiRequest -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679198496"><span id="local-6989586621679198512"><span id="local-6989586621679198516"><span class="annot"><span class="annottext">Int -&gt; ApiRequest -&gt; ShowS
+[ApiRequest] -&gt; ShowS
+ApiRequest -&gt; String
+(Int -&gt; ApiRequest -&gt; ShowS)
+-&gt; (ApiRequest -&gt; String)
+-&gt; ([ApiRequest] -&gt; ShowS)
+-&gt; Show ApiRequest
+forall a.
+(Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
+$cshowsPrec :: Int -&gt; ApiRequest -&gt; ShowS
+showsPrec :: Int -&gt; ApiRequest -&gt; ShowS
+$cshow :: ApiRequest -&gt; String
+show :: ApiRequest -&gt; String
+$cshowList :: [ApiRequest] -&gt; ShowS
+showList :: [ApiRequest] -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-78"></span><span>
+</span><span id="line-79"></span><span class="annot"><span class="hs-comment">{- | Represents an HTTP response received from the API.
+
+This type captures the response status code, headers, body,
+and timing information for analysis by checks.
+-}</span></span><span>
+</span><span id="line-84"></span><span class="hs-keyword">data</span><span> </span><span id="ApiResponse"><span class="annot"><a href="Haskemathesis.Execute.Types.html#ApiResponse"><span class="hs-identifier hs-var">ApiResponse</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="ApiResponse"><span class="annot"><a href="Haskemathesis.Execute.Types.html#ApiResponse"><span class="hs-identifier hs-var">ApiResponse</span></a></span></span><span>
+</span><span id="line-85"></span><span>    </span><span class="hs-special">{</span><span> </span><span id="resStatusCode"><span class="annot"><span class="annottext">ApiResponse -&gt; Int
+</span><a href="Haskemathesis.Execute.Types.html#resStatusCode"><span class="hs-identifier hs-var hs-var">resStatusCode</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span>
+</span><span id="line-86"></span><span>    </span><span class="annot"><span class="hs-comment">-- ^ HTTP status code (e.g., 200, 404, 500).</span></span><span>
+</span><span id="line-87"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="resHeaders"><span class="annot"><span class="annottext">ApiResponse -&gt; [(HeaderName, Method)]
+</span><a href="Haskemathesis.Execute.Types.html#resHeaders"><span class="hs-identifier hs-var hs-var">resHeaders</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="hs-special">(</span><span class="annot"><a href="file:///nix/store/fsi2cvnm3mdngjk22hkkpyl0q5h66sjj-http-types-0.12.4-doc/share/doc/http-types-0.12.4/html/src/Network.HTTP.Types.Header.html#HeaderName"><span class="hs-identifier hs-type">HeaderName</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">ByteString</span></span><span class="hs-special">)</span><span class="hs-special">]</span><span>
+</span><span id="line-88"></span><span>    </span><span class="annot"><span class="hs-comment">-- ^ Response headers as key-value pairs.</span></span><span>
+</span><span id="line-89"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="resBody"><span class="annot"><span class="annottext">ApiResponse -&gt; Method
+</span><a href="Haskemathesis.Execute.Types.html#resBody"><span class="hs-identifier hs-var hs-var">resBody</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">ByteString</span></span><span>
+</span><span id="line-90"></span><span>    </span><span class="annot"><span class="hs-comment">-- ^ Raw response body as a bytestring.</span></span><span>
+</span><span id="line-91"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="resTime"><span class="annot"><span class="annottext">ApiResponse -&gt; NominalDiffTime
+</span><a href="Haskemathesis.Execute.Types.html#resTime"><span class="hs-identifier hs-var hs-var">resTime</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">NominalDiffTime</span></span><span>
+</span><span id="line-92"></span><span>    </span><span class="annot"><span class="hs-comment">-- ^ Time taken for the request/response cycle.</span></span><span>
+</span><span id="line-93"></span><span>    </span><span class="hs-special">}</span><span>
+</span><span id="line-94"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679198529"><span id="local-6989586621679198539"><span class="annot"><span class="annottext">ApiResponse -&gt; ApiResponse -&gt; Bool
+(ApiResponse -&gt; ApiResponse -&gt; Bool)
+-&gt; (ApiResponse -&gt; ApiResponse -&gt; Bool) -&gt; Eq ApiResponse
+forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
+$c== :: ApiResponse -&gt; ApiResponse -&gt; Bool
+== :: ApiResponse -&gt; ApiResponse -&gt; Bool
+$c/= :: ApiResponse -&gt; ApiResponse -&gt; Bool
+/= :: ApiResponse -&gt; ApiResponse -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679198545"><span id="local-6989586621679198556"><span id="local-6989586621679198560"><span class="annot"><span class="annottext">Int -&gt; ApiResponse -&gt; ShowS
+[ApiResponse] -&gt; ShowS
+ApiResponse -&gt; String
+(Int -&gt; ApiResponse -&gt; ShowS)
+-&gt; (ApiResponse -&gt; String)
+-&gt; ([ApiResponse] -&gt; ShowS)
+-&gt; Show ApiResponse
+forall a.
+(Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
+$cshowsPrec :: Int -&gt; ApiResponse -&gt; ShowS
+showsPrec :: Int -&gt; ApiResponse -&gt; ShowS
+$cshow :: ApiResponse -&gt; String
+show :: ApiResponse -&gt; String
+$cshowList :: [ApiResponse] -&gt; ShowS
+showList :: [ApiResponse] -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-95"></span></pre></body></html>

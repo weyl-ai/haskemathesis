@@ -1,0 +1,299 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE StrictData #-}</span><span>
+</span><span id="line-2"></span><span>
+</span><span id="line-3"></span><span class="annot"><span class="hs-comment">{- | Resolved OpenAPI types used by generators and checks.
+
+This module provides a simplified, resolved representation of OpenAPI
+operations. The types here are &quot;resolved&quot; in the sense that all
+references have been flattened and the data structures are normalized
+for easy consumption by generators and checks.
+
+=== Type Hierarchy
+
+The main type is 'ResolvedOperation', which represents a single API
+endpoint (combination of HTTP method and path). It contains:
+
+* 'ResolvedParam' - Parameters (path, query, header, cookie)
+* 'ResolvedRequestBody' - Request body specification
+* 'ResponseSpec' - Expected response specifications
+
+=== Usage
+
+These types are typically obtained by calling 'resolveOperations' on
+a loaded OpenAPI specification:
+
+@
+import Haskemathesis.OpenApi.Loader (loadOpenApiFile)
+import Haskemathesis.OpenApi.Resolve (resolveOperations)
+
+main :: IO ()
+main = do
+    Right spec &lt;- loadOpenApiFile &quot;api.yaml&quot;
+    let ops = resolveOperations spec :: [ResolvedOperation]
+    -- Use operations for testing...
+@
+-}</span></span><span>
+</span><span id="line-35"></span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="Haskemathesis.OpenApi.Types.html"><span class="hs-identifier">Haskemathesis.OpenApi.Types</span></a></span><span> </span><span class="hs-special">(</span><span>
+</span><span id="line-36"></span><span>    </span><span class="annot"><span class="hs-comment">-- * Parameter Types</span></span><span>
+</span><span id="line-37"></span><span>    </span><span class="annot"><a href="Haskemathesis.OpenApi.Types.html#ParamLocation"><span class="hs-identifier">ParamLocation</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-38"></span><span>    </span><span class="annot"><a href="Haskemathesis.OpenApi.Types.html#ResolvedParam"><span class="hs-identifier">ResolvedParam</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-39"></span><span>
+</span><span id="line-40"></span><span>    </span><span class="annot"><span class="hs-comment">-- * Request/Response Types</span></span><span>
+</span><span id="line-41"></span><span>    </span><span class="annot"><a href="Haskemathesis.OpenApi.Types.html#ResolvedRequestBody"><span class="hs-identifier">ResolvedRequestBody</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-42"></span><span>    </span><span class="annot"><a href="Haskemathesis.OpenApi.Types.html#ResponseSpec"><span class="hs-identifier">ResponseSpec</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-43"></span><span>
+</span><span id="line-44"></span><span>    </span><span class="annot"><span class="hs-comment">-- * Operation Type</span></span><span>
+</span><span id="line-45"></span><span>    </span><span class="annot"><a href="Haskemathesis.OpenApi.Types.html#ResolvedOperation"><span class="hs-identifier">ResolvedOperation</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-46"></span><span class="hs-special">)</span><span>
+</span><span id="line-47"></span><span class="hs-keyword">where</span><span>
+</span><span id="line-48"></span><span>
+</span><span id="line-49"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Map.Strict</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Map</span></span><span class="hs-special">)</span><span>
+</span><span id="line-50"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="file:///nix/store/n9bq8nyqbcrs9rhllk8bh2xqlhba601s-openapi3-3.2.4-doc/share/doc/openapi3-3.2.4/html/src/Data.OpenApi.html"><span class="hs-identifier">Data.OpenApi</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="file:///nix/store/n9bq8nyqbcrs9rhllk8bh2xqlhba601s-openapi3-3.2.4-doc/share/doc/openapi3-3.2.4/html/src/Data.OpenApi.Internal.html#SecurityRequirement"><span class="hs-identifier">SecurityRequirement</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-51"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Text</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Text</span></span><span class="hs-special">)</span><span>
+</span><span id="line-52"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Haskemathesis.Schema.html"><span class="hs-identifier">Haskemathesis.Schema</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Haskemathesis.Schema.html#Schema"><span class="hs-identifier">Schema</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-53"></span><span>
+</span><span id="line-54"></span><span class="annot"><span class="hs-comment">{- | Location of a parameter in an HTTP request.
+
+OpenAPI supports parameters in four locations:
+
+* 'ParamPath' - URL path segments (e.g., @/users/{id}@)
+* 'ParamQuery' - URL query string (e.g., @?page=1@)
+* 'ParamHeader' - HTTP headers
+* 'ParamCookie' - Cookie values
+-}</span></span><span>
+</span><span id="line-63"></span><span class="hs-keyword">data</span><span> </span><span id="ParamLocation"><span class="annot"><a href="Haskemathesis.OpenApi.Types.html#ParamLocation"><span class="hs-identifier hs-var">ParamLocation</span></a></span></span><span>
+</span><span id="line-64"></span><span>    </span><span class="hs-glyph">=</span><span> </span><span id="ParamPath"><span class="annot"><a href="Haskemathesis.OpenApi.Types.html#ParamPath"><span class="hs-identifier hs-var">ParamPath</span></a></span></span><span>
+</span><span id="line-65"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span id="ParamQuery"><span class="annot"><a href="Haskemathesis.OpenApi.Types.html#ParamQuery"><span class="hs-identifier hs-var">ParamQuery</span></a></span></span><span>
+</span><span id="line-66"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span id="ParamHeader"><span class="annot"><a href="Haskemathesis.OpenApi.Types.html#ParamHeader"><span class="hs-identifier hs-var">ParamHeader</span></a></span></span><span>
+</span><span id="line-67"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span id="ParamCookie"><span class="annot"><a href="Haskemathesis.OpenApi.Types.html#ParamCookie"><span class="hs-identifier hs-var">ParamCookie</span></a></span></span><span>
+</span><span id="line-68"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679199444"><span id="local-6989586621679199449"><span class="annot"><span class="annottext">ParamLocation -&gt; ParamLocation -&gt; Bool
+(ParamLocation -&gt; ParamLocation -&gt; Bool)
+-&gt; (ParamLocation -&gt; ParamLocation -&gt; Bool) -&gt; Eq ParamLocation
+forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
+$c== :: ParamLocation -&gt; ParamLocation -&gt; Bool
+== :: ParamLocation -&gt; ParamLocation -&gt; Bool
+$c/= :: ParamLocation -&gt; ParamLocation -&gt; Bool
+/= :: ParamLocation -&gt; ParamLocation -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679199454"><span id="local-6989586621679199456"><span id="local-6989586621679199460"><span class="annot"><span class="annottext">Int -&gt; ParamLocation -&gt; ShowS
+[ParamLocation] -&gt; ShowS
+ParamLocation -&gt; String
+(Int -&gt; ParamLocation -&gt; ShowS)
+-&gt; (ParamLocation -&gt; String)
+-&gt; ([ParamLocation] -&gt; ShowS)
+-&gt; Show ParamLocation
+forall a.
+(Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
+$cshowsPrec :: Int -&gt; ParamLocation -&gt; ShowS
+showsPrec :: Int -&gt; ParamLocation -&gt; ShowS
+$cshow :: ParamLocation -&gt; String
+show :: ParamLocation -&gt; String
+$cshowList :: [ParamLocation] -&gt; ShowS
+showList :: [ParamLocation] -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-69"></span><span>
+</span><span id="line-70"></span><span class="annot"><span class="hs-comment">{- | A resolved parameter definition.
+
+Represents a single parameter after all OpenAPI references have been
+resolved. Contains the parameter name, location, whether it's required,
+and its JSON schema.
+-}</span></span><span>
+</span><span id="line-76"></span><span class="hs-keyword">data</span><span> </span><span id="ResolvedParam"><span class="annot"><a href="Haskemathesis.OpenApi.Types.html#ResolvedParam"><span class="hs-identifier hs-var">ResolvedParam</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="ResolvedParam"><span class="annot"><a href="Haskemathesis.OpenApi.Types.html#ResolvedParam"><span class="hs-identifier hs-var">ResolvedParam</span></a></span></span><span>
+</span><span id="line-77"></span><span>    </span><span class="hs-special">{</span><span> </span><span id="rpName"><span class="annot"><span class="annottext">ResolvedParam -&gt; Text
+</span><a href="Haskemathesis.OpenApi.Types.html#rpName"><span class="hs-identifier hs-var hs-var">rpName</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
+</span><span id="line-78"></span><span>    </span><span class="annot"><span class="hs-comment">-- ^ Parameter name (e.g., &quot;userId&quot;, &quot;page&quot;, &quot;Authorization&quot;).</span></span><span>
+</span><span id="line-79"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="rpLocation"><span class="annot"><span class="annottext">ResolvedParam -&gt; ParamLocation
+</span><a href="Haskemathesis.OpenApi.Types.html#rpLocation"><span class="hs-identifier hs-var hs-var">rpLocation</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Haskemathesis.OpenApi.Types.html#ParamLocation"><span class="hs-identifier hs-type">ParamLocation</span></a></span><span>
+</span><span id="line-80"></span><span>    </span><span class="annot"><span class="hs-comment">-- ^ Where the parameter appears in the request.</span></span><span>
+</span><span id="line-81"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="rpRequired"><span class="annot"><span class="annottext">ResolvedParam -&gt; Bool
+</span><a href="Haskemathesis.OpenApi.Types.html#rpRequired"><span class="hs-identifier hs-var hs-var">rpRequired</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span>
+</span><span id="line-82"></span><span>    </span><span class="annot"><span class="hs-comment">-- ^ Whether the parameter is required. Optional parameters may be omitted.</span></span><span>
+</span><span id="line-83"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="rpSchema"><span class="annot"><span class="annottext">ResolvedParam -&gt; Schema
+</span><a href="Haskemathesis.OpenApi.Types.html#rpSchema"><span class="hs-identifier hs-var hs-var">rpSchema</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Haskemathesis.Schema.html#Schema"><span class="hs-identifier hs-type">Schema</span></a></span><span>
+</span><span id="line-84"></span><span>    </span><span class="annot"><span class="hs-comment">-- ^ JSON Schema defining the parameter's type and constraints.</span></span><span>
+</span><span id="line-85"></span><span>    </span><span class="hs-special">}</span><span>
+</span><span id="line-86"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679199469"><span id="local-6989586621679199478"><span class="annot"><span class="annottext">ResolvedParam -&gt; ResolvedParam -&gt; Bool
+(ResolvedParam -&gt; ResolvedParam -&gt; Bool)
+-&gt; (ResolvedParam -&gt; ResolvedParam -&gt; Bool) -&gt; Eq ResolvedParam
+forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
+$c== :: ResolvedParam -&gt; ResolvedParam -&gt; Bool
+== :: ResolvedParam -&gt; ResolvedParam -&gt; Bool
+$c/= :: ResolvedParam -&gt; ResolvedParam -&gt; Bool
+/= :: ResolvedParam -&gt; ResolvedParam -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679199482"><span id="local-6989586621679199493"><span id="local-6989586621679199497"><span class="annot"><span class="annottext">Int -&gt; ResolvedParam -&gt; ShowS
+[ResolvedParam] -&gt; ShowS
+ResolvedParam -&gt; String
+(Int -&gt; ResolvedParam -&gt; ShowS)
+-&gt; (ResolvedParam -&gt; String)
+-&gt; ([ResolvedParam] -&gt; ShowS)
+-&gt; Show ResolvedParam
+forall a.
+(Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
+$cshowsPrec :: Int -&gt; ResolvedParam -&gt; ShowS
+showsPrec :: Int -&gt; ResolvedParam -&gt; ShowS
+$cshow :: ResolvedParam -&gt; String
+show :: ResolvedParam -&gt; String
+$cshowList :: [ResolvedParam] -&gt; ShowS
+showList :: [ResolvedParam] -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-87"></span><span>
+</span><span id="line-88"></span><span class="annot"><span class="hs-comment">{- | A resolved request body definition.
+
+Represents the request body specification after resolution.
+Currently only the first content type is used.
+-}</span></span><span>
+</span><span id="line-93"></span><span class="hs-keyword">data</span><span> </span><span id="ResolvedRequestBody"><span class="annot"><a href="Haskemathesis.OpenApi.Types.html#ResolvedRequestBody"><span class="hs-identifier hs-var">ResolvedRequestBody</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="ResolvedRequestBody"><span class="annot"><a href="Haskemathesis.OpenApi.Types.html#ResolvedRequestBody"><span class="hs-identifier hs-var">ResolvedRequestBody</span></a></span></span><span>
+</span><span id="line-94"></span><span>    </span><span class="hs-special">{</span><span> </span><span id="rbContentType"><span class="annot"><span class="annottext">ResolvedRequestBody -&gt; Text
+</span><a href="Haskemathesis.OpenApi.Types.html#rbContentType"><span class="hs-identifier hs-var hs-var">rbContentType</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
+</span><span id="line-95"></span><span>    </span><span class="annot"><span class="hs-comment">-- ^ Content type of the request body (e.g., &quot;application/json&quot;).</span></span><span>
+</span><span id="line-96"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="rbSchema"><span class="annot"><span class="annottext">ResolvedRequestBody -&gt; Schema
+</span><a href="Haskemathesis.OpenApi.Types.html#rbSchema"><span class="hs-identifier hs-var hs-var">rbSchema</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Haskemathesis.Schema.html#Schema"><span class="hs-identifier hs-type">Schema</span></a></span><span>
+</span><span id="line-97"></span><span>    </span><span class="annot"><span class="hs-comment">-- ^ JSON Schema defining the request body structure.</span></span><span>
+</span><span id="line-98"></span><span>    </span><span class="hs-special">}</span><span>
+</span><span id="line-99"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679199502"><span id="local-6989586621679199506"><span class="annot"><span class="annottext">ResolvedRequestBody -&gt; ResolvedRequestBody -&gt; Bool
+(ResolvedRequestBody -&gt; ResolvedRequestBody -&gt; Bool)
+-&gt; (ResolvedRequestBody -&gt; ResolvedRequestBody -&gt; Bool)
+-&gt; Eq ResolvedRequestBody
+forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
+$c== :: ResolvedRequestBody -&gt; ResolvedRequestBody -&gt; Bool
+== :: ResolvedRequestBody -&gt; ResolvedRequestBody -&gt; Bool
+$c/= :: ResolvedRequestBody -&gt; ResolvedRequestBody -&gt; Bool
+/= :: ResolvedRequestBody -&gt; ResolvedRequestBody -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679199510"><span id="local-6989586621679199515"><span id="local-6989586621679199519"><span class="annot"><span class="annottext">Int -&gt; ResolvedRequestBody -&gt; ShowS
+[ResolvedRequestBody] -&gt; ShowS
+ResolvedRequestBody -&gt; String
+(Int -&gt; ResolvedRequestBody -&gt; ShowS)
+-&gt; (ResolvedRequestBody -&gt; String)
+-&gt; ([ResolvedRequestBody] -&gt; ShowS)
+-&gt; Show ResolvedRequestBody
+forall a.
+(Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
+$cshowsPrec :: Int -&gt; ResolvedRequestBody -&gt; ShowS
+showsPrec :: Int -&gt; ResolvedRequestBody -&gt; ShowS
+$cshow :: ResolvedRequestBody -&gt; String
+show :: ResolvedRequestBody -&gt; String
+$cshowList :: [ResolvedRequestBody] -&gt; ShowS
+showList :: [ResolvedRequestBody] -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-100"></span><span>
+</span><span id="line-101"></span><span class="annot"><span class="hs-comment">{- | Specification for an expected response.
+
+Defines what a successful response should look like, including
+the content schema and header definitions.
+-}</span></span><span>
+</span><span id="line-106"></span><span class="hs-keyword">data</span><span> </span><span id="ResponseSpec"><span class="annot"><a href="Haskemathesis.OpenApi.Types.html#ResponseSpec"><span class="hs-identifier hs-var">ResponseSpec</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="ResponseSpec"><span class="annot"><a href="Haskemathesis.OpenApi.Types.html#ResponseSpec"><span class="hs-identifier hs-var">ResponseSpec</span></a></span></span><span>
+</span><span id="line-107"></span><span>    </span><span class="hs-special">{</span><span> </span><span id="rsContent"><span class="annot"><span class="annottext">ResponseSpec -&gt; Map Text Schema
+</span><a href="Haskemathesis.OpenApi.Types.html#rsContent"><span class="hs-identifier hs-var hs-var">rsContent</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Map</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span> </span><span class="annot"><a href="Haskemathesis.Schema.html#Schema"><span class="hs-identifier hs-type">Schema</span></a></span><span>
+</span><span id="line-108"></span><span>    </span><span class="annot"><span class="hs-comment">-- ^ Map from content type (e.g., &quot;application/json&quot;) to schema.</span></span><span>
+</span><span id="line-109"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="rsHeaders"><span class="annot"><span class="annottext">ResponseSpec -&gt; Map Text Schema
+</span><a href="Haskemathesis.OpenApi.Types.html#rsHeaders"><span class="hs-identifier hs-var hs-var">rsHeaders</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Map</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span> </span><span class="annot"><a href="Haskemathesis.Schema.html#Schema"><span class="hs-identifier hs-type">Schema</span></a></span><span>
+</span><span id="line-110"></span><span>    </span><span class="annot"><span class="hs-comment">-- ^ Map from header name to schema for that header's value.</span></span><span>
+</span><span id="line-111"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="rsRequiredHeaders"><span class="annot"><span class="annottext">ResponseSpec -&gt; [Text]
+</span><a href="Haskemathesis.OpenApi.Types.html#rsRequiredHeaders"><span class="hs-identifier hs-var hs-var">rsRequiredHeaders</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span class="hs-special">]</span><span>
+</span><span id="line-112"></span><span>    </span><span class="annot"><span class="hs-comment">-- ^ List of header names that must be present in the response.</span></span><span>
+</span><span id="line-113"></span><span>    </span><span class="hs-special">}</span><span>
+</span><span id="line-114"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679199525"><span id="local-6989586621679199534"><span class="annot"><span class="annottext">ResponseSpec -&gt; ResponseSpec -&gt; Bool
+(ResponseSpec -&gt; ResponseSpec -&gt; Bool)
+-&gt; (ResponseSpec -&gt; ResponseSpec -&gt; Bool) -&gt; Eq ResponseSpec
+forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
+$c== :: ResponseSpec -&gt; ResponseSpec -&gt; Bool
+== :: ResponseSpec -&gt; ResponseSpec -&gt; Bool
+$c/= :: ResponseSpec -&gt; ResponseSpec -&gt; Bool
+/= :: ResponseSpec -&gt; ResponseSpec -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679199538"><span id="local-6989586621679199548"><span id="local-6989586621679199552"><span class="annot"><span class="annottext">Int -&gt; ResponseSpec -&gt; ShowS
+[ResponseSpec] -&gt; ShowS
+ResponseSpec -&gt; String
+(Int -&gt; ResponseSpec -&gt; ShowS)
+-&gt; (ResponseSpec -&gt; String)
+-&gt; ([ResponseSpec] -&gt; ShowS)
+-&gt; Show ResponseSpec
+forall a.
+(Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
+$cshowsPrec :: Int -&gt; ResponseSpec -&gt; ShowS
+showsPrec :: Int -&gt; ResponseSpec -&gt; ShowS
+$cshow :: ResponseSpec -&gt; String
+show :: ResponseSpec -&gt; String
+$cshowList :: [ResponseSpec] -&gt; ShowS
+showList :: [ResponseSpec] -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-115"></span><span>
+</span><span id="line-116"></span><span class="annot"><span class="hs-comment">{- | A fully resolved OpenAPI operation.
+
+This is the central type representing a single API endpoint
+(combination of HTTP method and path) with all references resolved.
+It contains all the information needed to generate requests and
+validate responses for that endpoint.
+
+=== Fields
+
+* 'roMethod' - HTTP method (GET, POST, etc.)
+* 'roPath' - URL path template (e.g., &quot;/users/{id}&quot;)
+* 'roOperationId' - Optional operation identifier from OpenAPI
+* 'roTags' - Tags for grouping/categorizing operations
+* 'roParameters' - List of parameters (path, query, header, cookie)
+* 'roRequestBody' - Optional request body specification
+* 'roResponses' - Map of status codes to response specifications
+* 'roDefaultResponse' - Optional default response specification
+* 'roSecurity' - Security requirements for this operation
+-}</span></span><span>
+</span><span id="line-135"></span><span class="hs-keyword">data</span><span> </span><span id="ResolvedOperation"><span class="annot"><a href="Haskemathesis.OpenApi.Types.html#ResolvedOperation"><span class="hs-identifier hs-var">ResolvedOperation</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="ResolvedOperation"><span class="annot"><a href="Haskemathesis.OpenApi.Types.html#ResolvedOperation"><span class="hs-identifier hs-var">ResolvedOperation</span></a></span></span><span>
+</span><span id="line-136"></span><span>    </span><span class="hs-special">{</span><span> </span><span id="roMethod"><span class="annot"><span class="annottext">ResolvedOperation -&gt; Text
+</span><a href="Haskemathesis.OpenApi.Types.html#roMethod"><span class="hs-identifier hs-var hs-var">roMethod</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
+</span><span id="line-137"></span><span>    </span><span class="annot"><span class="hs-comment">-- ^ HTTP method (e.g., &quot;GET&quot;, &quot;POST&quot;, &quot;PUT&quot;, &quot;DELETE&quot;).</span></span><span>
+</span><span id="line-138"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="roPath"><span class="annot"><span class="annottext">ResolvedOperation -&gt; Text
+</span><a href="Haskemathesis.OpenApi.Types.html#roPath"><span class="hs-identifier hs-var hs-var">roPath</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
+</span><span id="line-139"></span><span>    </span><span class="annot"><span class="hs-comment">-- ^ URL path template (e.g., &quot;/api/users&quot;, &quot;/users/{id}&quot;).</span></span><span>
+</span><span id="line-140"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="roOperationId"><span class="annot"><span class="annottext">ResolvedOperation -&gt; Maybe Text
+</span><a href="Haskemathesis.OpenApi.Types.html#roOperationId"><span class="hs-identifier hs-var hs-var">roOperationId</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
+</span><span id="line-141"></span><span>    </span><span class="annot"><span class="hs-comment">{- ^ Optional operation identifier from the OpenAPI spec.
+    Used for labeling tests when available.
+    -}</span></span><span>
+</span><span id="line-144"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="roTags"><span class="annot"><span class="annottext">ResolvedOperation -&gt; [Text]
+</span><a href="Haskemathesis.OpenApi.Types.html#roTags"><span class="hs-identifier hs-var hs-var">roTags</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span class="hs-special">]</span><span>
+</span><span id="line-145"></span><span>    </span><span class="annot"><span class="hs-comment">-- ^ Tags for categorizing/grouping operations.</span></span><span>
+</span><span id="line-146"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="roParameters"><span class="annot"><span class="annottext">ResolvedOperation -&gt; [ResolvedParam]
+</span><a href="Haskemathesis.OpenApi.Types.html#roParameters"><span class="hs-identifier hs-var hs-var">roParameters</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="Haskemathesis.OpenApi.Types.html#ResolvedParam"><span class="hs-identifier hs-type">ResolvedParam</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-147"></span><span>    </span><span class="annot"><span class="hs-comment">-- ^ Parameters for this operation (path, query, header, cookie).</span></span><span>
+</span><span id="line-148"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="roRequestBody"><span class="annot"><span class="annottext">ResolvedOperation -&gt; Maybe ResolvedRequestBody
+</span><a href="Haskemathesis.OpenApi.Types.html#roRequestBody"><span class="hs-identifier hs-var hs-var">roRequestBody</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="Haskemathesis.OpenApi.Types.html#ResolvedRequestBody"><span class="hs-identifier hs-type">ResolvedRequestBody</span></a></span><span>
+</span><span id="line-149"></span><span>    </span><span class="annot"><span class="hs-comment">-- ^ Optional request body specification.</span></span><span>
+</span><span id="line-150"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="roResponses"><span class="annot"><span class="annottext">ResolvedOperation -&gt; Map Int ResponseSpec
+</span><a href="Haskemathesis.OpenApi.Types.html#roResponses"><span class="hs-identifier hs-var hs-var">roResponses</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Map</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span> </span><span class="annot"><a href="Haskemathesis.OpenApi.Types.html#ResponseSpec"><span class="hs-identifier hs-type">ResponseSpec</span></a></span><span>
+</span><span id="line-151"></span><span>    </span><span class="annot"><span class="hs-comment">{- ^ Map of HTTP status codes to response specifications.
+    Only includes explicitly documented status codes.
+    -}</span></span><span>
+</span><span id="line-154"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="roDefaultResponse"><span class="annot"><span class="annottext">ResolvedOperation -&gt; Maybe ResponseSpec
+</span><a href="Haskemathesis.OpenApi.Types.html#roDefaultResponse"><span class="hs-identifier hs-var hs-var">roDefaultResponse</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="Haskemathesis.OpenApi.Types.html#ResponseSpec"><span class="hs-identifier hs-type">ResponseSpec</span></a></span><span>
+</span><span id="line-155"></span><span>    </span><span class="annot"><span class="hs-comment">{- ^ Optional default response that applies to status codes
+    not explicitly documented in 'roResponses'.
+    -}</span></span><span>
+</span><span id="line-158"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="roSecurity"><span class="annot"><span class="annottext">ResolvedOperation -&gt; [SecurityRequirement]
+</span><a href="Haskemathesis.OpenApi.Types.html#roSecurity"><span class="hs-identifier hs-var hs-var">roSecurity</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="file:///nix/store/n9bq8nyqbcrs9rhllk8bh2xqlhba601s-openapi3-3.2.4-doc/share/doc/openapi3-3.2.4/html/src/Data.OpenApi.Internal.html#SecurityRequirement"><span class="hs-identifier hs-type">SecurityRequirement</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-159"></span><span>    </span><span class="annot"><span class="hs-comment">{- ^ Security requirements for this operation.
+    If empty, the operation requires no authentication.
+    -}</span></span><span>
+</span><span id="line-162"></span><span>    </span><span class="hs-special">}</span><span>
+</span><span id="line-163"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679199564"><span id="local-6989586621679199581"><span class="annot"><span class="annottext">ResolvedOperation -&gt; ResolvedOperation -&gt; Bool
+(ResolvedOperation -&gt; ResolvedOperation -&gt; Bool)
+-&gt; (ResolvedOperation -&gt; ResolvedOperation -&gt; Bool)
+-&gt; Eq ResolvedOperation
+forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
+$c== :: ResolvedOperation -&gt; ResolvedOperation -&gt; Bool
+== :: ResolvedOperation -&gt; ResolvedOperation -&gt; Bool
+$c/= :: ResolvedOperation -&gt; ResolvedOperation -&gt; Bool
+/= :: ResolvedOperation -&gt; ResolvedOperation -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679199587"><span id="local-6989586621679199605"><span id="local-6989586621679199609"><span class="annot"><span class="annottext">Int -&gt; ResolvedOperation -&gt; ShowS
+[ResolvedOperation] -&gt; ShowS
+ResolvedOperation -&gt; String
+(Int -&gt; ResolvedOperation -&gt; ShowS)
+-&gt; (ResolvedOperation -&gt; String)
+-&gt; ([ResolvedOperation] -&gt; ShowS)
+-&gt; Show ResolvedOperation
+forall a.
+(Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
+$cshowsPrec :: Int -&gt; ResolvedOperation -&gt; ShowS
+showsPrec :: Int -&gt; ResolvedOperation -&gt; ShowS
+$cshow :: ResolvedOperation -&gt; String
+show :: ResolvedOperation -&gt; String
+$cshowList :: [ResolvedOperation] -&gt; ShowS
+showList :: [ResolvedOperation] -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-164"></span></pre></body></html>

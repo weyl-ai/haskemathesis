@@ -1,0 +1,356 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE StrictData #-}</span><span>
+</span><span id="line-2"></span><span>
+</span><span id="line-3"></span><span class="annot"><span class="hs-comment">{- | Internal JSON Schema representation.
+
+This module provides a simplified JSON Schema type that captures
+the subset of JSON Schema features used by Haskemathesis. The 'Schema'
+type is used throughout the codebase for generating values and
+validating responses.
+
+=== Schema Types
+
+The 'SchemaType' enum represents the basic JSON types:
+
+* 'SString' - Text strings
+* 'SInteger' - Whole numbers
+* 'SNumber' - Floating point numbers
+* 'SBoolean' - True/false values
+* 'SArray' - Ordered lists
+* 'SObject' - Key-value mappings
+* 'SNull' - Null values
+
+=== Creating Schemas
+
+Use 'emptySchema' as a starting point and override fields:
+
+@
+import Haskemathesis.Schema
+
+-- A string schema with length constraints
+stringSchema :: Schema
+stringSchema = emptySchema
+    { schemaType = Just SString
+    , schemaMinLength = Just 1
+    , schemaMaxLength = Just 100
+    }
+
+-- An object schema with required fields
+userSchema :: Schema
+userSchema = emptySchema
+    { schemaType = Just SObject
+    , schemaRequired = [&quot;name&quot;, &quot;email&quot;]
+    , schemaProperties = Map.fromList
+        [ (&quot;name&quot;, emptySchema { schemaType = Just SString })
+        , (&quot;email&quot;, emptySchema { schemaType = Just SString })
+        ]
+    }
+@
+-}</span></span><span>
+</span><span id="line-49"></span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="Haskemathesis.Schema.html"><span class="hs-identifier">Haskemathesis.Schema</span></a></span><span> </span><span class="hs-special">(</span><span>
+</span><span id="line-50"></span><span>    </span><span class="annot"><span class="hs-comment">-- * Schema Types</span></span><span>
+</span><span id="line-51"></span><span>    </span><span class="annot"><a href="Haskemathesis.Schema.html#Schema"><span class="hs-identifier">Schema</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-52"></span><span>    </span><span class="annot"><a href="Haskemathesis.Schema.html#SchemaType"><span class="hs-identifier">SchemaType</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-53"></span><span>    </span><span class="annot"><a href="Haskemathesis.Schema.html#AdditionalProperties"><span class="hs-identifier">AdditionalProperties</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-54"></span><span>
+</span><span id="line-55"></span><span>    </span><span class="annot"><span class="hs-comment">-- * Schema Construction</span></span><span>
+</span><span id="line-56"></span><span>    </span><span class="annot"><a href="Haskemathesis.Schema.html#emptySchema"><span class="hs-identifier">emptySchema</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-57"></span><span class="hs-special">)</span><span>
+</span><span id="line-58"></span><span class="hs-keyword">where</span><span>
+</span><span id="line-59"></span><span>
+</span><span id="line-60"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="file:///nix/store/bjx03k98335ijsml9dq303bj5ddk8a5f-aeson-2.2.3.0-doc/share/doc/aeson-2.2.3.0/html/src/Data.Aeson.html"><span class="hs-identifier">Data.Aeson</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="file:///nix/store/bjx03k98335ijsml9dq303bj5ddk8a5f-aeson-2.2.3.0-doc/share/doc/aeson-2.2.3.0/html/src/Data.Aeson.Types.Internal.html#Value"><span class="hs-identifier">Value</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-61"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Map.Strict</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Map</span></span><span class="hs-special">)</span><span>
+</span><span id="line-62"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Text</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Text</span></span><span class="hs-special">)</span><span>
+</span><span id="line-63"></span><span>
+</span><span id="line-64"></span><span class="annot"><span class="hs-comment">{- | Basic JSON Schema types.
+
+These correspond to the JSON Schema type primitive types
+and are used to specify what kind of values a schema accepts.
+-}</span></span><span>
+</span><span id="line-69"></span><span class="hs-keyword">data</span><span> </span><span id="SchemaType"><span class="annot"><a href="Haskemathesis.Schema.html#SchemaType"><span class="hs-identifier hs-var">SchemaType</span></a></span></span><span>
+</span><span id="line-70"></span><span>    </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="hs-comment">-- | Text strings with optional length and pattern constraints.</span></span><span>
+</span><span id="line-71"></span><span>      </span><span id="SString"><span class="annot"><a href="Haskemathesis.Schema.html#SString"><span class="hs-identifier hs-var">SString</span></a></span></span><span>
+</span><span id="line-72"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="hs-comment">-- | Whole numbers (no fractional part).</span></span><span>
+</span><span id="line-73"></span><span>      </span><span id="SInteger"><span class="annot"><a href="Haskemathesis.Schema.html#SInteger"><span class="hs-identifier hs-var">SInteger</span></a></span></span><span>
+</span><span id="line-74"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="hs-comment">-- | Any numeric value (integer or floating point).</span></span><span>
+</span><span id="line-75"></span><span>      </span><span id="SNumber"><span class="annot"><a href="Haskemathesis.Schema.html#SNumber"><span class="hs-identifier hs-var">SNumber</span></a></span></span><span>
+</span><span id="line-76"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="hs-comment">-- | True or false values.</span></span><span>
+</span><span id="line-77"></span><span>      </span><span id="SBoolean"><span class="annot"><a href="Haskemathesis.Schema.html#SBoolean"><span class="hs-identifier hs-var">SBoolean</span></a></span></span><span>
+</span><span id="line-78"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="hs-comment">-- | Ordered list of values with optional item schema.</span></span><span>
+</span><span id="line-79"></span><span>      </span><span id="SArray"><span class="annot"><a href="Haskemathesis.Schema.html#SArray"><span class="hs-identifier hs-var">SArray</span></a></span></span><span>
+</span><span id="line-80"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="hs-comment">-- | Key-value mapping with property schemas.</span></span><span>
+</span><span id="line-81"></span><span>      </span><span id="SObject"><span class="annot"><a href="Haskemathesis.Schema.html#SObject"><span class="hs-identifier hs-var">SObject</span></a></span></span><span>
+</span><span id="line-82"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="hs-comment">-- | The null value.</span></span><span>
+</span><span id="line-83"></span><span>      </span><span id="SNull"><span class="annot"><a href="Haskemathesis.Schema.html#SNull"><span class="hs-identifier hs-var">SNull</span></a></span></span><span>
+</span><span id="line-84"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679199258"><span id="local-6989586621679199263"><span class="annot"><span class="annottext">SchemaType -&gt; SchemaType -&gt; Bool
+(SchemaType -&gt; SchemaType -&gt; Bool)
+-&gt; (SchemaType -&gt; SchemaType -&gt; Bool) -&gt; Eq SchemaType
+forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
+$c== :: SchemaType -&gt; SchemaType -&gt; Bool
+== :: SchemaType -&gt; SchemaType -&gt; Bool
+$c/= :: SchemaType -&gt; SchemaType -&gt; Bool
+/= :: SchemaType -&gt; SchemaType -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679199268"><span id="local-6989586621679199270"><span id="local-6989586621679199274"><span class="annot"><span class="annottext">Int -&gt; SchemaType -&gt; ShowS
+[SchemaType] -&gt; ShowS
+SchemaType -&gt; String
+(Int -&gt; SchemaType -&gt; ShowS)
+-&gt; (SchemaType -&gt; String)
+-&gt; ([SchemaType] -&gt; ShowS)
+-&gt; Show SchemaType
+forall a.
+(Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
+$cshowsPrec :: Int -&gt; SchemaType -&gt; ShowS
+showsPrec :: Int -&gt; SchemaType -&gt; ShowS
+$cshow :: SchemaType -&gt; String
+show :: SchemaType -&gt; String
+$cshowList :: [SchemaType] -&gt; ShowS
+showList :: [SchemaType] -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-85"></span><span>
+</span><span id="line-86"></span><span class="annot"><span class="hs-comment">{- | Policy for handling additional properties in objects.
+
+JSON Schema allows controlling whether objects can have properties
+beyond those explicitly defined in 'schemaProperties'.
+-}</span></span><span>
+</span><span id="line-91"></span><span class="hs-keyword">data</span><span> </span><span id="AdditionalProperties"><span class="annot"><a href="Haskemathesis.Schema.html#AdditionalProperties"><span class="hs-identifier hs-var">AdditionalProperties</span></a></span></span><span>
+</span><span id="line-92"></span><span>    </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="hs-comment">-- | Any additional properties are allowed (no validation).</span></span><span>
+</span><span id="line-93"></span><span>      </span><span id="AdditionalPropertiesAny"><span class="annot"><a href="Haskemathesis.Schema.html#AdditionalPropertiesAny"><span class="hs-identifier hs-var">AdditionalPropertiesAny</span></a></span></span><span>
+</span><span id="line-94"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="hs-comment">-- | No additional properties are allowed; extra properties cause validation errors.</span></span><span>
+</span><span id="line-95"></span><span>      </span><span id="AdditionalPropertiesNone"><span class="annot"><a href="Haskemathesis.Schema.html#AdditionalPropertiesNone"><span class="hs-identifier hs-var">AdditionalPropertiesNone</span></a></span></span><span>
+</span><span id="line-96"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="hs-comment">-- | Additional properties must conform to the given schema.</span></span><span>
+</span><span id="line-97"></span><span>      </span><span id="AdditionalPropertiesSchema"><span class="annot"><a href="Haskemathesis.Schema.html#AdditionalPropertiesSchema"><span class="hs-identifier hs-var">AdditionalPropertiesSchema</span></a></span></span><span> </span><span class="annot"><a href="Haskemathesis.Schema.html#Schema"><span class="hs-identifier hs-type">Schema</span></a></span><span>
+</span><span id="line-98"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679199283"><span id="local-6989586621679199289"><span class="annot"><span class="annottext">AdditionalProperties -&gt; AdditionalProperties -&gt; Bool
+(AdditionalProperties -&gt; AdditionalProperties -&gt; Bool)
+-&gt; (AdditionalProperties -&gt; AdditionalProperties -&gt; Bool)
+-&gt; Eq AdditionalProperties
+forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
+$c== :: AdditionalProperties -&gt; AdditionalProperties -&gt; Bool
+== :: AdditionalProperties -&gt; AdditionalProperties -&gt; Bool
+$c/= :: AdditionalProperties -&gt; AdditionalProperties -&gt; Bool
+/= :: AdditionalProperties -&gt; AdditionalProperties -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679199293"><span id="local-6989586621679199299"><span id="local-6989586621679199303"><span class="annot"><span class="annottext">Int -&gt; AdditionalProperties -&gt; ShowS
+[AdditionalProperties] -&gt; ShowS
+AdditionalProperties -&gt; String
+(Int -&gt; AdditionalProperties -&gt; ShowS)
+-&gt; (AdditionalProperties -&gt; String)
+-&gt; ([AdditionalProperties] -&gt; ShowS)
+-&gt; Show AdditionalProperties
+forall a.
+(Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
+$cshowsPrec :: Int -&gt; AdditionalProperties -&gt; ShowS
+showsPrec :: Int -&gt; AdditionalProperties -&gt; ShowS
+$cshow :: AdditionalProperties -&gt; String
+show :: AdditionalProperties -&gt; String
+$cshowList :: [AdditionalProperties] -&gt; ShowS
+showList :: [AdditionalProperties] -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-99"></span><span>
+</span><span id="line-100"></span><span class="annot"><span class="hs-comment">{- | JSON Schema representation.
+
+This type captures the subset of JSON Schema features used by
+Haskemathesis for generating test data and validating responses.
+
+=== Field Descriptions
+
+* 'schemaType' - The JSON type (string, number, etc.)
+* 'schemaEnum' - Allowed values (if restricted to specific values)
+* 'schemaConst' - Fixed value (if the value must be exactly this)
+* 'schemaMinLength' / 'schemaMaxLength' - String length constraints
+* 'schemaMinimum' / 'schemaMaximum' - Numeric range constraints
+* 'schemaExclusiveMinimum' / 'schemaExclusiveMaximum' - Exclusive bounds
+* 'schemaPattern' - Regular expression pattern for strings
+* 'schemaItems' - Schema for array items
+* 'schemaMinItems' / 'schemaMaxItems' - Array length constraints
+* 'schemaUniqueItems' - Whether array items must be unique
+* 'schemaRequired' - Required properties for objects
+* 'schemaProperties' - Property schemas for objects
+* 'schemaAdditionalProperties' - Policy for extra properties
+* 'schemaAllOf' / 'schemaAnyOf' / 'schemaOneOf' - Schema combinators
+* 'schemaNullable' - Whether null is an acceptable value
+-}</span></span><span>
+</span><span id="line-123"></span><span class="hs-keyword">data</span><span> </span><span id="Schema"><span class="annot"><a href="Haskemathesis.Schema.html#Schema"><span class="hs-identifier hs-var">Schema</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="Schema"><span class="annot"><a href="Haskemathesis.Schema.html#Schema"><span class="hs-identifier hs-var">Schema</span></a></span></span><span>
+</span><span id="line-124"></span><span>    </span><span class="hs-special">{</span><span> </span><span id="schemaType"><span class="annot"><span class="annottext">Schema -&gt; Maybe SchemaType
+</span><a href="Haskemathesis.Schema.html#schemaType"><span class="hs-identifier hs-var hs-var">schemaType</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="Haskemathesis.Schema.html#SchemaType"><span class="hs-identifier hs-type">SchemaType</span></a></span><span>
+</span><span id="line-125"></span><span>    </span><span class="annot"><span class="hs-comment">{- ^ The basic JSON type (string, number, object, etc.).
+    'Nothing' means any type is acceptable.
+    -}</span></span><span>
+</span><span id="line-128"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="schemaEnum"><span class="annot"><span class="annottext">Schema -&gt; Maybe [Value]
+</span><a href="Haskemathesis.Schema.html#schemaEnum"><span class="hs-identifier hs-var hs-var">schemaEnum</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="hs-special">[</span><span class="annot"><a href="file:///nix/store/bjx03k98335ijsml9dq303bj5ddk8a5f-aeson-2.2.3.0-doc/share/doc/aeson-2.2.3.0/html/src/Data.Aeson.Types.Internal.html#Value"><span class="hs-identifier hs-type">Value</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-129"></span><span>    </span><span class="annot"><span class="hs-comment">-- ^ If present, the value must be one of these specific values.</span></span><span>
+</span><span id="line-130"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="schemaConst"><span class="annot"><span class="annottext">Schema -&gt; Maybe Value
+</span><a href="Haskemathesis.Schema.html#schemaConst"><span class="hs-identifier hs-var hs-var">schemaConst</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="file:///nix/store/bjx03k98335ijsml9dq303bj5ddk8a5f-aeson-2.2.3.0-doc/share/doc/aeson-2.2.3.0/html/src/Data.Aeson.Types.Internal.html#Value"><span class="hs-identifier hs-type">Value</span></a></span><span>
+</span><span id="line-131"></span><span>    </span><span class="annot"><span class="hs-comment">-- ^ If present, the value must be exactly this value.</span></span><span>
+</span><span id="line-132"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="schemaMinLength"><span class="annot"><span class="annottext">Schema -&gt; Maybe Int
+</span><a href="Haskemathesis.Schema.html#schemaMinLength"><span class="hs-identifier hs-var hs-var">schemaMinLength</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span>
+</span><span id="line-133"></span><span>    </span><span class="annot"><span class="hs-comment">-- ^ Minimum length for string values (in bytes).</span></span><span>
+</span><span id="line-134"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="schemaMaxLength"><span class="annot"><span class="annottext">Schema -&gt; Maybe Int
+</span><a href="Haskemathesis.Schema.html#schemaMaxLength"><span class="hs-identifier hs-var hs-var">schemaMaxLength</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span>
+</span><span id="line-135"></span><span>    </span><span class="annot"><span class="hs-comment">-- ^ Maximum length for string values (in bytes).</span></span><span>
+</span><span id="line-136"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="schemaMinimum"><span class="annot"><span class="annottext">Schema -&gt; Maybe Double
+</span><a href="Haskemathesis.Schema.html#schemaMinimum"><span class="hs-identifier hs-var hs-var">schemaMinimum</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Double</span></span><span>
+</span><span id="line-137"></span><span>    </span><span class="annot"><span class="hs-comment">-- ^ Minimum value for numeric types (inclusive).</span></span><span>
+</span><span id="line-138"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="schemaMaximum"><span class="annot"><span class="annottext">Schema -&gt; Maybe Double
+</span><a href="Haskemathesis.Schema.html#schemaMaximum"><span class="hs-identifier hs-var hs-var">schemaMaximum</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Double</span></span><span>
+</span><span id="line-139"></span><span>    </span><span class="annot"><span class="hs-comment">-- ^ Maximum value for numeric types (inclusive).</span></span><span>
+</span><span id="line-140"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="schemaExclusiveMinimum"><span class="annot"><span class="annottext">Schema -&gt; Maybe Double
+</span><a href="Haskemathesis.Schema.html#schemaExclusiveMinimum"><span class="hs-identifier hs-var hs-var">schemaExclusiveMinimum</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Double</span></span><span>
+</span><span id="line-141"></span><span>    </span><span class="annot"><span class="hs-comment">-- ^ Minimum value for numeric types (exclusive).</span></span><span>
+</span><span id="line-142"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="schemaExclusiveMaximum"><span class="annot"><span class="annottext">Schema -&gt; Maybe Double
+</span><a href="Haskemathesis.Schema.html#schemaExclusiveMaximum"><span class="hs-identifier hs-var hs-var">schemaExclusiveMaximum</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Double</span></span><span>
+</span><span id="line-143"></span><span>    </span><span class="annot"><span class="hs-comment">-- ^ Maximum value for numeric types (exclusive).</span></span><span>
+</span><span id="line-144"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="schemaPattern"><span class="annot"><span class="annottext">Schema -&gt; Maybe Text
+</span><a href="Haskemathesis.Schema.html#schemaPattern"><span class="hs-identifier hs-var hs-var">schemaPattern</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
+</span><span id="line-145"></span><span>    </span><span class="annot"><span class="hs-comment">-- ^ Regular expression pattern that string values must match.</span></span><span>
+</span><span id="line-146"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="schemaItems"><span class="annot"><span class="annottext">Schema -&gt; Maybe Schema
+</span><a href="Haskemathesis.Schema.html#schemaItems"><span class="hs-identifier hs-var hs-var">schemaItems</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="Haskemathesis.Schema.html#Schema"><span class="hs-identifier hs-type">Schema</span></a></span><span>
+</span><span id="line-147"></span><span>    </span><span class="annot"><span class="hs-comment">-- ^ Schema for items in an array.</span></span><span>
+</span><span id="line-148"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="schemaMinItems"><span class="annot"><span class="annottext">Schema -&gt; Maybe Int
+</span><a href="Haskemathesis.Schema.html#schemaMinItems"><span class="hs-identifier hs-var hs-var">schemaMinItems</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span>
+</span><span id="line-149"></span><span>    </span><span class="annot"><span class="hs-comment">-- ^ Minimum number of items in an array.</span></span><span>
+</span><span id="line-150"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="schemaMaxItems"><span class="annot"><span class="annottext">Schema -&gt; Maybe Int
+</span><a href="Haskemathesis.Schema.html#schemaMaxItems"><span class="hs-identifier hs-var hs-var">schemaMaxItems</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span>
+</span><span id="line-151"></span><span>    </span><span class="annot"><span class="hs-comment">-- ^ Maximum number of items in an array.</span></span><span>
+</span><span id="line-152"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="schemaUniqueItems"><span class="annot"><span class="annottext">Schema -&gt; Bool
+</span><a href="Haskemathesis.Schema.html#schemaUniqueItems"><span class="hs-identifier hs-var hs-var">schemaUniqueItems</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span>
+</span><span id="line-153"></span><span>    </span><span class="annot"><span class="hs-comment">-- ^ Whether array items must be unique (default: False).</span></span><span>
+</span><span id="line-154"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="schemaRequired"><span class="annot"><span class="annottext">Schema -&gt; [Text]
+</span><a href="Haskemathesis.Schema.html#schemaRequired"><span class="hs-identifier hs-var hs-var">schemaRequired</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span class="hs-special">]</span><span>
+</span><span id="line-155"></span><span>    </span><span class="annot"><span class="hs-comment">-- ^ List of required property names for objects.</span></span><span>
+</span><span id="line-156"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="schemaProperties"><span class="annot"><span class="annottext">Schema -&gt; Map Text Schema
+</span><a href="Haskemathesis.Schema.html#schemaProperties"><span class="hs-identifier hs-var hs-var">schemaProperties</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Map</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span> </span><span class="annot"><a href="Haskemathesis.Schema.html#Schema"><span class="hs-identifier hs-type">Schema</span></a></span><span>
+</span><span id="line-157"></span><span>    </span><span class="annot"><span class="hs-comment">-- ^ Map from property name to schema for object properties.</span></span><span>
+</span><span id="line-158"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="schemaAdditionalProperties"><span class="annot"><span class="annottext">Schema -&gt; Maybe AdditionalProperties
+</span><a href="Haskemathesis.Schema.html#schemaAdditionalProperties"><span class="hs-identifier hs-var hs-var">schemaAdditionalProperties</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="Haskemathesis.Schema.html#AdditionalProperties"><span class="hs-identifier hs-type">AdditionalProperties</span></a></span><span>
+</span><span id="line-159"></span><span>    </span><span class="annot"><span class="hs-comment">-- ^ Policy for handling properties not in 'schemaProperties'.</span></span><span>
+</span><span id="line-160"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="schemaAllOf"><span class="annot"><span class="annottext">Schema -&gt; [Schema]
+</span><a href="Haskemathesis.Schema.html#schemaAllOf"><span class="hs-identifier hs-var hs-var">schemaAllOf</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="Haskemathesis.Schema.html#Schema"><span class="hs-identifier hs-type">Schema</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-161"></span><span>    </span><span class="annot"><span class="hs-comment">-- ^ Schema must satisfy all of these schemas (AND combinator).</span></span><span>
+</span><span id="line-162"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="schemaAnyOf"><span class="annot"><span class="annottext">Schema -&gt; [Schema]
+</span><a href="Haskemathesis.Schema.html#schemaAnyOf"><span class="hs-identifier hs-var hs-var">schemaAnyOf</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="Haskemathesis.Schema.html#Schema"><span class="hs-identifier hs-type">Schema</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-163"></span><span>    </span><span class="annot"><span class="hs-comment">-- ^ Schema must satisfy at least one of these schemas (OR combinator).</span></span><span>
+</span><span id="line-164"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="schemaOneOf"><span class="annot"><span class="annottext">Schema -&gt; [Schema]
+</span><a href="Haskemathesis.Schema.html#schemaOneOf"><span class="hs-identifier hs-var hs-var">schemaOneOf</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="Haskemathesis.Schema.html#Schema"><span class="hs-identifier hs-type">Schema</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-165"></span><span>    </span><span class="annot"><span class="hs-comment">-- ^ Schema must satisfy exactly one of these schemas (XOR combinator).</span></span><span>
+</span><span id="line-166"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="schemaNullable"><span class="annot"><span class="annottext">Schema -&gt; Bool
+</span><a href="Haskemathesis.Schema.html#schemaNullable"><span class="hs-identifier hs-var hs-var">schemaNullable</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span>
+</span><span id="line-167"></span><span>    </span><span class="annot"><span class="hs-comment">-- ^ Whether null is an acceptable value in addition to the main type.</span></span><span>
+</span><span id="line-168"></span><span>    </span><span class="hs-special">}</span><span>
+</span><span id="line-169"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679199326"><span id="local-6989586621679199361"><span class="annot"><span class="annottext">Schema -&gt; Schema -&gt; Bool
+(Schema -&gt; Schema -&gt; Bool)
+-&gt; (Schema -&gt; Schema -&gt; Bool) -&gt; Eq Schema
+forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
+$c== :: Schema -&gt; Schema -&gt; Bool
+== :: Schema -&gt; Schema -&gt; Bool
+$c/= :: Schema -&gt; Schema -&gt; Bool
+/= :: Schema -&gt; Schema -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679199368"><span id="local-6989586621679199404"><span id="local-6989586621679199407"><span class="annot"><span class="annottext">Int -&gt; Schema -&gt; ShowS
+[Schema] -&gt; ShowS
+Schema -&gt; String
+(Int -&gt; Schema -&gt; ShowS)
+-&gt; (Schema -&gt; String) -&gt; ([Schema] -&gt; ShowS) -&gt; Show Schema
+forall a.
+(Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
+$cshowsPrec :: Int -&gt; Schema -&gt; ShowS
+showsPrec :: Int -&gt; Schema -&gt; ShowS
+$cshow :: Schema -&gt; String
+show :: Schema -&gt; String
+$cshowList :: [Schema] -&gt; ShowS
+showList :: [Schema] -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-170"></span><span>
+</span><span id="line-171"></span><span class="annot"><span class="hs-comment">{- | An empty schema that accepts any value.
+
+This is the starting point for building schemas. All fields are
+set to their most permissive values (usually 'Nothing' or empty lists).
+
+=== Example
+
+@
+-- Start with emptySchema and override specific fields
+mySchema :: Schema
+mySchema = emptySchema
+    { schemaType = Just SString
+    , schemaMinLength = Just 1
+    , schemaMaxLength = Just 100
+    }
+@
+-}</span></span><span>
+</span><span id="line-188"></span><span class="annot"><a href="Haskemathesis.Schema.html#emptySchema"><span class="hs-identifier hs-type">emptySchema</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Haskemathesis.Schema.html#Schema"><span class="hs-identifier hs-type">Schema</span></a></span><span>
+</span><span id="line-189"></span><span id="emptySchema"><span class="annot"><span class="annottext">emptySchema :: Schema
+</span><a href="Haskemathesis.Schema.html#emptySchema"><span class="hs-identifier hs-var hs-var">emptySchema</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-190"></span><span>    </span><span class="annot"><a href="Haskemathesis.Schema.html#Schema"><span class="hs-identifier hs-type">Schema</span></a></span><span>
+</span><span id="line-191"></span><span>        </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">schemaType :: Maybe SchemaType
+</span><a href="Haskemathesis.Schema.html#schemaType"><span class="hs-identifier hs-var">schemaType</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe SchemaType
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-192"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">schemaEnum :: Maybe [Value]
+</span><a href="Haskemathesis.Schema.html#schemaEnum"><span class="hs-identifier hs-var">schemaEnum</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe [Value]
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-193"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">schemaConst :: Maybe Value
+</span><a href="Haskemathesis.Schema.html#schemaConst"><span class="hs-identifier hs-var">schemaConst</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe Value
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-194"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">schemaMinLength :: Maybe Int
+</span><a href="Haskemathesis.Schema.html#schemaMinLength"><span class="hs-identifier hs-var">schemaMinLength</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe Int
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-195"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">schemaMaxLength :: Maybe Int
+</span><a href="Haskemathesis.Schema.html#schemaMaxLength"><span class="hs-identifier hs-var">schemaMaxLength</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe Int
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-196"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">schemaMinimum :: Maybe Double
+</span><a href="Haskemathesis.Schema.html#schemaMinimum"><span class="hs-identifier hs-var">schemaMinimum</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe Double
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-197"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">schemaMaximum :: Maybe Double
+</span><a href="Haskemathesis.Schema.html#schemaMaximum"><span class="hs-identifier hs-var">schemaMaximum</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe Double
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-198"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">schemaExclusiveMinimum :: Maybe Double
+</span><a href="Haskemathesis.Schema.html#schemaExclusiveMinimum"><span class="hs-identifier hs-var">schemaExclusiveMinimum</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe Double
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-199"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">schemaExclusiveMaximum :: Maybe Double
+</span><a href="Haskemathesis.Schema.html#schemaExclusiveMaximum"><span class="hs-identifier hs-var">schemaExclusiveMaximum</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe Double
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-200"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">schemaPattern :: Maybe Text
+</span><a href="Haskemathesis.Schema.html#schemaPattern"><span class="hs-identifier hs-var">schemaPattern</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe Text
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-201"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">schemaItems :: Maybe Schema
+</span><a href="Haskemathesis.Schema.html#schemaItems"><span class="hs-identifier hs-var">schemaItems</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe Schema
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-202"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">schemaMinItems :: Maybe Int
+</span><a href="Haskemathesis.Schema.html#schemaMinItems"><span class="hs-identifier hs-var">schemaMinItems</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe Int
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-203"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">schemaMaxItems :: Maybe Int
+</span><a href="Haskemathesis.Schema.html#schemaMaxItems"><span class="hs-identifier hs-var">schemaMaxItems</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe Int
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-204"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">schemaUniqueItems :: Bool
+</span><a href="Haskemathesis.Schema.html#schemaUniqueItems"><span class="hs-identifier hs-var">schemaUniqueItems</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">False</span></span><span>
+</span><span id="line-205"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">schemaRequired :: [Text]
+</span><a href="Haskemathesis.Schema.html#schemaRequired"><span class="hs-identifier hs-var">schemaRequired</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>
+</span><span id="line-206"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">schemaProperties :: Map Text Schema
+</span><a href="Haskemathesis.Schema.html#schemaProperties"><span class="hs-identifier hs-var">schemaProperties</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Map Text Schema
+forall a. Monoid a =&gt; a
+</span><span class="hs-identifier hs-var">mempty</span></span><span>
+</span><span id="line-207"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">schemaAdditionalProperties :: Maybe AdditionalProperties
+</span><a href="Haskemathesis.Schema.html#schemaAdditionalProperties"><span class="hs-identifier hs-var">schemaAdditionalProperties</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe AdditionalProperties
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-208"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">schemaAllOf :: [Schema]
+</span><a href="Haskemathesis.Schema.html#schemaAllOf"><span class="hs-identifier hs-var">schemaAllOf</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>
+</span><span id="line-209"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">schemaAnyOf :: [Schema]
+</span><a href="Haskemathesis.Schema.html#schemaAnyOf"><span class="hs-identifier hs-var">schemaAnyOf</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>
+</span><span id="line-210"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">schemaOneOf :: [Schema]
+</span><a href="Haskemathesis.Schema.html#schemaOneOf"><span class="hs-identifier hs-var">schemaOneOf</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>
+</span><span id="line-211"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">schemaNullable :: Bool
+</span><a href="Haskemathesis.Schema.html#schemaNullable"><span class="hs-identifier hs-var">schemaNullable</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">False</span></span><span>
+</span><span id="line-212"></span><span>        </span><span class="hs-special">}</span><span>
+</span><span id="line-213"></span></pre></body></html>

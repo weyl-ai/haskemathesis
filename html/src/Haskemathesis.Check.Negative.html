@@ -1,0 +1,150 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE OverloadedStrings #-}</span><span>
+</span><span id="line-2"></span><span>
+</span><span id="line-3"></span><span class="annot"><span class="hs-comment">{- | Checks that assert negative (invalid) requests are rejected.
+
+This module provides checks for negative testing, which verifies that
+the API properly rejects invalid requests. Negative tests generate
+mutations that violate the OpenAPI schema (e.g., missing required fields,
+wrong content types, invalid values) and verify the API returns a 4xx
+status code.
+
+=== When to Use
+
+Use negative testing when you want to verify:
+
+* Input validation is working correctly
+* Required fields are enforced
+* Content types are validated
+* Invalid values are rejected
+
+=== Example
+
+@
+import Haskemathesis.Check.Negative (negativeTestRejection)
+import Haskemathesis.Gen.Negative (renderNegativeMutation)
+
+-- In a property test
+result = negativeTestRejection mutationDescription request response operation
+@
+-}</span></span><span>
+</span><span id="line-30"></span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="Haskemathesis.Check.Negative.html"><span class="hs-identifier">Haskemathesis.Check.Negative</span></a></span><span> </span><span class="hs-special">(</span><span>
+</span><span id="line-31"></span><span>    </span><span class="annot"><a href="Haskemathesis.Check.Negative.html#negativeTestRejection"><span class="hs-identifier">negativeTestRejection</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-32"></span><span class="hs-special">)</span><span>
+</span><span id="line-33"></span><span class="hs-keyword">where</span><span>
+</span><span id="line-34"></span><span>
+</span><span id="line-35"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Text</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Text</span></span><span class="hs-special">)</span><span>
+</span><span id="line-36"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Haskemathesis.Check.Types.html"><span class="hs-identifier">Haskemathesis.Check.Types</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Haskemathesis.Check.Types.html#CheckResult"><span class="hs-identifier">CheckResult</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Haskemathesis.Check.Types.html#FailureDetail"><span class="hs-identifier">FailureDetail</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-37"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Haskemathesis.Execute.Types.html"><span class="hs-identifier">Haskemathesis.Execute.Types</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Haskemathesis.Execute.Types.html#ApiRequest"><span class="hs-identifier">ApiRequest</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Haskemathesis.Execute.Types.html#ApiResponse"><span class="hs-identifier">ApiResponse</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-38"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Haskemathesis.OpenApi.Types.html"><span class="hs-identifier">Haskemathesis.OpenApi.Types</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Haskemathesis.OpenApi.Types.html#ResolvedOperation"><span class="hs-identifier">ResolvedOperation</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-39"></span><span>
+</span><span id="line-40"></span><span class="annot"><span class="hs-comment">{- | Check that a negative test request was properly rejected.
+
+This check verifies that the API returned a 4xx status code (client error)
+for a request that was intentionally made invalid. If the API accepts
+the invalid request (returns 2xx or 5xx), the check fails.
+
+=== Parameters
+
+* @mutation@ - Description of the mutation applied to make the request invalid
+* @req@ - The mutated 'ApiRequest' that was sent
+* @res@ - The 'ApiResponse' received from the API
+* @op@ - The 'ResolvedOperation' being tested
+
+=== Return Value
+
+Returns 'CheckPassed' if the response status is 4xx, otherwise returns
+'CheckFailed' with details about the failure.
+
+=== Example
+
+@
+import Haskemathesis.Gen.Negative (genNegativeRequest, renderNegativeMutation)
+
+-- In a property test
+mReq &lt;- forAll (genNegativeRequest operation)
+case mReq of
+    Nothing -&gt; success
+    Just (req, mutation) -&gt; do
+        res &lt;- evalIO (execute req)
+        case negativeTestRejection (renderNegativeMutation mutation) req res operation of
+            CheckPassed -&gt; success
+            CheckFailed detail -&gt; ...
+@
+-}</span></span><span>
+</span><span id="line-74"></span><span class="annot"><a href="Haskemathesis.Check.Negative.html#negativeTestRejection"><span class="hs-identifier hs-type">negativeTestRejection</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Haskemathesis.Execute.Types.html#ApiRequest"><span class="hs-identifier hs-type">ApiRequest</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Haskemathesis.Execute.Types.html#ApiResponse"><span class="hs-identifier hs-type">ApiResponse</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Haskemathesis.OpenApi.Types.html#ResolvedOperation"><span class="hs-identifier hs-type">ResolvedOperation</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Haskemathesis.Check.Types.html#CheckResult"><span class="hs-identifier hs-type">CheckResult</span></a></span><span>
+</span><span id="line-75"></span><span id="negativeTestRejection"><span class="annot"><span class="annottext">negativeTestRejection :: Text
+-&gt; ApiRequest -&gt; ApiResponse -&gt; ResolvedOperation -&gt; CheckResult
+</span><a href="Haskemathesis.Check.Negative.html#negativeTestRejection"><span class="hs-identifier hs-var hs-var">negativeTestRejection</span></a></span></span><span> </span><span id="local-6989586621679199885"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679199885"><span class="hs-identifier hs-var">mutation</span></a></span></span><span> </span><span id="local-6989586621679199886"><span class="annot"><span class="annottext">ApiRequest
+</span><a href="#local-6989586621679199886"><span class="hs-identifier hs-var">req</span></a></span></span><span> </span><span id="local-6989586621679199887"><span class="annot"><span class="annottext">ApiResponse
+</span><a href="#local-6989586621679199887"><span class="hs-identifier hs-var">res</span></a></span></span><span> </span><span id="local-6989586621679199888"><span class="annot"><span class="annottext">ResolvedOperation
+</span><a href="#local-6989586621679199888"><span class="hs-identifier hs-var">op</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-76"></span><span>    </span><span class="hs-keyword">if</span><span> </span><span class="annot"><span class="annottext">ApiResponse -&gt; Int
+</span><a href="Haskemathesis.Execute.Types.html#resStatusCode"><span class="hs-identifier hs-var">resStatusCode</span></a></span><span> </span><span class="annot"><span class="annottext">ApiResponse
+</span><a href="#local-6989586621679199887"><span class="hs-identifier hs-var">res</span></a></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Bool
+forall a. Ord a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">&gt;=</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">400</span></span><span> </span><span class="annot"><span class="annottext">Bool -&gt; Bool -&gt; Bool
+</span><span class="hs-operator hs-var">&amp;&amp;</span></span><span> </span><span class="annot"><span class="annottext">ApiResponse -&gt; Int
+</span><a href="Haskemathesis.Execute.Types.html#resStatusCode"><span class="hs-identifier hs-var">resStatusCode</span></a></span><span> </span><span class="annot"><span class="annottext">ApiResponse
+</span><a href="#local-6989586621679199887"><span class="hs-identifier hs-var">res</span></a></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Bool
+forall a. Ord a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">&lt;</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">500</span></span><span>
+</span><span id="line-77"></span><span>        </span><span class="hs-keyword">then</span><span> </span><span class="annot"><span class="annottext">CheckResult
+</span><a href="Haskemathesis.Check.Types.html#CheckPassed"><span class="hs-identifier hs-var">CheckPassed</span></a></span><span>
+</span><span id="line-78"></span><span>        </span><span class="hs-keyword">else</span><span>
+</span><span id="line-79"></span><span>            </span><span class="annot"><span class="annottext">FailureDetail -&gt; CheckResult
+</span><a href="Haskemathesis.Check.Types.html#CheckFailed"><span class="hs-identifier hs-var">CheckFailed</span></a></span><span>
+</span><span id="line-80"></span><span>                </span><span class="annot"><a href="Haskemathesis.Check.Types.html#FailureDetail"><span class="hs-identifier hs-type">FailureDetail</span></a></span><span>
+</span><span id="line-81"></span><span>                    </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">fdCheck :: Text
+</span><a href="Haskemathesis.Check.Types.html#fdCheck"><span class="hs-identifier hs-var">fdCheck</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;negative_test_rejection&quot;</span></span><span>
+</span><span id="line-82"></span><span>                    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">fdMessage :: Text
+</span><a href="Haskemathesis.Check.Types.html#fdMessage"><span class="hs-identifier hs-var">fdMessage</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;expected 4xx response for negative request&quot;</span></span><span>
+</span><span id="line-83"></span><span>                    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">fdRequest :: ApiRequest
+</span><a href="Haskemathesis.Check.Types.html#fdRequest"><span class="hs-identifier hs-var">fdRequest</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">ApiRequest
+</span><a href="#local-6989586621679199886"><span class="hs-identifier hs-var">req</span></a></span><span>
+</span><span id="line-84"></span><span>                    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">fdResponse :: ApiResponse
+</span><a href="Haskemathesis.Check.Types.html#fdResponse"><span class="hs-identifier hs-var">fdResponse</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">ApiResponse
+</span><a href="#local-6989586621679199887"><span class="hs-identifier hs-var">res</span></a></span><span>
+</span><span id="line-85"></span><span>                    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">fdOperation :: Text
+</span><a href="Haskemathesis.Check.Types.html#fdOperation"><span class="hs-identifier hs-var">fdOperation</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">ResolvedOperation -&gt; Text
+</span><a href="Haskemathesis.Check.Negative.html#operationLabel"><span class="hs-identifier hs-var">operationLabel</span></a></span><span> </span><span class="annot"><span class="annottext">ResolvedOperation
+</span><a href="#local-6989586621679199888"><span class="hs-identifier hs-var">op</span></a></span><span>
+</span><span id="line-86"></span><span>                    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">fdSchemaErrors :: [Text]
+</span><a href="Haskemathesis.Check.Types.html#fdSchemaErrors"><span class="hs-identifier hs-var">fdSchemaErrors</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>
+</span><span id="line-87"></span><span>                    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">fdSchemaDiff :: Maybe Text
+</span><a href="Haskemathesis.Check.Types.html#fdSchemaDiff"><span class="hs-identifier hs-var">fdSchemaDiff</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe Text
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-88"></span><span>                    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">fdMutation :: Maybe Text
+</span><a href="Haskemathesis.Check.Types.html#fdMutation"><span class="hs-identifier hs-var">fdMutation</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Text -&gt; Maybe Text
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679199885"><span class="hs-identifier hs-var">mutation</span></a></span><span>
+</span><span id="line-89"></span><span>                    </span><span class="hs-special">}</span><span>
+</span><span id="line-90"></span><span>
+</span><span id="line-91"></span><span class="annot"><a href="Haskemathesis.Check.Negative.html#operationLabel"><span class="hs-identifier hs-type">operationLabel</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Haskemathesis.OpenApi.Types.html#ResolvedOperation"><span class="hs-identifier hs-type">ResolvedOperation</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
+</span><span id="line-92"></span><span id="operationLabel"><span class="annot"><span class="annottext">operationLabel :: ResolvedOperation -&gt; Text
+</span><a href="Haskemathesis.Check.Negative.html#operationLabel"><span class="hs-identifier hs-var hs-var">operationLabel</span></a></span></span><span> </span><span id="local-6989586621679199902"><span class="annot"><span class="annottext">ResolvedOperation
+</span><a href="#local-6989586621679199902"><span class="hs-identifier hs-var">op</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-93"></span><span>    </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">ResolvedOperation -&gt; Maybe Text
+</span><a href="Haskemathesis.OpenApi.Types.html#roOperationId"><span class="hs-identifier hs-var">roOperationId</span></a></span><span> </span><span class="annot"><span class="annottext">ResolvedOperation
+</span><a href="#local-6989586621679199902"><span class="hs-identifier hs-var">op</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-94"></span><span>        </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span id="local-6989586621679199904"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679199904"><span class="hs-identifier hs-var">opId</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679199904"><span class="hs-identifier hs-var">opId</span></a></span><span>
+</span><span id="line-95"></span><span>        </span><span class="annot"><span class="annottext">Maybe Text
+</span><span class="hs-identifier hs-var">Nothing</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">ResolvedOperation -&gt; Text
+</span><a href="Haskemathesis.OpenApi.Types.html#roMethod"><span class="hs-identifier hs-var">roMethod</span></a></span><span> </span><span class="annot"><span class="annottext">ResolvedOperation
+</span><a href="#local-6989586621679199902"><span class="hs-identifier hs-var">op</span></a></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot; &quot;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">ResolvedOperation -&gt; Text
+</span><a href="Haskemathesis.OpenApi.Types.html#roPath"><span class="hs-identifier hs-var">roPath</span></a></span><span> </span><span class="annot"><span class="annottext">ResolvedOperation
+</span><a href="#local-6989586621679199902"><span class="hs-identifier hs-var">op</span></a></span><span>
+</span><span id="line-96"></span></pre></body></html>

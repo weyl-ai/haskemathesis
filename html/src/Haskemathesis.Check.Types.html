@@ -1,0 +1,151 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE StrictData #-}</span><span>
+</span><span id="line-2"></span><span>
+</span><span id="line-3"></span><span class="annot"><span class="hs-comment">{- | Core types for checks and failure reporting.
+
+This module defines the fundamental types used for response validation
+throughout Haskemathesis. Checks are the primary mechanism for asserting
+that API responses conform to expectations.
+
+=== Creating Custom Checks
+
+You can define your own checks by creating a 'Check' value:
+
+@
+myCustomCheck :: Check
+myCustomCheck = Check
+    { checkName = &quot;My Custom Check&quot;
+    , checkRun = \\req res op -&gt;
+        if resStatusCode res == 200
+            then CheckPassed
+            else CheckFailed $ FailureDetail
+                { fdCheck = &quot;My Custom Check&quot;
+                , fdMessage = &quot;Expected 200, got &quot; &lt;&gt; pack (show (resStatusCode res))
+                , fdRequest = req
+                , fdResponse = res
+                , fdOperation = fromMaybe &quot;unknown&quot; (roOperationId op)
+                , fdSchemaErrors = []
+                , fdSchemaDiff = Nothing
+                , fdMutation = Nothing
+                }
+    }
+@
+-}</span></span><span>
+</span><span id="line-33"></span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="Haskemathesis.Check.Types.html"><span class="hs-identifier">Haskemathesis.Check.Types</span></a></span><span> </span><span class="hs-special">(</span><span>
+</span><span id="line-34"></span><span>    </span><span class="annot"><a href="Haskemathesis.Check.Types.html#Check"><span class="hs-identifier">Check</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-35"></span><span>    </span><span class="annot"><a href="Haskemathesis.Check.Types.html#CheckResult"><span class="hs-identifier">CheckResult</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-36"></span><span>    </span><span class="annot"><a href="Haskemathesis.Check.Types.html#FailureDetail"><span class="hs-identifier">FailureDetail</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-37"></span><span class="hs-special">)</span><span>
+</span><span id="line-38"></span><span class="hs-keyword">where</span><span>
+</span><span id="line-39"></span><span>
+</span><span id="line-40"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Text</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Text</span></span><span class="hs-special">)</span><span>
+</span><span id="line-41"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Haskemathesis.Execute.Types.html"><span class="hs-identifier">Haskemathesis.Execute.Types</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Haskemathesis.Execute.Types.html#ApiRequest"><span class="hs-identifier">ApiRequest</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Haskemathesis.Execute.Types.html#ApiResponse"><span class="hs-identifier">ApiResponse</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-42"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Haskemathesis.OpenApi.Types.html"><span class="hs-identifier">Haskemathesis.OpenApi.Types</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Haskemathesis.OpenApi.Types.html#ResolvedOperation"><span class="hs-identifier">ResolvedOperation</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-43"></span><span>
+</span><span id="line-44"></span><span class="annot"><span class="hs-comment">{- | A check validates that an API response meets a specific criterion.
+
+Each check consists of a name and a function that examines the
+request, response, and operation definition to determine if the
+check passes or fails.
+-}</span></span><span>
+</span><span id="line-50"></span><span class="hs-keyword">data</span><span> </span><span id="Check"><span class="annot"><a href="Haskemathesis.Check.Types.html#Check"><span class="hs-identifier hs-var">Check</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="Check"><span class="annot"><a href="Haskemathesis.Check.Types.html#Check"><span class="hs-identifier hs-var">Check</span></a></span></span><span>
+</span><span id="line-51"></span><span>    </span><span class="hs-special">{</span><span> </span><span id="checkName"><span class="annot"><span class="annottext">Check -&gt; Text
+</span><a href="Haskemathesis.Check.Types.html#checkName"><span class="hs-identifier hs-var hs-var">checkName</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
+</span><span id="line-52"></span><span>    </span><span class="annot"><span class="hs-comment">-- ^ Human-readable name of the check, used in reports.</span></span><span>
+</span><span id="line-53"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="checkRun"><span class="annot"><span class="annottext">Check
+-&gt; ApiRequest -&gt; ApiResponse -&gt; ResolvedOperation -&gt; CheckResult
+</span><a href="Haskemathesis.Check.Types.html#checkRun"><span class="hs-identifier hs-var hs-var">checkRun</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Haskemathesis.Execute.Types.html#ApiRequest"><span class="hs-identifier hs-type">ApiRequest</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Haskemathesis.Execute.Types.html#ApiResponse"><span class="hs-identifier hs-type">ApiResponse</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Haskemathesis.OpenApi.Types.html#ResolvedOperation"><span class="hs-identifier hs-type">ResolvedOperation</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Haskemathesis.Check.Types.html#CheckResult"><span class="hs-identifier hs-type">CheckResult</span></a></span><span>
+</span><span id="line-54"></span><span>    </span><span class="annot"><span class="hs-comment">{- ^ Function that performs the validation. Takes the request that was sent,
+    the response that was received, and the operation definition.
+    -}</span></span><span>
+</span><span id="line-57"></span><span>    </span><span class="hs-special">}</span><span>
+</span><span id="line-58"></span><span>
+</span><span id="line-59"></span><span class="annot"><span class="hs-comment">{- | The result of running a check.
+
+A check either passes (indicating the response is valid according to
+that criterion) or fails with detailed information about what went wrong.
+-}</span></span><span>
+</span><span id="line-64"></span><span class="hs-keyword">data</span><span> </span><span id="CheckResult"><span class="annot"><a href="Haskemathesis.Check.Types.html#CheckResult"><span class="hs-identifier hs-var">CheckResult</span></a></span></span><span>
+</span><span id="line-65"></span><span>    </span><span class="hs-glyph">=</span><span> </span><span id="CheckPassed"><span class="annot"><a href="Haskemathesis.Check.Types.html#CheckPassed"><span class="hs-identifier hs-var">CheckPassed</span></a></span></span><span>
+</span><span id="line-66"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span id="CheckFailed"><span class="annot"><a href="Haskemathesis.Check.Types.html#CheckFailed"><span class="hs-identifier hs-var">CheckFailed</span></a></span></span><span> </span><span class="annot"><a href="Haskemathesis.Check.Types.html#FailureDetail"><span class="hs-identifier hs-type">FailureDetail</span></a></span><span>
+</span><span id="line-67"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679199635"><span id="local-6989586621679199642"><span class="annot"><span class="annottext">CheckResult -&gt; CheckResult -&gt; Bool
+(CheckResult -&gt; CheckResult -&gt; Bool)
+-&gt; (CheckResult -&gt; CheckResult -&gt; Bool) -&gt; Eq CheckResult
+forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
+$c== :: CheckResult -&gt; CheckResult -&gt; Bool
+== :: CheckResult -&gt; CheckResult -&gt; Bool
+$c/= :: CheckResult -&gt; CheckResult -&gt; Bool
+/= :: CheckResult -&gt; CheckResult -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679199647"><span id="local-6989586621679199653"><span id="local-6989586621679199657"><span class="annot"><span class="annottext">Int -&gt; CheckResult -&gt; ShowS
+[CheckResult] -&gt; ShowS
+CheckResult -&gt; String
+(Int -&gt; CheckResult -&gt; ShowS)
+-&gt; (CheckResult -&gt; String)
+-&gt; ([CheckResult] -&gt; ShowS)
+-&gt; Show CheckResult
+forall a.
+(Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
+$cshowsPrec :: Int -&gt; CheckResult -&gt; ShowS
+showsPrec :: Int -&gt; CheckResult -&gt; ShowS
+$cshow :: CheckResult -&gt; String
+show :: CheckResult -&gt; String
+$cshowList :: [CheckResult] -&gt; ShowS
+showList :: [CheckResult] -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-68"></span><span>
+</span><span id="line-69"></span><span class="annot"><span class="hs-comment">{- | Detailed information about a check failure.
+
+This record contains all the context needed to diagnose and report
+a test failure, including the request, response, and specific
+error messages.
+-}</span></span><span>
+</span><span id="line-75"></span><span class="hs-keyword">data</span><span> </span><span id="FailureDetail"><span class="annot"><a href="Haskemathesis.Check.Types.html#FailureDetail"><span class="hs-identifier hs-var">FailureDetail</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="FailureDetail"><span class="annot"><a href="Haskemathesis.Check.Types.html#FailureDetail"><span class="hs-identifier hs-var">FailureDetail</span></a></span></span><span>
+</span><span id="line-76"></span><span>    </span><span class="hs-special">{</span><span> </span><span id="fdCheck"><span class="annot"><span class="annottext">FailureDetail -&gt; Text
+</span><a href="Haskemathesis.Check.Types.html#fdCheck"><span class="hs-identifier hs-var hs-var">fdCheck</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
+</span><span id="line-77"></span><span>    </span><span class="annot"><span class="hs-comment">-- ^ Name of the check that failed.</span></span><span>
+</span><span id="line-78"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="fdMessage"><span class="annot"><span class="annottext">FailureDetail -&gt; Text
+</span><a href="Haskemathesis.Check.Types.html#fdMessage"><span class="hs-identifier hs-var hs-var">fdMessage</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
+</span><span id="line-79"></span><span>    </span><span class="annot"><span class="hs-comment">-- ^ Human-readable description of what went wrong.</span></span><span>
+</span><span id="line-80"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="fdRequest"><span class="annot"><span class="annottext">FailureDetail -&gt; ApiRequest
+</span><a href="Haskemathesis.Check.Types.html#fdRequest"><span class="hs-identifier hs-var hs-var">fdRequest</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Haskemathesis.Execute.Types.html#ApiRequest"><span class="hs-identifier hs-type">ApiRequest</span></a></span><span>
+</span><span id="line-81"></span><span>    </span><span class="annot"><span class="hs-comment">-- ^ The request that was sent to the API.</span></span><span>
+</span><span id="line-82"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="fdResponse"><span class="annot"><span class="annottext">FailureDetail -&gt; ApiResponse
+</span><a href="Haskemathesis.Check.Types.html#fdResponse"><span class="hs-identifier hs-var hs-var">fdResponse</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Haskemathesis.Execute.Types.html#ApiResponse"><span class="hs-identifier hs-type">ApiResponse</span></a></span><span>
+</span><span id="line-83"></span><span>    </span><span class="annot"><span class="hs-comment">-- ^ The response received from the API.</span></span><span>
+</span><span id="line-84"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="fdOperation"><span class="annot"><span class="annottext">FailureDetail -&gt; Text
+</span><a href="Haskemathesis.Check.Types.html#fdOperation"><span class="hs-identifier hs-var hs-var">fdOperation</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
+</span><span id="line-85"></span><span>    </span><span class="annot"><span class="hs-comment">-- ^ Identifier for the operation being tested.</span></span><span>
+</span><span id="line-86"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="fdSchemaErrors"><span class="annot"><span class="annottext">FailureDetail -&gt; [Text]
+</span><a href="Haskemathesis.Check.Types.html#fdSchemaErrors"><span class="hs-identifier hs-var hs-var">fdSchemaErrors</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span class="hs-special">]</span><span>
+</span><span id="line-87"></span><span>    </span><span class="annot"><span class="hs-comment">-- ^ JSON Schema validation errors, if any.</span></span><span>
+</span><span id="line-88"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="fdSchemaDiff"><span class="annot"><span class="annottext">FailureDetail -&gt; Maybe Text
+</span><a href="Haskemathesis.Check.Types.html#fdSchemaDiff"><span class="hs-identifier hs-var hs-var">fdSchemaDiff</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
+</span><span id="line-89"></span><span>    </span><span class="annot"><span class="hs-comment">-- ^ Diff showing expected vs actual schema, if applicable.</span></span><span>
+</span><span id="line-90"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="fdMutation"><span class="annot"><span class="annottext">FailureDetail -&gt; Maybe Text
+</span><a href="Haskemathesis.Check.Types.html#fdMutation"><span class="hs-identifier hs-var hs-var">fdMutation</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
+</span><span id="line-91"></span><span>    </span><span class="annot"><span class="hs-comment">-- ^ Description of the mutation applied (for negative testing).</span></span><span>
+</span><span id="line-92"></span><span>    </span><span class="hs-special">}</span><span>
+</span><span id="line-93"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679199671"><span id="local-6989586621679199686"><span class="annot"><span class="annottext">FailureDetail -&gt; FailureDetail -&gt; Bool
+(FailureDetail -&gt; FailureDetail -&gt; Bool)
+-&gt; (FailureDetail -&gt; FailureDetail -&gt; Bool) -&gt; Eq FailureDetail
+forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
+$c== :: FailureDetail -&gt; FailureDetail -&gt; Bool
+== :: FailureDetail -&gt; FailureDetail -&gt; Bool
+$c/= :: FailureDetail -&gt; FailureDetail -&gt; Bool
+/= :: FailureDetail -&gt; FailureDetail -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679199689"><span id="local-6989586621679199705"><span id="local-6989586621679199708"><span class="annot"><span class="annottext">Int -&gt; FailureDetail -&gt; ShowS
+[FailureDetail] -&gt; ShowS
+FailureDetail -&gt; String
+(Int -&gt; FailureDetail -&gt; ShowS)
+-&gt; (FailureDetail -&gt; String)
+-&gt; ([FailureDetail] -&gt; ShowS)
+-&gt; Show FailureDetail
+forall a.
+(Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
+$cshowsPrec :: Int -&gt; FailureDetail -&gt; ShowS
+showsPrec :: Int -&gt; FailureDetail -&gt; ShowS
+$cshow :: FailureDetail -&gt; String
+show :: FailureDetail -&gt; String
+$cshowList :: [FailureDetail] -&gt; ShowS
+showList :: [FailureDetail] -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-94"></span></pre></body></html>

@@ -1,0 +1,159 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE OverloadedStrings #-}</span><span>
+</span><span id="line-2"></span><span>
+</span><span id="line-3"></span><span class="annot"><span class="hs-comment">{- | Types for negative testing mutations.
+
+This module defines the 'NegativeMutation' type, which represents
+various ways to make a valid request invalid. These mutations are
+used in negative testing to verify that the API properly rejects
+malformed input.
+
+=== Mutation Types
+
+* 'RemoveRequiredPath' - Remove a required path parameter
+* 'RemoveRequiredHeader' - Remove a required header
+* 'RemoveRequiredQuery' - Remove a required query parameter
+* 'InvalidPathParam' - Replace a path parameter with an invalid value
+* 'InvalidHeader' - Replace a header with an invalid value
+* 'InvalidQueryParam' - Replace a query parameter with an invalid value
+* 'InvalidRequestBody' - Replace the request body with an invalid value
+* 'InvalidContentType' - Change the Content-Type to an invalid value
+
+=== Basic Usage
+
+@
+import Haskemathesis.Gen.Negative.Types (NegativeMutation(..), renderNegativeMutation)
+
+let mutation = RemoveRequiredQuery &quot;page&quot;
+    description = renderNegativeMutation mutation
+-- description == &quot;remove required query param: page&quot;
+@
+-}</span></span><span>
+</span><span id="line-31"></span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="Haskemathesis.Gen.Negative.Types.html"><span class="hs-identifier">Haskemathesis.Gen.Negative.Types</span></a></span><span> </span><span class="hs-special">(</span><span>
+</span><span id="line-32"></span><span>    </span><span class="annot"><a href="Haskemathesis.Gen.Negative.Types.html#NegativeMutation"><span class="hs-identifier">NegativeMutation</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-33"></span><span>    </span><span class="annot"><a href="Haskemathesis.Gen.Negative.Types.html#renderNegativeMutation"><span class="hs-identifier">renderNegativeMutation</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-34"></span><span class="hs-special">)</span><span>
+</span><span id="line-35"></span><span class="hs-keyword">where</span><span>
+</span><span id="line-36"></span><span>
+</span><span id="line-37"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Text</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Text</span></span><span class="hs-special">)</span><span>
+</span><span id="line-38"></span><span>
+</span><span id="line-39"></span><span class="annot"><span class="hs-comment">{- | Mutations applied to a valid request to create a negative test case.
+
+Each constructor represents a different way to make a request invalid.
+These mutations are used to test that the API properly rejects
+malformed input.
+-}</span></span><span>
+</span><span id="line-45"></span><span class="hs-keyword">data</span><span> </span><span id="NegativeMutation"><span class="annot"><a href="Haskemathesis.Gen.Negative.Types.html#NegativeMutation"><span class="hs-identifier hs-var">NegativeMutation</span></a></span></span><span>
+</span><span id="line-46"></span><span>    </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="hs-comment">-- | Remove a required path parameter (will result in 404 or error).</span></span><span>
+</span><span id="line-47"></span><span>      </span><span id="RemoveRequiredPath"><span class="annot"><a href="Haskemathesis.Gen.Negative.Types.html#RemoveRequiredPath"><span class="hs-identifier hs-var">RemoveRequiredPath</span></a></span></span><span> </span><span class="hs-glyph">!</span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
+</span><span id="line-48"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="hs-comment">-- | Remove a required header from the request.</span></span><span>
+</span><span id="line-49"></span><span>      </span><span id="RemoveRequiredHeader"><span class="annot"><a href="Haskemathesis.Gen.Negative.Types.html#RemoveRequiredHeader"><span class="hs-identifier hs-var">RemoveRequiredHeader</span></a></span></span><span> </span><span class="hs-glyph">!</span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
+</span><span id="line-50"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="hs-comment">-- | Remove a required query parameter from the request.</span></span><span>
+</span><span id="line-51"></span><span>      </span><span id="RemoveRequiredQuery"><span class="annot"><a href="Haskemathesis.Gen.Negative.Types.html#RemoveRequiredQuery"><span class="hs-identifier hs-var">RemoveRequiredQuery</span></a></span></span><span> </span><span class="hs-glyph">!</span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
+</span><span id="line-52"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="hs-comment">-- | Replace a path parameter with an invalid value.</span></span><span>
+</span><span id="line-53"></span><span>      </span><span id="InvalidPathParam"><span class="annot"><a href="Haskemathesis.Gen.Negative.Types.html#InvalidPathParam"><span class="hs-identifier hs-var">InvalidPathParam</span></a></span></span><span> </span><span class="hs-glyph">!</span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
+</span><span id="line-54"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="hs-comment">-- | Replace a header with an invalid value.</span></span><span>
+</span><span id="line-55"></span><span>      </span><span id="InvalidHeader"><span class="annot"><a href="Haskemathesis.Gen.Negative.Types.html#InvalidHeader"><span class="hs-identifier hs-var">InvalidHeader</span></a></span></span><span> </span><span class="hs-glyph">!</span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
+</span><span id="line-56"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="hs-comment">-- | Replace a query parameter with an invalid value.</span></span><span>
+</span><span id="line-57"></span><span>      </span><span id="InvalidQueryParam"><span class="annot"><a href="Haskemathesis.Gen.Negative.Types.html#InvalidQueryParam"><span class="hs-identifier hs-var">InvalidQueryParam</span></a></span></span><span> </span><span class="hs-glyph">!</span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
+</span><span id="line-58"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="hs-comment">-- | Replace the request body with an invalid value.</span></span><span>
+</span><span id="line-59"></span><span>      </span><span id="InvalidRequestBody"><span class="annot"><a href="Haskemathesis.Gen.Negative.Types.html#InvalidRequestBody"><span class="hs-identifier hs-var">InvalidRequestBody</span></a></span></span><span>
+</span><span id="line-60"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="hs-comment">-- | Change the Content-Type to an invalid value.</span></span><span>
+</span><span id="line-61"></span><span>      </span><span id="InvalidContentType"><span class="annot"><a href="Haskemathesis.Gen.Negative.Types.html#InvalidContentType"><span class="hs-identifier hs-var">InvalidContentType</span></a></span></span><span>
+</span><span id="line-62"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679199040"><span id="local-6989586621679199052"><span class="annot"><span class="annottext">NegativeMutation -&gt; NegativeMutation -&gt; Bool
+(NegativeMutation -&gt; NegativeMutation -&gt; Bool)
+-&gt; (NegativeMutation -&gt; NegativeMutation -&gt; Bool)
+-&gt; Eq NegativeMutation
+forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
+$c== :: NegativeMutation -&gt; NegativeMutation -&gt; Bool
+== :: NegativeMutation -&gt; NegativeMutation -&gt; Bool
+$c/= :: NegativeMutation -&gt; NegativeMutation -&gt; Bool
+/= :: NegativeMutation -&gt; NegativeMutation -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679199057"><span id="local-6989586621679199073"><span id="local-6989586621679199077"><span class="annot"><span class="annottext">Int -&gt; NegativeMutation -&gt; ShowS
+[NegativeMutation] -&gt; ShowS
+NegativeMutation -&gt; String
+(Int -&gt; NegativeMutation -&gt; ShowS)
+-&gt; (NegativeMutation -&gt; String)
+-&gt; ([NegativeMutation] -&gt; ShowS)
+-&gt; Show NegativeMutation
+forall a.
+(Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
+$cshowsPrec :: Int -&gt; NegativeMutation -&gt; ShowS
+showsPrec :: Int -&gt; NegativeMutation -&gt; ShowS
+$cshow :: NegativeMutation -&gt; String
+show :: NegativeMutation -&gt; String
+$cshowList :: [NegativeMutation] -&gt; ShowS
+showList :: [NegativeMutation] -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-63"></span><span>
+</span><span id="line-64"></span><span class="annot"><span class="hs-comment">{- | Render a mutation as a human-readable description.
+
+This function converts a 'NegativeMutation' into a descriptive string
+suitable for display in test output or failure messages.
+
+=== Parameters
+
+* @mutation@ - The 'NegativeMutation' to describe
+
+=== Return Value
+
+Returns a 'Text' containing the human-readable description.
+
+=== Example
+
+@
+renderNegativeMutation (RemoveRequiredQuery &quot;page&quot;)
+-- Returns: &quot;remove required query param: page&quot;
+
+renderNegativeMutation InvalidRequestBody
+-- Returns: &quot;invalid request body&quot;
+@
+-}</span></span><span>
+</span><span id="line-87"></span><span class="annot"><a href="Haskemathesis.Gen.Negative.Types.html#renderNegativeMutation"><span class="hs-identifier hs-type">renderNegativeMutation</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Haskemathesis.Gen.Negative.Types.html#NegativeMutation"><span class="hs-identifier hs-type">NegativeMutation</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
+</span><span id="line-88"></span><span id="renderNegativeMutation"><span class="annot"><span class="annottext">renderNegativeMutation :: NegativeMutation -&gt; Text
+</span><a href="Haskemathesis.Gen.Negative.Types.html#renderNegativeMutation"><span class="hs-identifier hs-var hs-var">renderNegativeMutation</span></a></span></span><span> </span><span id="local-6989586621679199081"><span class="annot"><span class="annottext">NegativeMutation
+</span><a href="#local-6989586621679199081"><span class="hs-identifier hs-var">mutation</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-89"></span><span>    </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">NegativeMutation
+</span><a href="#local-6989586621679199081"><span class="hs-identifier hs-var">mutation</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-90"></span><span>        </span><span class="annot"><a href="Haskemathesis.Gen.Negative.Types.html#RemoveRequiredPath"><span class="hs-identifier hs-type">RemoveRequiredPath</span></a></span><span> </span><span id="local-6989586621679199082"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679199082"><span class="hs-identifier hs-var">name</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;remove required path param: &quot;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679199082"><span class="hs-identifier hs-var">name</span></a></span><span>
+</span><span id="line-91"></span><span>        </span><span class="annot"><a href="Haskemathesis.Gen.Negative.Types.html#RemoveRequiredHeader"><span class="hs-identifier hs-type">RemoveRequiredHeader</span></a></span><span> </span><span id="local-6989586621679199083"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679199083"><span class="hs-identifier hs-var">name</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;remove required header: &quot;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679199083"><span class="hs-identifier hs-var">name</span></a></span><span>
+</span><span id="line-92"></span><span>        </span><span class="annot"><a href="Haskemathesis.Gen.Negative.Types.html#RemoveRequiredQuery"><span class="hs-identifier hs-type">RemoveRequiredQuery</span></a></span><span> </span><span id="local-6989586621679199084"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679199084"><span class="hs-identifier hs-var">name</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;remove required query param: &quot;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679199084"><span class="hs-identifier hs-var">name</span></a></span><span>
+</span><span id="line-93"></span><span>        </span><span class="annot"><a href="Haskemathesis.Gen.Negative.Types.html#InvalidPathParam"><span class="hs-identifier hs-type">InvalidPathParam</span></a></span><span> </span><span id="local-6989586621679199085"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679199085"><span class="hs-identifier hs-var">name</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;invalid path param value: &quot;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679199085"><span class="hs-identifier hs-var">name</span></a></span><span>
+</span><span id="line-94"></span><span>        </span><span class="annot"><a href="Haskemathesis.Gen.Negative.Types.html#InvalidHeader"><span class="hs-identifier hs-type">InvalidHeader</span></a></span><span> </span><span id="local-6989586621679199086"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679199086"><span class="hs-identifier hs-var">name</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;invalid header value: &quot;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679199086"><span class="hs-identifier hs-var">name</span></a></span><span>
+</span><span id="line-95"></span><span>        </span><span class="annot"><a href="Haskemathesis.Gen.Negative.Types.html#InvalidQueryParam"><span class="hs-identifier hs-type">InvalidQueryParam</span></a></span><span> </span><span id="local-6989586621679199087"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679199087"><span class="hs-identifier hs-var">name</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;invalid query param value: &quot;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679199087"><span class="hs-identifier hs-var">name</span></a></span><span>
+</span><span id="line-96"></span><span>        </span><span class="annot"><span class="annottext">NegativeMutation
+</span><a href="Haskemathesis.Gen.Negative.Types.html#InvalidRequestBody"><span class="hs-identifier hs-var">InvalidRequestBody</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;invalid request body&quot;</span></span><span>
+</span><span id="line-97"></span><span>        </span><span class="annot"><span class="annottext">NegativeMutation
+</span><a href="Haskemathesis.Gen.Negative.Types.html#InvalidContentType"><span class="hs-identifier hs-var">InvalidContentType</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;invalid content type&quot;</span></span><span>
+</span><span id="line-98"></span></pre></body></html>

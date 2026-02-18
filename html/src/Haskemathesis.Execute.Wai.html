@@ -1,0 +1,150 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="annot"><span class="hs-comment">{- | WAI executor for running requests directly against an Application.
+
+This module provides an executor that runs requests against a WAI
+'Application' directly in memory, without starting a real HTTP server.
+This is useful for fast, deterministic testing of Servant, Yesod, or
+any other WAI-based application.
+
+=== Basic Usage
+
+@
+import Network.Wai (Application)
+import Haskemathesis.Execute.Wai (executeWai)
+
+myApp :: Application
+myApp = ... -- your WAI application
+
+main :: IO ()
+main = do
+    let request = ApiRequest { ... }
+    response &lt;- executeWai myApp request
+    print (resStatusCode response)
+@
+-}</span></span><span>
+</span><span id="line-24"></span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="Haskemathesis.Execute.Wai.html"><span class="hs-identifier">Haskemathesis.Execute.Wai</span></a></span><span> </span><span class="hs-special">(</span><span>
+</span><span id="line-25"></span><span>    </span><span class="annot"><a href="Haskemathesis.Execute.Wai.html#executeWai"><span class="hs-identifier">executeWai</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-26"></span><span class="hs-special">)</span><span>
+</span><span id="line-27"></span><span class="hs-keyword">where</span><span>
+</span><span id="line-28"></span><span>
+</span><span id="line-29"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.ByteString</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">BS</span></span><span>
+</span><span id="line-30"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.ByteString.Builder</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">toLazyByteString</span></span><span class="hs-special">)</span><span>
+</span><span id="line-31"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.ByteString.Lazy</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">LBS</span></span><span>
+</span><span id="line-32"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Text.Encoding</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">encodeUtf8</span></span><span class="hs-special">)</span><span>
+</span><span id="line-33"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Haskemathesis.Execute.Types.html"><span class="hs-identifier">Haskemathesis.Execute.Types</span></a></span><span>
+</span><span id="line-34"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="file:///nix/store/fsi2cvnm3mdngjk22hkkpyl0q5h66sjj-http-types-0.12.4-doc/share/doc/http-types-0.12.4/html/src/Network.HTTP.Types.html"><span class="hs-identifier">Network.HTTP.Types</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="file:///nix/store/fsi2cvnm3mdngjk22hkkpyl0q5h66sjj-http-types-0.12.4-doc/share/doc/http-types-0.12.4/html/src/Network.HTTP.Types.Header.html#hContentType"><span class="hs-identifier">hContentType</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="file:///nix/store/fsi2cvnm3mdngjk22hkkpyl0q5h66sjj-http-types-0.12.4-doc/share/doc/http-types-0.12.4/html/src/Network.HTTP.Types.URI.html#renderQueryText"><span class="hs-identifier">renderQueryText</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="file:///nix/store/fsi2cvnm3mdngjk22hkkpyl0q5h66sjj-http-types-0.12.4-doc/share/doc/http-types-0.12.4/html/src/Network.HTTP.Types.Status.html#statusCode"><span class="hs-identifier">statusCode</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-35"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="file:///nix/store/lwc9snjq2izyxa0840h8rp6r9f5za4cc-wai-3.2.4-doc/share/doc/wai-3.2.4/html/src/Network.Wai.html"><span class="hs-identifier">Network.Wai</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="file:///nix/store/lwc9snjq2izyxa0840h8rp6r9f5za4cc-wai-3.2.4-doc/share/doc/wai-3.2.4/html/src/Network.Wai.html#Application"><span class="hs-identifier">Application</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="file:///nix/store/lwc9snjq2izyxa0840h8rp6r9f5za4cc-wai-3.2.4-doc/share/doc/wai-3.2.4/html/src/Network.Wai.Internal.html#Request"><span class="hs-identifier">Request</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="annot"><a href="file:///nix/store/lwc9snjq2izyxa0840h8rp6r9f5za4cc-wai-3.2.4-doc/share/doc/wai-3.2.4/html/src/Network.Wai.html#defaultRequest"><span class="hs-identifier">defaultRequest</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-36"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="file:///nix/store/yb815y20adlpwj0kcdi98wkr36zwm2xj-wai-extra-3.1.18-doc/share/doc/wai-extra-3.1.18/html/src/Network.Wai.Test.html"><span class="hs-identifier">Network.Wai.Test</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="file:///nix/store/yb815y20adlpwj0kcdi98wkr36zwm2xj-wai-extra-3.1.18-doc/share/doc/wai-extra-3.1.18/html/src/Network.Wai.Test.html#SRequest"><span class="hs-identifier">SRequest</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="annot"><a href="file:///nix/store/yb815y20adlpwj0kcdi98wkr36zwm2xj-wai-extra-3.1.18-doc/share/doc/wai-extra-3.1.18/html/src/Network.Wai.Test.html#SResponse"><span class="hs-identifier">SResponse</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="annot"><a href="file:///nix/store/yb815y20adlpwj0kcdi98wkr36zwm2xj-wai-extra-3.1.18-doc/share/doc/wai-extra-3.1.18/html/src/Network.Wai.Test.html#runSession"><span class="hs-identifier">runSession</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="file:///nix/store/yb815y20adlpwj0kcdi98wkr36zwm2xj-wai-extra-3.1.18-doc/share/doc/wai-extra-3.1.18/html/src/Network.Wai.Test.html#srequest"><span class="hs-identifier">srequest</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-37"></span><span>
+</span><span id="line-38"></span><span class="annot"><span class="hs-comment">{- | Execute a request against a WAI application.
+
+This function converts an 'ApiRequest' to a WAI 'Request', runs it
+through the provided 'Application', and returns the result as an
+'ApiResponse'. This allows testing WAI applications without
+starting a real HTTP server.
+
+=== Parameters
+
+* @app@ - The WAI 'Application' to test
+* @req@ - The 'ApiRequest' to execute
+
+=== Return Value
+
+Returns an 'ApiResponse' containing the status code, headers, body,
+and timing information.
+
+=== Example
+
+@
+import Network.Wai (Application)
+import Haskemathesis.Execute.Wai (executeWai)
+
+myApp :: Application
+myApp = ... -- your WAI application
+
+main :: IO ()
+main = do
+    let request = ApiRequest
+            { reqMethod = &quot;GET&quot;
+            , reqPath = &quot;/api/users&quot;
+            , reqQueryParams = []
+            , reqHeaders = []
+            , reqBody = Nothing
+            }
+    response &lt;- executeWai myApp request
+    putStrLn $ &quot;Status: &quot; ++ show (resStatusCode response)
+@
+-}</span></span><span>
+</span><span id="line-77"></span><span class="annot"><a href="Haskemathesis.Execute.Wai.html#executeWai"><span class="hs-identifier hs-type">executeWai</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="file:///nix/store/lwc9snjq2izyxa0840h8rp6r9f5za4cc-wai-3.2.4-doc/share/doc/wai-3.2.4/html/src/Network.Wai.html#Application"><span class="hs-identifier hs-type">Application</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Haskemathesis.Execute.Types.html#ApiRequest"><span class="hs-identifier hs-type">ApiRequest</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="annot"><a href="Haskemathesis.Execute.Types.html#ApiResponse"><span class="hs-identifier hs-type">ApiResponse</span></a></span><span>
+</span><span id="line-78"></span><span id="executeWai"><span class="annot"><span class="annottext">executeWai :: Application -&gt; ApiRequest -&gt; IO ApiResponse
+</span><a href="Haskemathesis.Execute.Wai.html#executeWai"><span class="hs-identifier hs-var hs-var">executeWai</span></a></span></span><span> </span><span id="local-6989586621679198708"><span class="annot"><span class="annottext">Application
+</span><a href="#local-6989586621679198708"><span class="hs-identifier hs-var">app</span></a></span></span><span> </span><span id="local-6989586621679198709"><span class="annot"><span class="annottext">ApiRequest
+</span><a href="#local-6989586621679198709"><span class="hs-identifier hs-var">req</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-79"></span><span>    </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621679198710"><span class="annot"><span class="annottext">waiReq :: Request
+</span><a href="#local-6989586621679198710"><span class="hs-identifier hs-var hs-var hs-var">waiReq</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">ApiRequest -&gt; Request
+</span><a href="Haskemathesis.Execute.Wai.html#toWaiRequest"><span class="hs-identifier hs-var">toWaiRequest</span></a></span><span> </span><span class="annot"><span class="annottext">ApiRequest
+</span><a href="#local-6989586621679198709"><span class="hs-identifier hs-var">req</span></a></span><span>
+</span><span id="line-80"></span><span>    </span><span id="local-6989586621679198712"><span class="annot"><a href="#local-6989586621679198712"><span class="hs-identifier hs-var">response</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">Session SResponse -&gt; Application -&gt; IO SResponse
+forall a. Session a -&gt; Application -&gt; IO a
+</span><a href="file:///nix/store/yb815y20adlpwj0kcdi98wkr36zwm2xj-wai-extra-3.1.18-doc/share/doc/wai-extra-3.1.18/html/src/Network.Wai.Test.html#runSession"><span class="hs-identifier hs-var">runSession</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SRequest -&gt; Session SResponse
+</span><a href="file:///nix/store/yb815y20adlpwj0kcdi98wkr36zwm2xj-wai-extra-3.1.18-doc/share/doc/wai-extra-3.1.18/html/src/Network.Wai.Test.html#srequest"><span class="hs-identifier hs-var">srequest</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Request -&gt; ByteString -&gt; SRequest
+</span><a href="file:///nix/store/yb815y20adlpwj0kcdi98wkr36zwm2xj-wai-extra-3.1.18-doc/share/doc/wai-extra-3.1.18/html/src/Network.Wai.Test.html#SRequest"><span class="hs-identifier hs-var">SRequest</span></a></span><span> </span><span class="annot"><span class="annottext">Request
+</span><a href="#local-6989586621679198710"><span class="hs-identifier hs-var">waiReq</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">StrictByteString -&gt; ByteString
+</span><span class="hs-identifier hs-var">LBS.fromStrict</span></span><span> </span><span class="annot"><span class="annottext">StrictByteString
+</span><a href="#local-6989586621679198715"><span class="hs-identifier hs-var">body</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Application
+</span><a href="#local-6989586621679198708"><span class="hs-identifier hs-var">app</span></a></span><span>
+</span><span id="line-81"></span><span>    </span><span class="annot"><span class="hs-identifier hs-type">pure</span></span><span>
+</span><span id="line-82"></span><span>        </span><span class="annot"><a href="Haskemathesis.Execute.Types.html#ApiResponse"><span class="hs-identifier hs-type">ApiResponse</span></a></span><span>
+</span><span id="line-83"></span><span>            </span><span class="hs-special">{</span><span> </span><span class="annot"><a href="Haskemathesis.Execute.Types.html#resStatusCode"><span class="hs-identifier hs-var">resStatusCode</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><a href="file:///nix/store/fsi2cvnm3mdngjk22hkkpyl0q5h66sjj-http-types-0.12.4-doc/share/doc/http-types-0.12.4/html/src/Network.HTTP.Types.Status.html#statusCode"><span class="hs-identifier hs-var">statusCode</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="file:///nix/store/yb815y20adlpwj0kcdi98wkr36zwm2xj-wai-extra-3.1.18-doc/share/doc/wai-extra-3.1.18/html/src/Network.Wai.Test.html#simpleStatus"><span class="hs-identifier hs-var">simpleStatus</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679198712"><span class="hs-identifier hs-type">response</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-84"></span><span>            </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Haskemathesis.Execute.Types.html#resHeaders"><span class="hs-identifier hs-var">resHeaders</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><a href="file:///nix/store/yb815y20adlpwj0kcdi98wkr36zwm2xj-wai-extra-3.1.18-doc/share/doc/wai-extra-3.1.18/html/src/Network.Wai.Test.html#simpleHeaders"><span class="hs-identifier hs-var">simpleHeaders</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679198712"><span class="hs-identifier hs-type">response</span></a></span><span>
+</span><span id="line-85"></span><span>            </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Haskemathesis.Execute.Types.html#resBody"><span class="hs-identifier hs-var">resBody</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="hs-identifier hs-type">LBS.toStrict</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="file:///nix/store/yb815y20adlpwj0kcdi98wkr36zwm2xj-wai-extra-3.1.18-doc/share/doc/wai-extra-3.1.18/html/src/Network.Wai.Test.html#simpleBody"><span class="hs-identifier hs-var">simpleBody</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679198712"><span class="hs-identifier hs-type">response</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-86"></span><span>            </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Haskemathesis.Execute.Types.html#resTime"><span class="hs-identifier hs-var">resTime</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="hs-number">0</span></span><span>
+</span><span id="line-87"></span><span>            </span><span class="hs-special">}</span><span>
+</span><span id="line-88"></span><span>  </span><span class="hs-keyword">where</span><span>
+</span><span id="line-89"></span><span>    </span><span id="local-6989586621679198715"><span class="annot"><span class="annottext">body :: StrictByteString
+</span><a href="#local-6989586621679198715"><span class="hs-identifier hs-var hs-var">body</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">StrictByteString
+-&gt; ((MediaType, StrictByteString) -&gt; StrictByteString)
+-&gt; Maybe (MediaType, StrictByteString)
+-&gt; StrictByteString
+forall b a. b -&gt; (a -&gt; b) -&gt; Maybe a -&gt; b
+</span><span class="hs-identifier hs-var">maybe</span></span><span> </span><span class="annot"><span class="annottext">StrictByteString
+</span><span class="hs-identifier hs-var">BS.empty</span></span><span> </span><span class="annot"><span class="annottext">(MediaType, StrictByteString) -&gt; StrictByteString
+forall a b. (a, b) -&gt; b
+</span><span class="hs-identifier hs-var">snd</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">ApiRequest -&gt; Maybe (MediaType, StrictByteString)
+</span><a href="Haskemathesis.Execute.Types.html#reqBody"><span class="hs-identifier hs-var">reqBody</span></a></span><span> </span><span class="annot"><span class="annottext">ApiRequest
+</span><a href="#local-6989586621679198709"><span class="hs-identifier hs-var">req</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-90"></span><span>
+</span><span id="line-91"></span><span class="annot"><a href="Haskemathesis.Execute.Wai.html#toWaiRequest"><span class="hs-identifier hs-type">toWaiRequest</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Haskemathesis.Execute.Types.html#ApiRequest"><span class="hs-identifier hs-type">ApiRequest</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="file:///nix/store/lwc9snjq2izyxa0840h8rp6r9f5za4cc-wai-3.2.4-doc/share/doc/wai-3.2.4/html/src/Network.Wai.Internal.html#Request"><span class="hs-identifier hs-type">Request</span></a></span><span>
+</span><span id="line-92"></span><span id="toWaiRequest"><span class="annot"><span class="annottext">toWaiRequest :: ApiRequest -&gt; Request
+</span><a href="Haskemathesis.Execute.Wai.html#toWaiRequest"><span class="hs-identifier hs-var hs-var">toWaiRequest</span></a></span></span><span> </span><span id="local-6989586621679198728"><span class="annot"><span class="annottext">ApiRequest
+</span><a href="#local-6989586621679198728"><span class="hs-identifier hs-var">req</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-93"></span><span>    </span><span class="annot"><span class="annottext">Request
+</span><a href="file:///nix/store/lwc9snjq2izyxa0840h8rp6r9f5za4cc-wai-3.2.4-doc/share/doc/wai-3.2.4/html/src/Network.Wai.html#defaultRequest"><span class="hs-identifier hs-var">defaultRequest</span></a></span><span>
+</span><span id="line-94"></span><span>        </span><span class="hs-special">{</span><span> </span><span class="annot"><a href="file:///nix/store/lwc9snjq2izyxa0840h8rp6r9f5za4cc-wai-3.2.4-doc/share/doc/wai-3.2.4/html/src/Network.Wai.Internal.html#requestMethod"><span class="hs-identifier hs-var">requestMethod</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><a href="Haskemathesis.Execute.Types.html#reqMethod"><span class="hs-identifier hs-var">reqMethod</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679198728"><span class="hs-identifier hs-type">req</span></a></span><span>
+</span><span id="line-95"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="file:///nix/store/lwc9snjq2izyxa0840h8rp6r9f5za4cc-wai-3.2.4-doc/share/doc/wai-3.2.4/html/src/Network.Wai.Internal.html#rawPathInfo"><span class="hs-identifier hs-var">rawPathInfo</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="hs-identifier hs-type">encodeUtf8</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Haskemathesis.Execute.Types.html#reqPath"><span class="hs-identifier hs-var">reqPath</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679198728"><span class="hs-identifier hs-type">req</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-96"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="file:///nix/store/lwc9snjq2izyxa0840h8rp6r9f5za4cc-wai-3.2.4-doc/share/doc/wai-3.2.4/html/src/Network.Wai.Internal.html#rawQueryString"><span class="hs-identifier hs-var">rawQueryString</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="hs-identifier hs-type">LBS.toStrict</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">toLazyByteString</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="file:///nix/store/fsi2cvnm3mdngjk22hkkpyl0q5h66sjj-http-types-0.12.4-doc/share/doc/http-types-0.12.4/html/src/Network.HTTP.Types.URI.html#renderQueryText"><span class="hs-identifier hs-type">renderQueryText</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">True</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">map</span></span><span> </span><span class="annot"><a href="#local-6989586621679198734"><span class="hs-identifier hs-type">toQuery</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Haskemathesis.Execute.Types.html#reqQueryParams"><span class="hs-identifier hs-var">reqQueryParams</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679198728"><span class="hs-identifier hs-type">req</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-97"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="file:///nix/store/lwc9snjq2izyxa0840h8rp6r9f5za4cc-wai-3.2.4-doc/share/doc/wai-3.2.4/html/src/Network.Wai.Internal.html#requestHeaders"><span class="hs-identifier hs-var">requestHeaders</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><a href="#local-6989586621679198737"><span class="hs-identifier hs-type">contentTypeHeader</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">++</span></span><span> </span><span class="annot"><a href="Haskemathesis.Execute.Types.html#reqHeaders"><span class="hs-identifier hs-var">reqHeaders</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679198728"><span class="hs-identifier hs-type">req</span></a></span><span>
+</span><span id="line-98"></span><span>        </span><span class="hs-special">}</span><span>
+</span><span id="line-99"></span><span>  </span><span class="hs-keyword">where</span><span>
+</span><span id="line-100"></span><span>    </span><span id="local-6989586621679198734"><span class="annot"><span class="annottext">toQuery :: (a, a) -&gt; (a, Maybe a)
+</span><a href="#local-6989586621679198734"><span class="hs-identifier hs-var hs-var">toQuery</span></a></span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621679198739"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679198739"><span class="hs-identifier hs-var">k</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679198740"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679198740"><span class="hs-identifier hs-var">v</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679198739"><span class="hs-identifier hs-var">k</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">a -&gt; Maybe a
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679198740"><span class="hs-identifier hs-var">v</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-101"></span><span>    </span><span id="local-6989586621679198737"><span class="annot"><span class="annottext">contentTypeHeader :: [(HeaderName, StrictByteString)]
+</span><a href="#local-6989586621679198737"><span class="hs-identifier hs-var hs-var">contentTypeHeader</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-102"></span><span>        </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">ApiRequest -&gt; Maybe (MediaType, StrictByteString)
+</span><a href="Haskemathesis.Execute.Types.html#reqBody"><span class="hs-identifier hs-var">reqBody</span></a></span><span> </span><span class="annot"><span class="annottext">ApiRequest
+</span><a href="#local-6989586621679198728"><span class="hs-identifier hs-var">req</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-103"></span><span>            </span><span class="annot"><span class="annottext">Maybe (MediaType, StrictByteString)
+</span><span class="hs-identifier hs-var">Nothing</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>
+</span><span id="line-104"></span><span>            </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621679198741"><span class="annot"><span class="annottext">MediaType
+</span><a href="#local-6989586621679198741"><span class="hs-identifier hs-var">mediaType</span></a></span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">StrictByteString
+</span><span class="hs-identifier">_</span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-105"></span><span>                </span><span class="hs-special">[</span><span class="hs-special">(</span><span class="annot"><span class="annottext">HeaderName
+</span><a href="file:///nix/store/fsi2cvnm3mdngjk22hkkpyl0q5h66sjj-http-types-0.12.4-doc/share/doc/http-types-0.12.4/html/src/Network.HTTP.Types.Header.html#hContentType"><span class="hs-identifier hs-var">hContentType</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">MediaType -&gt; StrictByteString
+</span><span class="hs-identifier hs-var">encodeUtf8</span></span><span> </span><span class="annot"><span class="annottext">MediaType
+</span><a href="#local-6989586621679198741"><span class="hs-identifier hs-var">mediaType</span></a></span><span class="hs-special">)</span><span class="hs-special">]</span><span>
+</span><span id="line-106"></span></pre></body></html>
