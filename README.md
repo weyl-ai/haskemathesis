@@ -99,7 +99,7 @@ The repo includes runnable examples:
 - `examples/TastyExample.hs`
 - `examples/HspecNegativeExample.hs`
 - `examples/openapi.yaml`
-- `examples/medium-spec.yaml`
+- `examples/openapi-medium-spec.yaml`
 
 Run them with cabal:
 

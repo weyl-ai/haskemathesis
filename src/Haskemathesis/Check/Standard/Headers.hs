@@ -1,5 +1,14 @@
 {-# LANGUAGE OverloadedStrings #-}
 
+{- |
+Module      : Haskemathesis.Check.Standard.Headers
+Description : Response header conformance validation
+Stability   : experimental
+
+This module provides checks for validating API response headers against
+the OpenAPI specification. It verifies that required headers are present
+and that header values conform to their documented schemas.
+-}
 module Haskemathesis.Check.Standard.Headers (responseHeadersConformance) where
 
 import Data.Aeson (Value (..))
@@ -16,16 +25,47 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeUtf8, encodeUtf8)
 import qualified Data.Vector as Vector
-import Network.HTTP.Types (HeaderName)
-import Text.Read (readMaybe)
-
 import Haskemathesis.Check.Standard.Helpers (failureDetail, responseSchemasForStatus)
 import Haskemathesis.Check.Types (Check (..), CheckResult (..))
 import Haskemathesis.Execute.Types (ApiResponse (..))
 import Haskemathesis.OpenApi.Types (ResponseSpec (..))
 import Haskemathesis.Schema (Schema (..), SchemaType (..), emptySchema)
 import Haskemathesis.Validate (validateErrors)
+import Network.HTTP.Types (HeaderName)
+import Text.Read (readMaybe)
 
+{- | Check that response headers conform to the OpenAPI specification.
+
+This check validates response headers in two ways:
+
+1. __Required headers__: Verifies that all headers marked as required
+  in the spec are present in the response
+2. __Schema validation__: Validates header values against their
+  documented JSON schemas
+
+==== Behavior
+
+* __Passes__ when no response schema is defined for the status code
+* __Passes__ when all required headers are present and valid
+* __Fails__ when a required header is missing
+* __Fails__ when a header value violates its schema
+
+==== Header value parsing
+
+Header values are parsed according to their schema type:
+
+* @string@ - Used as-is (with quotes stripped if present)
+* @integer@ / @number@ - Parsed as numeric values
+* @boolean@ - Parsed from "true" or "false" (case-insensitive)
+* @array@ - Parsed from comma-separated values or multiple headers
+
+==== Example
+
+@
+-- Include header validation in your checks
+checks = ['responseHeadersConformance', 'contentTypeConformance']
+@
+-}
 responseHeadersConformance :: Check
 responseHeadersConformance =
     Check "response_headers_conformance" $ \req res op ->

@@ -7,8 +7,11 @@
     {
       haskellProjects.default = {
         settings = {
-          haskemathesis.stan = true;
-          librarySystemDepends = [ pkgs.zlib ];
+          haskemathesis = {
+            stan = true;
+            haddock = true;
+            librarySystemDepends = [ pkgs.zlib ];
+          };
         };
         devShell = {
           tools = hp: {
@@ -20,7 +23,13 @@
         };
       };
 
-      packages.default = self'.packages.haskemathesis;
-      checks.default = self'.packages.haskemathesis;
+      packages = {
+        default = self'.packages.haskemathesis;
+        docs = self'.packages.haskemathesis.doc;
+      };
+      checks = {
+        default = self'.packages.haskemathesis;
+        docs = self'.packages.haskemathesis.doc;
+      };
     };
 }

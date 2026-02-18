@@ -1,13 +1,41 @@
--- | Convert OpenAPI schemas into the internal schema representation.
+{- | Convert OpenAPI schemas into the internal schema representation.
+
+This module provides functions for converting OpenAPI 'Schema' types
+from the @openapi3@ library into the internal 'Schema' representation
+used by Haskemathesis. This conversion handles all JSON Schema
+constraints and features supported by the internal representation.
+
+=== Conversion Details
+
+The conversion process handles:
+
+* Type conversion (string, integer, number, boolean, array, object, null)
+* String constraints (min/max length, pattern)
+* Numeric constraints (minimum, maximum, exclusive bounds)
+* Array constraints (min/max items, unique items, item schema)
+* Object constraints (required properties, property schemas, additional properties)
+* Schema combinators (allOf, anyOf, oneOf)
+* Nullable types
+
+=== Basic Usage
+
+@
+import Haskemathesis.OpenApi.Convert (convertSchema)
+import Data.OpenApi (Schema(..))
+
+-- Convert an OpenAPI schema
+let openApiSchema = ... -- from your spec
+    internalSchema = convertSchema resolveRef openApiSchema
+@
+-}
 module Haskemathesis.OpenApi.Convert (
     convertSchema,
-) where
+)
+where
 
 import qualified Data.HashMap.Strict.InsOrd as InsOrdHashMap
 import qualified Data.Map.Strict as Map
 import Data.Maybe (fromMaybe, listToMaybe)
-import Data.Scientific (Scientific, toRealFloat)
-
 import Data.OpenApi (
     AdditionalProperties (..),
     OpenApiItems (..),
@@ -16,9 +44,36 @@ import Data.OpenApi (
     Referenced (..),
     Schema (..),
  )
-
+import Data.Scientific (Scientific, toRealFloat)
 import qualified Haskemathesis.Schema as HS
 
+{- | Convert an OpenAPI schema to the internal schema representation.
+
+This function converts a 'Schema' from the @openapi3@ library into
+the internal 'Schema' type used by Haskemathesis. It handles all
+supported JSON Schema constraints and features.
+
+=== Parameters
+
+* @resolveRef@ - A function to resolve schema references
+* @schema@ - The OpenAPI 'Schema' to convert
+
+=== Return Value
+
+Returns the converted 'Schema' in the internal representation.
+
+=== Example
+
+@
+import Haskemathesis.OpenApi.Convert (convertSchema)
+import Data.OpenApi (Schema(..))
+
+-- Convert a simple string schema
+let openApiSchema = mempty { _schemaType = Just OpenApiString }
+    internalSchema = convertSchema (const Nothing) openApiSchema
+-- internalSchema will have schemaType = Just SString
+@
+-}
 convertSchema :: (Reference -> Maybe Schema) -> Schema -> HS.Schema
 convertSchema resolveRef schema =
     HS.emptySchema

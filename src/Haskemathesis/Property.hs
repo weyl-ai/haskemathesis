@@ -1,23 +1,60 @@
 {-# LANGUAGE OverloadedStrings #-}
 
--- | High-level property generation for resolved operations and specs.
+{- | High-level property generation for resolved operations and specs.
+
+This module provides the main entry points for generating Hedgehog properties
+from OpenAPI specifications. Properties can be generated for individual
+operations or entire specs, with various configuration options.
+
+=== Basic Usage
+
+Generate properties for all operations in a spec:
+
+@
+import Haskemathesis.OpenApi.Loader (loadOpenApiFile)
+import Haskemathesis.OpenApi.Resolve (resolveOperations)
+import Haskemathesis.Property (propertiesForSpec)
+import Haskemathesis.Check.Standard (defaultChecks)
+
+main :: IO ()
+main = do
+    Right spec <- loadOpenApiFile "api.yaml"
+    let ops = resolveOperations spec
+        props = propertiesForSpec Nothing defaultChecks myExecutor ops
+    -- Run properties with your favorite test framework
+@
+
+=== Configuration
+
+For more control, use 'propertiesForSpecWithConfig':
+
+@
+import Haskemathesis.Config
+
+myConfig :: TestConfig
+myConfig = defaultTestConfig
+    { tcPropertyCount = 200
+    , tcNegativeTesting = True
+    , tcOperationFilter = filterByTag "public"
+    }
+@
+-}
 module Haskemathesis.Property (
+    -- * Single Operation Properties
     propertyForOperation,
     propertyForOperationWithConfig,
     propertyForOperationNegative,
+
+    -- * Spec-Level Properties
     propertiesForSpec,
     propertiesForSpecWithConfig,
     propertiesForSpecNegative,
-) where
-
-import Data.Text (Text)
-import qualified Data.Text as T
-import Hedgehog (Property, annotate, evalIO, failure, forAll, property, success, withTests)
-import Hedgehog.Internal.Property (PropertyT)
-import System.Environment (lookupEnv)
+)
+where
 
 import Data.OpenApi (OpenApi)
-
+import Data.Text (Text)
+import qualified Data.Text as T
 import Haskemathesis.Auth.Config (applyAuthForOperation)
 import Haskemathesis.Check.Negative (negativeTestRejection)
 import Haskemathesis.Check.Types (Check (..), CheckResult (..))
@@ -27,7 +64,29 @@ import Haskemathesis.Gen.Negative (genNegativeRequest, renderNegativeMutation)
 import Haskemathesis.Gen.Request (genApiRequest)
 import Haskemathesis.OpenApi.Types (ResolvedOperation (..))
 import Haskemathesis.Report.Render (renderFailureDetailAnsi)
+import Hedgehog (Property, annotate, evalIO, failure, forAll, property, success, withTests)
+import Hedgehog.Internal.Property (PropertyT)
+import System.Environment (lookupEnv)
 
+{- | Generate a Hedgehog property for a single operation using basic configuration.
+
+This is the simplest way to create a property for an operation. The property
+will generate random requests based on the OpenAPI schema and execute them
+against your API, then run the provided checks on the response.
+
+=== Parameters
+
+* @mBase@ - Optional base URL for rendering failure reports (can be 'Nothing')
+* @checks@ - List of 'Check' functions to validate responses
+* @execute@ - Function to execute an 'ApiRequest' and return an 'ApiResponse'
+* @op@ - The 'ResolvedOperation' to generate tests for
+
+=== Example
+
+@
+let prop = propertyForOperation (Just "http://localhost:8080") checks httpExecutor myOperation
+@
+-}
 propertyForOperation ::
     Maybe BaseUrl ->
     [Check] ->
@@ -40,6 +99,29 @@ propertyForOperation mBase checks execute op =
         res <- evalIO (execute req)
         runChecks mBase checks req res op
 
+{- | Generate a property with full configuration support including authentication.
+
+This function provides more control than 'propertyForOperation' by accepting
+a 'TestConfig' record. It supports:
+
+* Authentication via 'tcAuthConfig'
+* Custom property counts via 'tcPropertyCount'
+* Operation filtering via 'tcOperationFilter'
+
+=== Parameters
+
+* @openApi@ - The full OpenAPI specification (needed for auth resolution)
+* @config@ - The 'TestConfig' controlling test generation
+* @execute@ - Function to execute requests
+* @op@ - The operation to test
+
+=== Example
+
+@
+config = defaultTestConfig { tcPropertyCount = 200 }
+prop = propertyForOperationWithConfig spec config httpExecutor myOperation
+@
+-}
 propertyForOperationWithConfig ::
     OpenApi ->
     TestConfig ->
@@ -57,6 +139,33 @@ propertyForOperationWithConfig openApi config execute op =
             res <- evalIO (execute req')
             runChecks (tcBaseUrl config) (tcChecks config) req' res op
 
+{- | Generate a negative testing property for an operation.
+
+Negative testing generates /invalid/ requests to verify that the API
+properly rejects malformed input. This property generates mutations
+that violate the OpenAPI schema (e.g., missing required fields,
+wrong content types, invalid values) and verifies the API rejects them.
+
+=== When to Use
+
+Use this when you want to verify your API's error handling and
+input validation. The API should return 4xx status codes for
+these invalid requests.
+
+=== Parameters
+
+* @openApi@ - The full OpenAPI specification
+* @config@ - The 'TestConfig' (negative testing is enabled separately)
+* @execute@ - Function to execute requests
+* @op@ - The operation to test
+
+=== Example
+
+@
+config = defaultTestConfig { tcPropertyCount = 50 }
+negProp = propertyForOperationNegative spec config httpExecutor myOperation
+@
+-}
 propertyForOperationNegative ::
     OpenApi ->
     TestConfig ->
@@ -83,6 +192,36 @@ propertyForOperationNegative openApi config execute op =
                             annotate (T.unpack (renderFailureDetailAnsi (tcBaseUrl config) seedText detail))
                             failure
 
+{- | Generate properties for all operations in a spec using basic configuration.
+
+This is the simplest way to generate a complete test suite from an
+OpenAPI specification. It creates a list of named properties, one
+for each resolved operation.
+
+=== Return Value
+
+Returns a list of tuples where:
+* First element: A descriptive label (operation ID or method+path)
+* Second element: The Hedgehog 'Property' for testing that operation
+
+=== Parameters
+
+* @mBase@ - Optional base URL for rendering failure reports
+* @checks@ - List of 'Check' functions to validate responses
+* @execute@ - Function to execute requests
+* @ops@ - List of resolved operations (from 'resolveOperations')
+
+=== Example
+
+@
+main :: IO ()
+main = do
+    Right spec <- loadOpenApiFile "api.yaml"
+    let ops = resolveOperations spec
+        props = propertiesForSpec Nothing defaultChecks httpExecutor ops
+    -- Run with your test framework
+@
+-}
 propertiesForSpec ::
     Maybe BaseUrl ->
     [Check] ->
@@ -94,6 +233,42 @@ propertiesForSpec mBase checks execute ops =
     | op <- ops
     ]
 
+{- | Generate properties with full configuration support.
+
+This function provides the most flexibility for generating properties.
+It supports authentication, operation filtering, custom check sets,
+and can generate both positive and negative test cases.
+
+=== Negative Testing
+
+When 'tcNegativeTesting' is 'True', this function generates both
+normal properties and negative testing properties (prefixed with
+"NEGATIVE:"). Negative tests verify that the API properly rejects
+invalid requests.
+
+=== Operation Filtering
+
+Only operations that satisfy 'tcOperationFilter' will have properties
+generated. This is useful for testing subsets of your API.
+
+=== Parameters
+
+* @openApi@ - The full OpenAPI specification (needed for auth resolution)
+* @config@ - The 'TestConfig' controlling all aspects of generation
+* @execute@ - Function to execute requests
+* @ops@ - List of resolved operations
+
+=== Example
+
+@
+config = defaultTestConfig
+    { tcPropertyCount = 200
+    , tcNegativeTesting = True
+    , tcOperationFilter = filterByTag "public"
+    }
+props = propertiesForSpecWithConfig spec config httpExecutor ops
+@
+-}
 propertiesForSpecWithConfig ::
     OpenApi ->
     TestConfig ->
@@ -117,6 +292,32 @@ propertiesForSpecWithConfig openApi config execute ops =
         , tcOperationFilter config op
         ]
 
+{- | Generate only negative testing properties.
+
+This is a convenience function that generates only negative test properties
+for all operations. Negative tests verify that the API properly rejects
+invalid requests (mutations that violate the OpenAPI schema).
+
+=== Use Cases
+
+* Testing input validation and error handling
+* Verifying security controls reject malformed requests
+* Dedicated negative testing suites
+
+=== Parameters
+
+* @openApi@ - The full OpenAPI specification
+* @config@ - The 'TestConfig' (negative testing flag is ignored, always enabled)
+* @execute@ - Function to execute requests
+* @ops@ - List of resolved operations
+
+=== Example
+
+@
+-- Dedicated negative testing suite
+negativeProps = propertiesForSpecNegative spec defaultConfig httpExecutor ops
+@
+-}
 propertiesForSpecNegative ::
     OpenApi ->
     TestConfig ->
@@ -126,6 +327,7 @@ propertiesForSpecNegative ::
 propertiesForSpecNegative openApi config =
     propertiesForSpecWithConfig openApi (config{tcNegativeTesting = True})
 
+-- | Internal helper to run all checks and report first failure.
 runChecks ::
     Maybe BaseUrl ->
     [Check] ->
@@ -147,6 +349,7 @@ runChecks mBase checks req res op =
             [] -> Nothing
             (detail : _) -> Just detail
 
+-- | Internal helper to create a human-readable label for an operation.
 operationLabel :: ResolvedOperation -> Text
 operationLabel op =
     case roOperationId op of

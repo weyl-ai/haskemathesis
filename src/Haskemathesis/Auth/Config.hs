@@ -1,24 +1,49 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE StrictData #-}
 
--- | Authentication configuration and request mutation helpers.
+{- | Authentication configuration and request mutation helpers.
+
+This module provides types and functions for configuring authentication
+in Haskemathesis tests. It supports various authentication schemes
+including HTTP Basic, Bearer tokens, and API keys.
+
+=== Supported Authentication Types
+
+* 'AuthBasic' - HTTP Basic authentication (username/password)
+* 'AuthBearer' - Bearer token authentication (OAuth2, JWT, etc.)
+* 'AuthApiKey' - API key authentication (header, query, or cookie)
+
+=== Basic Usage
+
+@
+import Haskemathesis.Auth.Config (AuthConfig(..), AuthValue(..), applyAuthForOperation)
+import Haskemathesis.Config (defaultTestConfig)
+
+-- Create auth configuration
+authConfig :: AuthConfig
+authConfig = AuthConfig $ Map.fromList
+    [ ("bearerAuth", AuthBearer "my-token-123")
+    , ("basicAuth", AuthBasic "username" "password")
+    ]
+
+-- Use in test configuration
+config = defaultTestConfig { tcAuthConfig = Just authConfig }
+@
+-}
 module Haskemathesis.Auth.Config (
     AuthConfig (..),
     AuthValue (..),
     applyAuthForOperation,
-) where
+)
+where
 
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Base64 as Base64
 import qualified Data.ByteString.Char8 as BS8
 import qualified Data.CaseInsensitive as CI
+import qualified Data.HashMap.Strict.InsOrd as InsOrdHashMap
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
-import Data.Text (Text)
-import Data.Text.Encoding (encodeUtf8)
-import Network.HTTP.Types (HeaderName)
-
-import qualified Data.HashMap.Strict.InsOrd as InsOrdHashMap
 import Data.OpenApi (
     ApiKeyLocation (..),
     ApiKeyParams (..),
@@ -30,23 +55,102 @@ import Data.OpenApi (
     SecurityScheme (..),
     SecuritySchemeType (..),
  )
-
+import Data.Text (Text)
+import Data.Text.Encoding (encodeUtf8)
 import Haskemathesis.Execute.Types (ApiRequest (..))
 import Haskemathesis.OpenApi.Types (ResolvedOperation (..))
+import Network.HTTP.Types (HeaderName)
 
--- | User-provided auth values keyed by security scheme name.
+{- | User-provided auth values keyed by security scheme name.
+
+The 'AuthConfig' type wraps a map from security scheme names (as defined
+in the OpenAPI spec) to their corresponding 'AuthValue's. The scheme
+names must match those defined in the OpenAPI specification's
+@securitySchemes@ section.
+
+=== Example
+
+@
+authConfig :: AuthConfig
+authConfig = AuthConfig $ Map.fromList
+    [ ("bearerAuth", AuthBearer "my-token")
+    , ("basicAuth", AuthBasic "user" "pass")
+    , ("apiKey", AuthApiKey "secret-key")
+    ]
+@
+-}
 newtype AuthConfig = AuthConfig
     { authValues :: Map Text AuthValue
     }
     deriving (Eq, Show)
 
--- | Auth values supplied by users.
+{- | Authentication values supplied by users.
+
+This type represents the different kinds of authentication credentials
+that can be provided. The constructor used must match the security
+scheme type defined in the OpenAPI specification.
+
+=== Constructors
+
+* 'AuthBearer' - Bearer token (for HTTP Bearer auth)
+* 'AuthBasic' - Username and password (for HTTP Basic auth)
+* 'AuthApiKey' - API key string (for API key auth)
+
+=== Example
+
+@
+-- Bearer token (OAuth2, JWT, etc.)
+bearerAuth :: AuthValue
+bearerAuth = AuthBearer "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+
+-- Basic authentication
+basicAuth :: AuthValue
+basicAuth = AuthBasic "username" "password"
+
+-- API key
+apiKeyAuth :: AuthValue
+apiKeyAuth = AuthApiKey "my-secret-api-key"
+@
+-}
 data AuthValue
     = AuthBearer !Text
     | AuthBasic !Text !Text
     | AuthApiKey !Text
     deriving (Eq, Show)
 
+{- | Apply authentication to a request for a specific operation.
+
+This function examines the security requirements of the given operation
+and applies the appropriate authentication credentials from the
+'AuthConfig'. It supports multiple authentication schemes and will
+use the first one that matches both the operation's requirements and
+the available credentials.
+
+=== Parameters
+
+* @openApi@ - The OpenAPI specification (contains security scheme definitions)
+* @config@ - The 'AuthConfig' containing user credentials
+* @op@ - The 'ResolvedOperation' being tested
+* @req@ - The 'ApiRequest' to add authentication to
+
+=== Return Value
+
+Returns the request with authentication headers/query parameters added.
+If no authentication is required or available, the request is returned
+unchanged.
+
+=== Example
+
+@
+import Haskemathesis.Auth.Config (AuthConfig(..), AuthValue(..), applyAuthForOperation)
+import Data.OpenApi (OpenApi)
+
+addAuth :: OpenApi -> ApiRequest -> ResolvedOperation -> ApiRequest
+addAuth spec req op =
+    let authConfig = AuthConfig $ Map.fromList [("bearerAuth", AuthBearer "my-token")]
+    in applyAuthForOperation spec authConfig op req
+@
+-}
 applyAuthForOperation :: OpenApi -> AuthConfig -> ResolvedOperation -> ApiRequest -> ApiRequest
 applyAuthForOperation openApi config op req =
     case selectAuthForOperation openApi config op of

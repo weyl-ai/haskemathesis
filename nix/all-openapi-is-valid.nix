@@ -3,7 +3,7 @@
   perSystem =
     { pkgs, ... }:
     let
-      isYaml = x: lib.hasSuffix "yaml" x || lib.hasSuffix "yml" x;
+      isYaml = x: lib.hasPrefix "openapi" x && (lib.hasSuffix "yaml" x || lib.hasSuffix "yml" x);
 
       toPkg =
         openapiSpec:

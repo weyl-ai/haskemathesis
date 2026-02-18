@@ -1,9 +1,19 @@
 {-# LANGUAGE OverloadedStrings #-}
 
+{- |
+Module      : Haskemathesis.Gen.Negative.Mutations
+Description : Request mutation operations for negative testing
+Stability   : experimental
+
+This module provides functions for mutating valid API requests into
+invalid ones for negative testing. It generates various types of
+malformed requests to verify that the API correctly rejects invalid input.
+-}
 module Haskemathesis.Gen.Negative.Mutations (
     mutationCandidates,
     applyNegativeMutation,
-) where
+)
+where
 
 import Data.Aeson (Value (..), encode)
 import qualified Data.ByteString as BS
@@ -15,12 +25,40 @@ import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
-
 import Haskemathesis.Execute.Types (ApiRequest (..), MediaType)
 import Haskemathesis.Gen.Negative.Types (NegativeMutation (..))
 import Haskemathesis.OpenApi.Types (ParamLocation (..), ResolvedOperation (..), ResolvedParam (..), ResolvedRequestBody (..))
 import Haskemathesis.Schema (Schema (..), SchemaType (..))
 
+{- | Apply a specific negative mutation to an API request.
+
+Given a valid request and a mutation type, this function produces an
+intentionally invalid request that can be used to test error handling.
+
+==== Parameters
+
+* @op@ - The resolved operation (needed for schema and path information)
+* @req@ - The original valid request to mutate
+* @mutation@ - The type of mutation to apply
+
+==== Mutation types
+
+* 'RemoveRequiredPath' - Removes a required path parameter
+* 'RemoveRequiredHeader' - Removes a required header
+* 'RemoveRequiredQuery' - Removes a required query parameter
+* 'InvalidPathParam' - Sets a path parameter to an invalid value
+* 'InvalidHeader' - Sets a header to an invalid value
+* 'InvalidQueryParam' - Sets a query parameter to an invalid value
+* 'InvalidRequestBody' - Replaces the body with an invalid value
+* 'InvalidContentType' - Changes the Content-Type to an undocumented type
+
+==== Example
+
+@
+let invalidReq = applyNegativeMutation op validReq (RemoveRequiredHeader "Authorization")
+-- invalidReq now has no Authorization header
+@
+-}
 applyNegativeMutation :: ResolvedOperation -> ApiRequest -> NegativeMutation -> ApiRequest
 applyNegativeMutation op req mutation =
     case mutation of

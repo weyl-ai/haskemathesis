@@ -1,7 +1,17 @@
--- | Resolve OpenAPI specs into a normalized operation list.
+{- |
+Module      : Haskemathesis.OpenApi.Resolve
+Description : OpenAPI specification resolution
+Stability   : experimental
+
+This module provides functionality to resolve an OpenAPI specification
+into a list of normalized operations that can be used for testing.
+It handles reference resolution, parameter extraction, and response
+schema mapping.
+-}
 module Haskemathesis.OpenApi.Resolve (
     resolveOperations,
-) where
+)
+where
 
 import Data.Aeson ()
 import qualified Data.HashMap.Strict.InsOrd as InsOrdHashMap
@@ -9,11 +19,6 @@ import qualified Data.HashSet.InsOrd as InsOrdHashSet
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 import Data.Maybe (catMaybes, fromMaybe, mapMaybe)
-import Data.Text (Text)
-import qualified Data.Text as T
-import Data.Text.Encoding (decodeUtf8)
-import Network.HTTP.Media (MediaType, renderHeader)
-
 import Data.OpenApi (
     Components (..),
     Header (..),
@@ -31,11 +36,47 @@ import Data.OpenApi (
     Schema,
     SecurityRequirement,
  )
-
+import Data.Text (Text)
+import qualified Data.Text as T
+import Data.Text.Encoding (decodeUtf8)
 import Haskemathesis.OpenApi.Convert (convertSchema)
 import qualified Haskemathesis.OpenApi.Types as HOT
 import qualified Haskemathesis.Schema as HS
+import Network.HTTP.Media (MediaType, renderHeader)
 
+{- | Resolve an OpenAPI specification into a list of testable operations.
+
+This function extracts all operations (GET, POST, PUT, DELETE, etc.) from
+an OpenAPI specification and resolves all @$ref@ references to produce
+a flat list of 'ResolvedOperation' values ready for testing.
+
+==== Resolution process
+
+1. Iterates through all paths in the specification
+2. Extracts operations for each HTTP method defined on each path
+3. Resolves @$ref@ references in parameters, request bodies, and responses
+4. Converts openapi3 schemas to internal 'Schema' representation
+5. Applies path-level parameters to all operations
+
+==== Security handling
+
+Operations inherit security requirements from the global level unless
+they define their own security requirements.
+
+==== Example
+
+@
+import Data.OpenApi (OpenApi)
+import Haskemathesis.OpenApi.Resolve
+
+-- Load and resolve operations
+operations :: [ResolvedOperation]
+operations = resolveOperations myOpenApiSpec
+
+-- Filter to specific operations
+userOps = filter (\\op -> "users" \`elem\` roTags op) operations
+@
+-}
 resolveOperations :: OpenApi -> [HOT.ResolvedOperation]
 resolveOperations openApi =
     concatMap (uncurry (resolvePathItem components globalSecurity)) (InsOrdHashMap.toList pathMap)

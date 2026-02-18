@@ -4,6 +4,7 @@ version:       0.1.0.0
 license:
 author:        Luke
 maintainer:    luke@weyl.ai
+description:   OpenAPI 3.0 Property-Based Testing
 build-type:    Simple
 
 common warnings
@@ -12,6 +13,7 @@ common warnings
 library
   import:           warnings
   exposed-modules:
+    Haskemathesis
     Haskemathesis.Auth.Config
     Haskemathesis.Check.Negative
     Haskemathesis.Check.Standard

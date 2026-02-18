@@ -13,7 +13,7 @@ import System.IO (hPutStrLn, stderr)
 
 main :: IO ()
 main = do
-    specResult <- loadOpenApiFile "examples/medium-spec.yaml"
+    specResult <- loadOpenApiFile "examples/openapi-medium-spec.yaml"
     spec <- case specResult of
         Left err -> error (show err)
         Right s -> pure s

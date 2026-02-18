@@ -1,9 +1,28 @@
 {-# LANGUAGE OverloadedStrings #-}
 
--- | Render API requests as reproducible curl commands.
+{- | Render API requests as reproducible curl commands.
+
+This module provides functionality to convert 'ApiRequest' values into
+equivalent curl command strings. This is useful for debugging failed
+tests by providing developers with a command they can run manually to
+reproduce the exact request.
+
+=== Basic Usage
+
+@
+import Haskemathesis.Report.Curl (toCurl)
+import Haskemathesis.Execute.Types (ApiRequest(..))
+
+let request = ApiRequest { ... }
+    curlCommand = toCurl (Just "http://localhost:8080") request
+putStrLn (T.unpack curlCommand)
+-- Output: curl -X GET 'http://localhost:8080/api/users'
+@
+-}
 module Haskemathesis.Report.Curl (
     toCurl,
-) where
+)
+where
 
 import Data.ByteString (ByteString)
 import qualified Data.CaseInsensitive as CI
@@ -11,10 +30,38 @@ import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeUtf8, encodeUtf8)
+import Haskemathesis.Execute.Types (ApiRequest (..), BaseUrl)
 import Network.HTTP.Types (hContentType, renderSimpleQuery)
 
-import Haskemathesis.Execute.Types (ApiRequest (..), BaseUrl)
+{- | Convert an API request to a curl command string.
 
+This function renders an 'ApiRequest' as a curl command that can be
+executed to reproduce the request. The command includes the HTTP method,
+headers, request body, and full URL.
+
+=== Parameters
+
+* @mBase@ - Optional base URL (if not provided, the path alone is used)
+* @req@ - The 'ApiRequest' to convert
+
+=== Return Value
+
+Returns a 'Text' containing the curl command.
+
+=== Example
+
+@
+let request = ApiRequest
+        { reqMethod = "POST"
+        , reqPath = "/api/users"
+        , reqQueryParams = [("page", "1")]
+        , reqHeaders = [("Authorization", "Bearer token123")]
+        , reqBody = Just ("application/json", "{\\"name\\":\\"John\\"}")
+        }
+    curlCmd = toCurl (Just "http://localhost:8080") request
+-- Result: curl -X POST -H 'Authorization: Bearer token123' -d '{"name":"John"}' 'http://localhost:8080/api/users?page=1'
+@
+-}
 toCurl :: Maybe BaseUrl -> ApiRequest -> Text
 toCurl mBase req =
     T.intercalate " " (filter (not . T.null) parts)

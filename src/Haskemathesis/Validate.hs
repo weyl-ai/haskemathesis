@@ -1,10 +1,59 @@
 {-# LANGUAGE OverloadedStrings #-}
 
--- | Validation utilities for JSON values against schemas.
+{- | Validation utilities for JSON values against schemas.
+
+This module provides functions for validating JSON 'Value's against
+'Schema' definitions. It's used internally by generators to ensure
+generated values conform to schemas, and by checks to validate
+API responses.
+
+=== Basic Validation
+
+Check if a value satisfies a schema:
+
+@
+import Haskemathesis.Validate (validateValue)
+import Haskemathesis.Schema (emptySchema, schemaType, SString)
+import Data.Aeson (String)
+
+schema :: Schema
+schema = emptySchema { schemaType = Just SString }
+
+-- Returns True
+isValid = validateValue schema (String "hello")
+@
+
+=== Getting Detailed Errors
+
+For debugging or reporting, get specific validation errors:
+
+@
+import Haskemathesis.Validate (validateErrors)
+
+errors = validateErrors schema value
+-- Returns a list of error messages like:
+-- ["string shorter than minLength", "number below minimum"]
+@
+
+=== Supported Validations
+
+The validator supports all common JSON Schema constraints:
+
+* Type validation ('SString', 'SInteger', 'SNumber', 'SBoolean', 'SArray', 'SObject', 'SNull')
+* Enum and const constraints
+* String: min/max length, pattern matching
+* Numbers: minimum, maximum, exclusive bounds
+* Arrays: min/max items, unique items, item schema validation
+* Objects: required properties, property schemas, additional properties
+* Combinators: allOf, anyOf, oneOf
+* Nullable types
+-}
 module Haskemathesis.Validate (
+    -- * Validation Functions
     validateValue,
     validateErrors,
-) where
+)
+where
 
 import Data.Aeson (Value (..))
 import Data.Aeson.Key (Key, fromText, toText)
@@ -18,13 +67,46 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import qualified Data.Vector as Vector
+import Haskemathesis.Schema
 import Text.Regex.TDFA ((=~))
 
-import Haskemathesis.Schema
+{- | Validate a JSON value against a schema.
 
+Returns 'True' if the value conforms to the schema, 'False' otherwise.
+This is a convenience function equivalent to checking if 'validateErrors'
+returns an empty list.
+
+=== Example
+
+@
+schema :: Schema
+schema = emptySchema { schemaType = Just SString }
+
+isValid = validateValue schema (String "hello")  -- True
+isInvalid = validateValue schema (Number 42)     -- False
+@
+-}
 validateValue :: Schema -> Value -> Bool
 validateValue schema value = null (validateErrors schema value)
 
+{- | Validate a JSON value and return detailed error messages.
+
+Returns a list of error messages describing why the value does not
+conform to the schema. If the list is empty, the value is valid.
+
+=== Example
+
+@
+schema :: Schema
+schema = emptySchema
+    { schemaType = Just SString
+    , schemaMinLength = Just 5
+    }
+
+errors = validateErrors schema (String "hi")
+-- Returns: ["string shorter than minLength"]
+@
+-}
 validateErrors :: Schema -> Value -> [Text]
 validateErrors schema value =
     concat
@@ -38,6 +120,7 @@ validateErrors schema value =
         , validateCombinators schema value
         ]
 
+-- | Validate the type of a value.
 validateType :: Schema -> Value -> [Text]
 validateType schema value
     | value == Null && schemaNullable schema = []
@@ -73,6 +156,7 @@ validateType schema value
                     Null -> []
                     _otherValue -> ["expected null"]
 
+-- | Validate enum constraints.
 validateEnum :: Schema -> Value -> [Text]
 validateEnum schema value =
     case schemaEnum schema of
@@ -80,6 +164,7 @@ validateEnum schema value =
         Just xs ->
             ["value not in enum" | value `notElem` xs]
 
+-- | Validate const constraints.
 validateConst :: Schema -> Value -> [Text]
 validateConst schema value =
     case schemaConst schema of
@@ -87,6 +172,7 @@ validateConst schema value =
         Just v ->
             ["value not equal to const" | value /= v]
 
+-- | Validate string constraints (length, pattern).
 validateString :: Schema -> Value -> [Text]
 validateString schema value =
     case value of
@@ -107,6 +193,7 @@ validateString schema value =
                 ]
         _otherValue -> []
 
+-- | Validate number constraints (range, bounds).
 validateNumber :: Schema -> Value -> [Text]
 validateNumber schema value =
     case value of
@@ -132,6 +219,7 @@ validateNumber schema value =
                     ]
         _otherValue -> []
 
+-- | Validate array constraints (length, uniqueness, item schema).
 validateArray :: Schema -> Value -> [Text]
 validateArray schema value =
     case value of
@@ -155,6 +243,7 @@ validateArray schema value =
                     ]
         _otherValue -> []
 
+-- | Validate object constraints (required properties, property schemas, additional properties).
 validateObject :: Schema -> Value -> [Text]
 validateObject schema value =
     case value of
@@ -201,6 +290,7 @@ validateObject schema value =
                         ]
                  in concatMap (validateErrors extraSchema) extras
 
+-- | Validate schema combinators (allOf, anyOf, oneOf).
 validateCombinators :: Schema -> Value -> [Text]
 validateCombinators schema value =
     concat
@@ -220,12 +310,15 @@ validateCombinators schema value =
                  in ["value does not satisfy oneOf" | matches /= 1]
         ]
 
+-- | Convert Text to a Key for object property lookup.
 toKey :: Text -> Key
 toKey = fromText
 
+-- | Calculate the byte length of a Text value.
 textLength :: Text -> Int
 textLength = BS.length . encodeUtf8
 
+-- | Check if a vector contains duplicate values.
 hasDuplicateValues :: Vector.Vector Value -> Bool
 hasDuplicateValues = snd . Vector.foldl' step (Set.empty, False)
   where
@@ -234,6 +327,7 @@ hasDuplicateValues = snd . Vector.foldl' step (Set.empty, False)
         | Set.member item seen = (seen, True)
         | otherwise = (Set.insert item seen, False)
 
+-- | Count how many schemas in a list validate successfully against a value.
 countMatches :: Value -> [Schema] -> Int
 countMatches value = foldl' step 0
   where

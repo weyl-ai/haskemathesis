@@ -1,8 +1,20 @@
--- | Core JSON Schema to JSON value generators.
+{- |
+Module      : Haskemathesis.Gen.Core
+Description : Core JSON Schema to JSON value generators
+Stability   : experimental
+
+This module provides the core functionality for generating random JSON
+values that conform to a given JSON Schema. It handles all schema types,
+constraints, and composition keywords (oneOf, anyOf, allOf).
+
+These generators are used internally by the request generators to create
+valid request bodies and parameter values.
+-}
 module Haskemathesis.Gen.Core (
     genFromSchema,
     genFromSchemaWithDepth,
-) where
+)
+where
 
 import Data.Aeson (Value (..))
 import Data.Aeson.Key (Key, fromText)
@@ -11,17 +23,67 @@ import qualified Data.Map.Strict as Map
 import Data.Maybe (fromMaybe)
 import qualified Data.Set as Set
 import qualified Data.Vector as Vector
+import Haskemathesis.Gen.Primitive
+import Haskemathesis.Schema
+import Haskemathesis.Validate (validateValue)
 import Hedgehog (Gen)
 import qualified Hedgehog.Gen as Gen
 import qualified Hedgehog.Range as Range
 
-import Haskemathesis.Gen.Primitive
-import Haskemathesis.Schema
-import Haskemathesis.Validate (validateValue)
+{- | Generate a random JSON value conforming to a schema.
 
+This is the main entry point for schema-based value generation. It uses
+a default recursion depth of 4 levels for nested objects and arrays.
+
+==== Schema Support
+
+Supports all JSON Schema types and constraints:
+
+* __Primitive types__: string, integer, number, boolean, null
+* __Complex types__: object, array
+* __Constraints__: minLength, maxLength, minimum, maximum, pattern, etc.
+* __Composition__: oneOf, anyOf, allOf
+* __Special__: enum, const, nullable
+
+==== Example
+
+@
+let schema = emptySchema { schemaType = Just SString, schemaMinLength = Just 5 }
+value <- Gen.sample (genFromSchema schema)
+-- value might be: String \"abcdef\"
+@
+-}
 genFromSchema :: Schema -> Gen Value
 genFromSchema = genFromSchemaWithDepth 4
 
+{- | Generate a random JSON value with explicit depth control.
+
+This variant allows you to specify the maximum recursion depth for
+nested structures. Use this when you need to:
+
+* Generate deeper structures for thorough testing
+* Limit depth for performance or to avoid stack overflow on recursive schemas
+
+==== Parameters
+
+* @depth@ - Maximum recursion depth. When depth reaches 0, only leaf
+ values (primitives) are generated, preventing infinite recursion.
+
+==== Depth behavior
+
+* At @depth > 0@: Arrays and objects can contain nested values
+* At @depth <= 0@: Only primitive values are generated (no nesting)
+
+==== Example
+
+@
+-- Generate shallow structures (max 2 levels of nesting)
+shallowGen = genFromSchemaWithDepth 2 schema
+
+-- Generate deeper structures for thorough testing
+deepGen = genFromSchemaWithDepth 8 schema
+@
+-}
 genFromSchemaWithDepth :: Int -> Schema -> Gen Value
 genFromSchemaWithDepth depth schema
     | depth <= 0 = genLeafFallback schema

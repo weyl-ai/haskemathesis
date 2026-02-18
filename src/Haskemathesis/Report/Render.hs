@@ -1,19 +1,72 @@
 {-# LANGUAGE OverloadedStrings #-}
 
--- | Pretty rendering for failure details.
+{- | Pretty rendering for failure details.
+
+This module provides functions for rendering 'FailureDetail' records
+as human-readable text. It includes both plain text and ANSI-colored
+output for better readability in terminal environments.
+
+=== Basic Usage
+
+@
+import Haskemathesis.Report.Render (renderFailureDetail)
+import Haskemathesis.Check.Types (FailureDetail(..))
+
+let detail = FailureDetail { ... }
+    output = renderFailureDetail (Just "http://localhost:8080") Nothing detail
+putStrLn (T.unpack output)
+@
+
+=== ANSI-Colored Output
+
+For terminal output with colors, use 'renderFailureDetailAnsi':
+
+@
+let output = renderFailureDetailAnsi (Just "http://localhost:8080") Nothing detail
+@
+-}
 module Haskemathesis.Report.Render (
     renderFailureDetail,
     renderFailureDetailAnsi,
-) where
+)
+where
 
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeUtf8)
-
 import Haskemathesis.Check.Types (FailureDetail (..))
 import Haskemathesis.Execute.Types (ApiRequest (..), ApiResponse (..), BaseUrl)
 import Haskemathesis.Report.Curl (toCurl)
 
+{- | Render a failure detail as plain text.
+
+This function converts a 'FailureDetail' into a human-readable text
+representation suitable for logging or display. It includes information
+about the check that failed, the request and response, and a curl command
+for reproducing the issue.
+
+=== Parameters
+
+* @mBase@ - Optional base URL for the curl command
+* @mSeed@ - Optional Hedgehog seed for reproducing the test case
+* @detail@ - The 'FailureDetail' to render
+
+=== Return Value
+
+Returns a 'Text' containing the formatted failure report.
+
+=== Example
+
+@
+let detail = FailureDetail
+        { fdCheck = "status_code_conformance"
+        , fdMessage = "response status code is not documented: 418"
+        , ...
+        }
+    output = renderFailureDetail (Just "http://localhost:8080") Nothing detail
+putStrLn (T.unpack output)
+@
+-}
 renderFailureDetail :: Maybe BaseUrl -> Maybe Text -> FailureDetail -> Text
 renderFailureDetail mBase mSeed detail =
     T.intercalate
@@ -32,6 +85,35 @@ renderFailureDetail mBase mSeed detail =
                ]
         )
 
+{- | Render a failure detail with ANSI colors.
+
+This function is similar to 'renderFailureDetail' but adds ANSI color
+codes for better readability in terminal environments. Different parts
+of the output are color-coded:
+
+* Cyan - Check name and operation
+* Red - Error messages and schema issues
+* Yellow - Seed information
+* Green - Request, response, and curl command
+
+=== Parameters
+
+* @mBase@ - Optional base URL for the curl command
+* @mSeed@ - Optional Hedgehog seed for reproducing the test case
+* @detail@ - The 'FailureDetail' to render
+
+=== Return Value
+
+Returns a 'Text' containing the ANSI-colored failure report.
+
+=== Example
+
+@
+let detail = FailureDetail { ... }
+    output = renderFailureDetailAnsi (Just "http://localhost:8080") Nothing detail
+putStrLn (T.unpack output)  -- Colored output in terminal
+@
+-}
 renderFailureDetailAnsi :: Maybe BaseUrl -> Maybe Text -> FailureDetail -> Text
 renderFailureDetailAnsi mBase mSeed detail =
     T.intercalate
