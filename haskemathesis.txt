@@ -7,6 +7,128 @@
 @version 0.1.0.0
 
 
+-- | CLI options and types for Haskemathesis.
+--   
+--   This module defines the data types used for command-line argument
+--   parsing and configuration. It is separate from the main CLI module to
+--   avoid cyclic dependencies.
+module Haskemathesis.CLI.Options
+
+-- | Top-level CLI command.
+data Command
+Test :: !TestOptions -> Command
+Validate :: !ValidateOptions -> Command
+Curl :: !CurlOptions -> Command
+
+-- | Options for the <tt>test</tt> command.
+data TestOptions
+TestOptions :: !FilePath -> !Text -> !Int -> ![Text] -> ![Text] -> ![Text] -> !Bool -> !Maybe Text -> !OutputFormat -> !Maybe Int -> !Maybe Int -> !Int -> !WorkdirOption -> TestOptions
+
+-- | Path to the OpenAPI specification file (YAML or JSON)
+[testSpecPath] :: TestOptions -> !FilePath
+
+-- | Base URL of the API to test (e.g., "<a>http://localhost:8080")</a>
+[testBaseUrl] :: TestOptions -> !Text
+
+-- | Number of test cases to generate per operation (default: 100)
+[testCount] :: TestOptions -> !Int
+
+-- | Include only operations matching these patterns (operationId or
+--   method+path)
+[testInclude] :: TestOptions -> ![Text]
+
+-- | Exclude operations matching these patterns
+[testExclude] :: TestOptions -> ![Text]
+
+-- | Filter operations by tags
+[testTags] :: TestOptions -> ![Text]
+
+-- | Enable negative testing (generate invalid requests)
+[testNegative] :: TestOptions -> !Bool
+
+-- | Authorization header value (e.g., "Bearer token123")
+[testAuthHeader] :: TestOptions -> !Maybe Text
+
+-- | Output format for results
+[testOutputFormat] :: TestOptions -> !OutputFormat
+
+-- | Random seed for reproducible tests
+[testSeed] :: TestOptions -> !Maybe Int
+
+-- | Request timeout in seconds
+[testTimeout] :: TestOptions -> !Maybe Int
+
+-- | Number of parallel workers (default: 1)
+[testWorkers] :: TestOptions -> !Int
+
+-- | Working directory for tests (to isolate side effects)
+[testWorkdir] :: TestOptions -> !WorkdirOption
+
+-- | Options for the <tt>validate</tt> command.
+data ValidateOptions
+ValidateOptions :: !FilePath -> !Bool -> ValidateOptions
+
+-- | Path to the OpenAPI specification file
+[validateSpecPath] :: ValidateOptions -> !FilePath
+
+-- | Show detailed validation information
+[validateVerbose] :: ValidateOptions -> !Bool
+
+-- | Options for the <tt>curl</tt> command.
+data CurlOptions
+CurlOptions :: !FilePath -> !Text -> !Int -> ![Text] -> ![Text] -> ![Text] -> CurlOptions
+
+-- | Path to the OpenAPI specification file
+[curlSpecPath] :: CurlOptions -> !FilePath
+
+-- | Base URL for the generated curl commands
+[curlBaseUrl] :: CurlOptions -> !Text
+
+-- | Number of example requests to generate per operation
+[curlCount] :: CurlOptions -> !Int
+
+-- | Include only operations matching these patterns
+[curlInclude] :: CurlOptions -> ![Text]
+
+-- | Exclude operations matching these patterns
+[curlExclude] :: CurlOptions -> ![Text]
+
+-- | Filter operations by tags
+[curlTags] :: CurlOptions -> ![Text]
+
+-- | Output format for test results.
+data OutputFormat
+OutputText :: OutputFormat
+OutputJson :: OutputFormat
+
+-- | Working directory option for tests.
+data WorkdirOption
+
+-- | Run in current directory (default)
+WorkdirCurrent :: WorkdirOption
+
+-- | Run in a temporary directory (cleaned up after tests)
+WorkdirTemp :: WorkdirOption
+
+-- | Run in a specific directory
+WorkdirPath :: !FilePath -> WorkdirOption
+
+-- | Default test options.
+defaultTestOptions :: TestOptions
+instance GHC.Classes.Eq Haskemathesis.CLI.Options.Command
+instance GHC.Classes.Eq Haskemathesis.CLI.Options.CurlOptions
+instance GHC.Classes.Eq Haskemathesis.CLI.Options.OutputFormat
+instance GHC.Classes.Eq Haskemathesis.CLI.Options.TestOptions
+instance GHC.Classes.Eq Haskemathesis.CLI.Options.ValidateOptions
+instance GHC.Classes.Eq Haskemathesis.CLI.Options.WorkdirOption
+instance GHC.Internal.Show.Show Haskemathesis.CLI.Options.Command
+instance GHC.Internal.Show.Show Haskemathesis.CLI.Options.CurlOptions
+instance GHC.Internal.Show.Show Haskemathesis.CLI.Options.OutputFormat
+instance GHC.Internal.Show.Show Haskemathesis.CLI.Options.TestOptions
+instance GHC.Internal.Show.Show Haskemathesis.CLI.Options.ValidateOptions
+instance GHC.Internal.Show.Show Haskemathesis.CLI.Options.WorkdirOption
+
+
 -- | Request/response types shared by executors and checks.
 --   
 --   This module defines the core data types used for representing API
@@ -452,12 +574,31 @@ genByte :: Gen Value
 --   <li>JSON files (.json extension)</li>
 --   <li>Files without extension (auto-detected by content)</li>
 --   </ul>
+--   
+--   <h3>OpenAPI 3.1 Support</h3>
+--   
+--   This loader automatically transforms OpenAPI 3.1 constructs to their
+--   OpenAPI 3.0 equivalents before parsing. This includes:
+--   
+--   <ul>
+--   <li><tt>exclusiveMinimum: &lt;number&gt;</tt> → <tt>minimum:
+--   &lt;number&gt;, exclusiveMinimum: true</tt></li>
+--   <li><tt>exclusiveMaximum: &lt;number&gt;</tt> → <tt>maximum:
+--   &lt;number&gt;, exclusiveMaximum: true</tt></li>
+--   </ul>
+--   
+--   This allows specs written for OpenAPI 3.1 (which uses JSON Schema
+--   2020-12) to be loaded by the openapi3 library which only supports
+--   OpenAPI 3.0.
 module Haskemathesis.OpenApi.Loader
 
 -- | Load an OpenAPI specification from a file.
 --   
 --   This function reads a YAML or JSON file and parses it into an
 --   <a>OpenApi</a> value. It automatically detects the file format.
+--   
+--   OpenAPI 3.1 specs are automatically transformed to OpenAPI 3.0 format
+--   before parsing, allowing compatibility with the openapi3 library.
 --   
 --   <h3>Parameters</h3>
 --   
@@ -482,6 +623,25 @@ module Haskemathesis.OpenApi.Loader
 --               putStrLn $ "Loaded API with " ++ show (length spec) ++ " paths"
 --   </pre>
 loadOpenApiFile :: FilePath -> IO (Either Text OpenApi)
+
+-- | Transform OpenAPI 3.1 JSON Schema constructs to OpenAPI 3.0
+--   equivalents.
+--   
+--   This function recursively walks the JSON structure and transforms:
+--   
+--   <ul>
+--   <li>OpenAPI version <tt>3.1.x</tt> to <tt>3.0.3</tt> (highest
+--   supported by openapi3 library)</li>
+--   <li>Numeric <tt>exclusiveMinimum</tt> to <tt>minimum</tt> + boolean
+--   <tt>exclusiveMinimum: true</tt></li>
+--   <li>Numeric <tt>exclusiveMaximum</tt> to <tt>maximum</tt> + boolean
+--   <tt>exclusiveMaximum: true</tt></li>
+--   </ul>
+--   
+--   This allows OpenAPI 3.1 specs (which use JSON Schema 2020-12
+--   semantics) to be parsed by libraries that only support OpenAPI 3.0
+--   (JSON Schema draft-04).
+transformOpenApi31To30 :: Value -> Value
 
 
 -- | Render API requests as reproducible curl commands.
@@ -2426,15 +2586,17 @@ module Haskemathesis.Config
 --   cases</li>
 --   <li><a>tcOperationFilter</a> - Predicate to filter which operations to
 --   test</li>
+--   <li><a>tcHeaders</a> - Global headers to include in every request</li>
 --   </ul>
 data TestConfig
-TestConfig :: ![Check] -> !Maybe AuthConfig -> !Maybe BaseUrl -> !Int -> !Bool -> !ResolvedOperation -> Bool -> TestConfig
+TestConfig :: ![Check] -> !Maybe AuthConfig -> !Maybe BaseUrl -> !Int -> !Bool -> !ResolvedOperation -> Bool -> ![(HeaderName, ByteString)] -> TestConfig
 [tcChecks] :: TestConfig -> ![Check]
 [tcAuthConfig] :: TestConfig -> !Maybe AuthConfig
 [tcBaseUrl] :: TestConfig -> !Maybe BaseUrl
 [tcPropertyCount] :: TestConfig -> !Int
 [tcNegativeTesting] :: TestConfig -> !Bool
 [tcOperationFilter] :: TestConfig -> !ResolvedOperation -> Bool
+[tcHeaders] :: TestConfig -> ![(HeaderName, ByteString)]
 
 -- | Sensible defaults for <a>TestConfig</a>.
 --   
@@ -2448,6 +2610,7 @@ TestConfig :: ![Check] -> !Maybe AuthConfig -> !Maybe BaseUrl -> !Int -> !Bool -
 --   <li>100 properties per operation</li>
 --   <li>Negative testing disabled</li>
 --   <li>All operations included (filter always returns <a>True</a>)</li>
+--   <li>No global headers</li>
 --   </ul>
 defaultTestConfig :: TestConfig
 
@@ -3333,3 +3496,161 @@ specForUrlNegative :: TestConfig -> OpenApi -> Manager -> BaseUrl -> Spec
 --   Tasty</li>
 --   </ul>
 module Haskemathesis
+
+
+-- | Test runner implementation for the Haskemathesis CLI.
+--   
+--   This module provides the actual test execution logic for the CLI,
+--   including HTTP testing, spec validation, and curl command generation.
+module Haskemathesis.CLI.Runner
+
+-- | Run the test command.
+runTestCommand :: TestOptions -> IO ()
+
+-- | Run the validate command.
+runValidateCommand :: ValidateOptions -> IO ()
+
+-- | Run the curl command.
+runCurlCommand :: CurlOptions -> IO ()
+
+
+-- | Command-line interface for Haskemathesis.
+--   
+--   This module provides a standalone CLI for running property-based API
+--   tests against any HTTP API using an OpenAPI specification. It allows
+--   non-Haskell projects to benefit from Haskemathesis testing without
+--   writing Haskell code.
+--   
+--   <h2>Usage</h2>
+--   
+--   Basic usage:
+--   
+--   <pre>
+--   haskemathesis test --spec openapi.yaml --url <a>http://localhost:8080</a>
+--   </pre>
+--   
+--   With options:
+--   
+--   <pre>
+--   haskemathesis test \
+--     --spec openapi.yaml \
+--     --url <a>http://localhost:8080</a> \
+--     --count 200 \
+--     --tag public \
+--     --negative
+--   </pre>
+--   
+--   <h2>Commands</h2>
+--   
+--   <ul>
+--   <li><tt>test</tt> - Run property-based tests against a live API</li>
+--   <li><tt>validate</tt> - Validate an OpenAPI specification without
+--   running tests</li>
+--   <li><tt>curl</tt> - Generate curl commands for all operations (dry
+--   run)</li>
+--   </ul>
+--   
+--   <h2>Exit Codes</h2>
+--   
+--   <ul>
+--   <li><tt>0</tt> - All tests passed or validation succeeded</li>
+--   <li><tt>1</tt> - Tests failed or validation errors found</li>
+--   <li><tt>2</tt> - CLI parsing or configuration error</li>
+--   </ul>
+module Haskemathesis.CLI
+
+-- | Main entry point for the CLI.
+runCLI :: IO ()
+
+-- | Top-level CLI command.
+data Command
+Test :: !TestOptions -> Command
+Validate :: !ValidateOptions -> Command
+Curl :: !CurlOptions -> Command
+
+-- | Options for the <tt>test</tt> command.
+data TestOptions
+TestOptions :: !FilePath -> !Text -> !Int -> ![Text] -> ![Text] -> ![Text] -> !Bool -> !Maybe Text -> !OutputFormat -> !Maybe Int -> !Maybe Int -> !Int -> !WorkdirOption -> TestOptions
+
+-- | Path to the OpenAPI specification file (YAML or JSON)
+[testSpecPath] :: TestOptions -> !FilePath
+
+-- | Base URL of the API to test (e.g., "<a>http://localhost:8080")</a>
+[testBaseUrl] :: TestOptions -> !Text
+
+-- | Number of test cases to generate per operation (default: 100)
+[testCount] :: TestOptions -> !Int
+
+-- | Include only operations matching these patterns (operationId or
+--   method+path)
+[testInclude] :: TestOptions -> ![Text]
+
+-- | Exclude operations matching these patterns
+[testExclude] :: TestOptions -> ![Text]
+
+-- | Filter operations by tags
+[testTags] :: TestOptions -> ![Text]
+
+-- | Enable negative testing (generate invalid requests)
+[testNegative] :: TestOptions -> !Bool
+
+-- | Authorization header value (e.g., "Bearer token123")
+[testAuthHeader] :: TestOptions -> !Maybe Text
+
+-- | Output format for results
+[testOutputFormat] :: TestOptions -> !OutputFormat
+
+-- | Random seed for reproducible tests
+[testSeed] :: TestOptions -> !Maybe Int
+
+-- | Request timeout in seconds
+[testTimeout] :: TestOptions -> !Maybe Int
+
+-- | Number of parallel workers (default: 1)
+[testWorkers] :: TestOptions -> !Int
+
+-- | Working directory for tests (to isolate side effects)
+[testWorkdir] :: TestOptions -> !WorkdirOption
+
+-- | Options for the <tt>validate</tt> command.
+data ValidateOptions
+ValidateOptions :: !FilePath -> !Bool -> ValidateOptions
+
+-- | Path to the OpenAPI specification file
+[validateSpecPath] :: ValidateOptions -> !FilePath
+
+-- | Show detailed validation information
+[validateVerbose] :: ValidateOptions -> !Bool
+
+-- | Options for the <tt>curl</tt> command.
+data CurlOptions
+CurlOptions :: !FilePath -> !Text -> !Int -> ![Text] -> ![Text] -> ![Text] -> CurlOptions
+
+-- | Path to the OpenAPI specification file
+[curlSpecPath] :: CurlOptions -> !FilePath
+
+-- | Base URL for the generated curl commands
+[curlBaseUrl] :: CurlOptions -> !Text
+
+-- | Number of example requests to generate per operation
+[curlCount] :: CurlOptions -> !Int
+
+-- | Include only operations matching these patterns
+[curlInclude] :: CurlOptions -> ![Text]
+
+-- | Exclude operations matching these patterns
+[curlExclude] :: CurlOptions -> ![Text]
+
+-- | Filter operations by tags
+[curlTags] :: CurlOptions -> ![Text]
+
+-- | Output format for test results.
+data OutputFormat
+OutputText :: OutputFormat
+OutputJson :: OutputFormat
+
+-- | Parse a command from command-line arguments.
+parseCommand :: IO Command
+
+-- | CLI parser info with help text.
+cliParserInfo :: ParserInfo Command

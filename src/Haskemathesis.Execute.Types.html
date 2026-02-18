@@ -79,7 +79,7 @@ including the HTTP method, path, query parameters, headers, and body.
 </span><a href="Haskemathesis.Execute.Types.html#reqBody"><span class="hs-identifier hs-var hs-var">reqBody</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Haskemathesis.Execute.Types.html#MediaType"><span class="hs-identifier hs-type">MediaType</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">ByteString</span></span><span class="hs-special">)</span><span>
 </span><span id="line-75"></span><span>    </span><span class="annot"><span class="hs-comment">-- ^ Optional request body with its media type.</span></span><span>
 </span><span id="line-76"></span><span>    </span><span class="hs-special">}</span><span>
-</span><span id="line-77"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679198474"><span id="local-6989586621679198488"><span class="annot"><span class="annottext">ApiRequest -&gt; ApiRequest -&gt; Bool
+</span><span id="line-77"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679218492"><span id="local-6989586621679218506"><span class="annot"><span class="annottext">ApiRequest -&gt; ApiRequest -&gt; Bool
 (ApiRequest -&gt; ApiRequest -&gt; Bool)
 -&gt; (ApiRequest -&gt; ApiRequest -&gt; Bool) -&gt; Eq ApiRequest
 forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
@@ -87,7 +87,7 @@ $c== :: ApiRequest -&gt; ApiRequest -&gt; Bool
 == :: ApiRequest -&gt; ApiRequest -&gt; Bool
 $c/= :: ApiRequest -&gt; ApiRequest -&gt; Bool
 /= :: ApiRequest -&gt; ApiRequest -&gt; Bool
-</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679198496"><span id="local-6989586621679198512"><span id="local-6989586621679198516"><span class="annot"><span class="annottext">Int -&gt; ApiRequest -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679218514"><span id="local-6989586621679218530"><span id="local-6989586621679218534"><span class="annot"><span class="annottext">Int -&gt; ApiRequest -&gt; ShowS
 [ApiRequest] -&gt; ShowS
 ApiRequest -&gt; String
 (Int -&gt; ApiRequest -&gt; ShowS)
@@ -123,7 +123,7 @@ and timing information for analysis by checks.
 </span><a href="Haskemathesis.Execute.Types.html#resTime"><span class="hs-identifier hs-var hs-var">resTime</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">NominalDiffTime</span></span><span>
 </span><span id="line-92"></span><span>    </span><span class="annot"><span class="hs-comment">-- ^ Time taken for the request/response cycle.</span></span><span>
 </span><span id="line-93"></span><span>    </span><span class="hs-special">}</span><span>
-</span><span id="line-94"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679198529"><span id="local-6989586621679198539"><span class="annot"><span class="annottext">ApiResponse -&gt; ApiResponse -&gt; Bool
+</span><span id="line-94"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679218547"><span id="local-6989586621679218557"><span class="annot"><span class="annottext">ApiResponse -&gt; ApiResponse -&gt; Bool
 (ApiResponse -&gt; ApiResponse -&gt; Bool)
 -&gt; (ApiResponse -&gt; ApiResponse -&gt; Bool) -&gt; Eq ApiResponse
 forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
@@ -131,7 +131,7 @@ $c== :: ApiResponse -&gt; ApiResponse -&gt; Bool
 == :: ApiResponse -&gt; ApiResponse -&gt; Bool
 $c/= :: ApiResponse -&gt; ApiResponse -&gt; Bool
 /= :: ApiResponse -&gt; ApiResponse -&gt; Bool
-</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679198545"><span id="local-6989586621679198556"><span id="local-6989586621679198560"><span class="annot"><span class="annottext">Int -&gt; ApiResponse -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679218563"><span id="local-6989586621679218574"><span id="local-6989586621679218578"><span class="annot"><span class="annottext">Int -&gt; ApiResponse -&gt; ShowS
 [ApiResponse] -&gt; ShowS
 ApiResponse -&gt; String
 (Int -&gt; ApiResponse -&gt; ShowS)
