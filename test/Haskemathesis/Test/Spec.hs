@@ -15,6 +15,7 @@ import qualified Haskemathesis.Test.Properties.ResponseHeaders as ResponseHeader
 import qualified Haskemathesis.Test.Properties.ResponseSchema as ResponseSchema
 import qualified Haskemathesis.Test.Properties.StatusCode as StatusCode
 import qualified Haskemathesis.Test.Properties.Validate as Validate
+import qualified Haskemathesis.Test.Properties.Wai as Wai
 import Test.Hspec (Spec, describe)
 
 spec :: Spec
@@ -35,3 +36,4 @@ spec =
         Validate.spec
         Render.spec
         Resolve.spec
+        Wai.spec

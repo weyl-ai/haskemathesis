@@ -29,6 +29,7 @@ where
 import qualified Data.ByteString as BS
 import Data.ByteString.Builder (toLazyByteString)
 import qualified Data.ByteString.Lazy as LBS
+import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import Haskemathesis.Execute.Types
 import Network.HTTP.Types (hContentType, renderQueryText, statusCode)
@@ -93,6 +94,7 @@ toWaiRequest req =
     defaultRequest
         { requestMethod = reqMethod req
         , rawPathInfo = encodeUtf8 (reqPath req)
+        , pathInfo = filter (not . T.null) (T.split (== '/') (reqPath req))
         , rawQueryString = LBS.toStrict (toLazyByteString (renderQueryText True (map toQuery (reqQueryParams req))))
         , requestHeaders = contentTypeHeader ++ reqHeaders req
         }
