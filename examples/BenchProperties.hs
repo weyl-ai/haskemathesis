@@ -8,25 +8,20 @@ import Haskemathesis.Config (TestConfig (..), defaultTestConfig)
 import Haskemathesis.Execute.Types (ApiResponse (..))
 import Haskemathesis.OpenApi.Loader (loadOpenApiFile)
 import Haskemathesis.OpenApi.Resolve (resolveOperations)
-import Haskemathesis.Property (propertiesForSpecWithConfig)
+import Haskemathesis.Property (propertiesForSpec, propertiesForSpecWithConfig)
 import System.IO (hPutStrLn, stderr)
 
 main :: IO ()
-  specResult <- loadOpenApiFile "examples/medium-spec.yaml"
-  spec <- case specResult of
-    Left err -> error (show err)
-    Right s -> pure s
-  let cfg = Nothing
-      executor _ = pure (ApiResponse 200 [] "" 0)
-      ops = resolveOperations spec
-  start <- getCurrentTime
-  let props = propertiesForSpec cfg allChecks executor ops
-  end <- getCurrentTime
-  hPutStrLn stderr ("generated properties: " <> show (length props))
-  hPutStrLn stderr ("generation time: " <> show (diffUTCTime end start))
+main = do
+    specResult <- loadOpenApiFile "examples/medium-spec.yaml"
+    spec <- case specResult of
+        Left err -> error (show err)
+        Right s -> pure s
+    let cfg = Nothing
+        executor _ = pure (ApiResponse 200 [] "" 0)
+        ops = resolveOperations spec
     start <- getCurrentTime
-    let props = propertiesForSpecWithConfig spec cfg executor ops
+    let props = propertiesForSpec cfg allChecks executor ops
     end <- getCurrentTime
-    let totalProperties = length props * tcPropertyCount cfg
-    hPutStrLn stderr ("generated properties: " <> show totalProperties)
+    hPutStrLn stderr ("generated properties: " <> show (length props))
     hPutStrLn stderr ("generation time: " <> show (diffUTCTime end start))

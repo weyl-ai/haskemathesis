@@ -7,15 +7,14 @@ import qualified Data.ByteString.Lazy as LBS
 import qualified Data.CaseInsensitive as CI
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
-import Hedgehog (Property, assert, discard, forAll, property, success)
-import Test.Hspec (Spec, describe)
-
 import Haskemathesis.Execute.Types (ApiRequest (..))
 import Haskemathesis.Gen.Negative (NegativeMutation (..), applyNegativeMutation, genNegativeRequest, renderNegativeMutation)
 import Haskemathesis.Gen.Request (genApiRequest)
 import Haskemathesis.OpenApi.Types (ParamLocation (..), ResolvedOperation (..), ResolvedParam (..), ResolvedRequestBody (..))
 import Haskemathesis.Schema
 import Haskemathesis.Test.Support (emptyOperation, itProp)
+import Hedgehog (Property, assert, discard, forAll, property, success)
+import Test.Hspec (Spec, describe)
 
 spec :: Spec
 spec =
@@ -321,7 +320,11 @@ prop_negative_invalid_content_type_preserves_payload =
                     Right value ->
                         case value of
                             String _ -> success
-                            _ -> assert False
+                            Object _ -> assert False
+                            Array _ -> assert False
+                            Number _ -> assert False
+                            Bool _ -> assert False
+                            Null -> assert False
             Nothing -> assert False
 
 prop_negative_invalid_body_string_non_string :: Property
@@ -346,7 +349,11 @@ prop_negative_invalid_body_string_non_string =
                     Right val ->
                         case val of
                             String _ -> assert False
-                            _ -> success
+                            Object _ -> success
+                            Array _ -> success
+                            Number _ -> success
+                            Bool _ -> success
+                            Null -> success
             Nothing -> assert False
 
 prop_negative_mutation_label_non_empty :: Property
