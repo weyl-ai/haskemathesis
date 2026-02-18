@@ -59,7 +59,7 @@ import Haskemathesis.Auth.Config (applyAuthForOperation)
 import Haskemathesis.Check.Negative (negativeTestRejection)
 import Haskemathesis.Check.Types (Check (..), CheckResult (..))
 import Haskemathesis.Config (TestConfig (..))
-import Haskemathesis.Execute.Types (ApiRequest, ApiResponse, BaseUrl)
+import Haskemathesis.Execute.Types (ApiRequest (..), ApiResponse, BaseUrl)
 import Haskemathesis.Gen.Negative (genNegativeRequest, renderNegativeMutation)
 import Haskemathesis.Gen.Request (genApiRequest)
 import Haskemathesis.OpenApi.Types (ResolvedOperation (..))
@@ -132,10 +132,11 @@ propertyForOperationWithConfig openApi config execute op =
     withTests (fromIntegral (tcPropertyCount config)) $
         property $ do
             req <- forAll (genApiRequest op)
-            let req' =
+            let reqAuth =
                     case tcAuthConfig config of
                         Nothing -> req
                         Just auth -> applyAuthForOperation openApi auth op req
+            let req' = reqAuth{reqHeaders = tcHeaders config ++ reqHeaders reqAuth}
             res <- evalIO (execute req')
             runChecks (tcBaseUrl config) (tcChecks config) req' res op
 
@@ -179,10 +180,11 @@ propertyForOperationNegative openApi config execute op =
             case mReq of
                 Nothing -> success
                 Just (req, mutation) -> do
-                    let req' =
+                    let reqAuth =
                             case tcAuthConfig config of
                                 Nothing -> req
                                 Just auth -> applyAuthForOperation openApi auth op req
+                    let req' = reqAuth{reqHeaders = tcHeaders config ++ reqHeaders reqAuth}
                     res <- evalIO (execute req')
                     case negativeTestRejection (renderNegativeMutation mutation) req' res op of
                         CheckPassed -> success

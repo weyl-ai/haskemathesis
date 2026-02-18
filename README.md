@@ -8,14 +8,81 @@ applies a configurable set of checks to the responses.
 
 ## Features
 
-- OpenAPI 3.0 schema parsing and operation resolution
+- OpenAPI 3.0 and 3.1 schema parsing and operation resolution
 - Schema-driven generators for JSON requests
 - WAI executor (no network) and HTTP executor
 - Built-in checks (status codes, content type, response schema, response headers)
 - Curl rendering for failure reproduction
 - Hspec and Tasty integration helpers
+- Standalone CLI for testing any HTTP API without writing Haskell
 
-## Quick Start (WAI)
+## CLI
+
+The CLI allows you to test any HTTP API without writing Haskell code.
+
+### Installation
+
+```bash
+cabal install haskemathesis
+```
+
+Or run directly with cabal:
+
+```bash
+cabal run haskemathesis-cli -- <command> [options]
+```
+
+### Commands
+
+#### `test` - Run property-based tests against an API
+
+```bash
+# Basic usage
+haskemathesis-cli test --spec openapi.yaml --url http://localhost:8080
+
+# With more options
+haskemathesis-cli test \
+  --spec openapi.yaml \
+  --url http://localhost:8080 \
+  --count 200 \
+  --tag users \
+  --negative \
+  --auth-header "Bearer YOUR_TOKEN"
+```
+
+Options:
+
+- `-s, --spec FILE` - Path to OpenAPI spec (required)
+- `-u, --url URL` - Base URL of the API (required)
+- `-n, --count N` - Test cases per operation (default: 100)
+- `-i, --include PATTERN` - Include only matching operations (repeatable)
+- `-e, --exclude PATTERN` - Exclude matching operations (repeatable)
+- `-t, --tag TAG` - Filter by tag (repeatable)
+- `--negative` - Enable negative testing (invalid inputs)
+- `--auth-header VALUE` - Authorization header value
+- `-o, --output FORMAT` - Output format: `text` or `json`
+- `--seed INT` - Random seed for reproducibility
+- `--timeout SECONDS` - Request timeout
+- `-w, --workers N` - Parallel workers (default: 1)
+- `--workdir PATH|temp|current` - Working directory (default: `temp`)
+
+#### `validate` - Validate an OpenAPI specification
+
+```bash
+haskemathesis-cli validate --spec openapi.yaml
+haskemathesis-cli validate --spec openapi.yaml --verbose
+```
+
+#### `curl` - Generate curl commands for operations
+
+```bash
+haskemathesis-cli curl --spec openapi.yaml --url http://localhost:8080
+haskemathesis-cli curl --spec openapi.yaml --url http://localhost:8080 --count 5
+```
+
+## Quick Start (Haskell Library)
+
+### WAI
 
 1. Create an OpenAPI spec file (YAML or JSON).
 1. Use the integration helpers to generate tests for your application.
@@ -37,7 +104,7 @@ main = do
       hspec (specForExecutor Nothing allChecks (executeWai app) (resolveOperations spec))
 ```
 
-## Quick Start (HTTP)
+### HTTP
 
 ```haskell
 import Network.HTTP.Client (newManager)
@@ -134,6 +201,8 @@ Nix users can use the devshell or `nix build` / `nix flake check`.
 
 ## OpenAPI Coverage
 
-- OpenAPI 3.0.x is supported via the `openapi3` library.
-- OpenAPI 3.1 is not parsed natively; use a 3.1 → 3.0 preprocessing step if
-  you need 3.1 features (e.g., `null` in type arrays or full JSON Schema 2020-12).
+- OpenAPI 3.0.x is fully supported via the `openapi3` library.
+- OpenAPI 3.1.x is supported with automatic transformation to 3.0 format:
+  - Version field is downgraded from `3.1.x` to `3.0.3`
+  - Numeric `exclusiveMinimum`/`exclusiveMaximum` are converted to the 3.0 boolean format
+  - Other 3.1-specific features (e.g., `null` in type arrays) may require manual adjustment

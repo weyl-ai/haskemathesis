@@ -38,6 +38,7 @@ module Haskemathesis.Config (
 )
 where
 
+import Data.ByteString (ByteString)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Haskemathesis.Auth.Config (AuthConfig)
@@ -45,6 +46,7 @@ import Haskemathesis.Check.Standard (defaultChecks)
 import Haskemathesis.Check.Types (Check)
 import Haskemathesis.Execute.Types (BaseUrl)
 import Haskemathesis.OpenApi.Types (ResolvedOperation (..))
+import Network.HTTP.Types (HeaderName)
 
 {- | Configuration for test generation and execution.
 
@@ -59,6 +61,7 @@ authentication settings, and which operations to include.
 * 'tcPropertyCount' - Number of test cases to generate per property
 * 'tcNegativeTesting' - Whether to generate negative test cases
 * 'tcOperationFilter' - Predicate to filter which operations to test
+* 'tcHeaders' - Global headers to include in every request
 -}
 data TestConfig = TestConfig
     { tcChecks :: ![Check]
@@ -67,6 +70,7 @@ data TestConfig = TestConfig
     , tcPropertyCount :: !Int
     , tcNegativeTesting :: !Bool
     , tcOperationFilter :: !(ResolvedOperation -> Bool)
+    , tcHeaders :: ![(HeaderName, ByteString)]
     }
 
 {- | Sensible defaults for 'TestConfig'.
@@ -79,6 +83,7 @@ The default configuration:
 * 100 properties per operation
 * Negative testing disabled
 * All operations included (filter always returns 'True')
+* No global headers
 -}
 defaultTestConfig :: TestConfig
 defaultTestConfig =
@@ -89,6 +94,7 @@ defaultTestConfig =
         , tcPropertyCount = 100
         , tcNegativeTesting = False
         , tcOperationFilter = const True
+        , tcHeaders = []
         }
 
 {- | Create a filter that matches a specific operation ID.

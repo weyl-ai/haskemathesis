@@ -51,10 +51,9 @@ prop_resolve_ref_missing_filtered =
             openApi = mempty{_openApiPaths = InsOrdHashMap.fromList [("/test", pathItem)]}
             resolved = resolveOperations openApi
         -- Operation should be resolved but with no parameters (missing ref filtered)
-        length resolved === 1
         case resolved of
             [resolvedOp] -> HOT.roParameters resolvedOp === []
-            _ -> assert False
+            _unexpectedResult -> assert False
 
 -- | Resolution should extract all parameters from an operation
 prop_resolve_operation_extracts_all_params :: Property
@@ -82,14 +81,15 @@ prop_resolve_operation_extracts_all_params =
             pathItem = mempty{_pathItemGet = Just op}
             openApi = mempty{_openApiPaths = InsOrdHashMap.fromList [("/items", pathItem)]}
             resolved = resolveOperations openApi
-        length resolved === 1
         case resolved of
             [resolvedOp] -> do
-                length (HOT.roParameters resolvedOp) === 2
-                let paramNames = map HOT.rpName (HOT.roParameters resolvedOp)
-                assert ("limit" `elem` paramNames)
-                assert ("X-Request-Id" `elem` paramNames)
-            _ -> assert False
+                case HOT.roParameters resolvedOp of
+                    [_, _] -> do
+                        let paramNames = map HOT.rpName (HOT.roParameters resolvedOp)
+                        assert ("limit" `elem` paramNames)
+                        assert ("X-Request-Id" `elem` paramNames)
+                    _wrongParamCount -> assert False
+            _unexpectedResult -> assert False
 
 -- | Response status codes should be preserved during resolution
 prop_resolve_response_codes_preserved :: Property
@@ -111,15 +111,16 @@ prop_resolve_response_codes_preserved =
             pathItem = mempty{_pathItemGet = Just op}
             openApi = mempty{_openApiPaths = InsOrdHashMap.fromList [("/resource", pathItem)]}
             resolved = resolveOperations openApi
-        length resolved === 1
         case resolved of
             [resolvedOp] -> do
                 let responseCodes = Map.keys (HOT.roResponses resolvedOp)
                 assert (200 `elem` responseCodes)
                 assert (404 `elem` responseCodes)
                 assert (500 `elem` responseCodes)
-                length responseCodes === 3
-            _ -> assert False
+                case responseCodes of
+                    [_, _, _] -> assert True
+                    _wrongCount -> assert False
+            _unexpectedResult -> assert False
 
 -- | Content types should be preserved in response schemas
 prop_resolve_content_types_preserved :: Property
@@ -146,7 +147,6 @@ prop_resolve_content_types_preserved =
             pathItem = mempty{_pathItemGet = Just op}
             openApi = mempty{_openApiPaths = InsOrdHashMap.fromList [("/data", pathItem)]}
             resolved = resolveOperations openApi
-        length resolved === 1
         case resolved of
             [resolvedOp] -> do
                 case Map.lookup 200 (HOT.roResponses resolvedOp) of
@@ -155,7 +155,7 @@ prop_resolve_content_types_preserved =
                         assert ("application/json" `elem` contentTypes)
                         assert ("application/xml" `elem` contentTypes)
                     Nothing -> assert False
-            _ -> assert False
+            _unexpectedResult -> assert False
 
 -- | Path-level and operation-level parameters should be merged
 prop_resolve_params_merged :: Property
@@ -187,11 +187,12 @@ prop_resolve_params_merged =
                     }
             openApi = mempty{_openApiPaths = InsOrdHashMap.fromList [("/items/{id}", pathItem)]}
             resolved = resolveOperations openApi
-        length resolved === 1
         case resolved of
             [resolvedOp] -> do
-                length (HOT.roParameters resolvedOp) === 2
-                let paramNames = map HOT.rpName (HOT.roParameters resolvedOp)
-                assert ("id" `elem` paramNames)
-                assert ("format" `elem` paramNames)
-            _ -> assert False
+                case HOT.roParameters resolvedOp of
+                    [_, _] -> do
+                        let paramNames = map HOT.rpName (HOT.roParameters resolvedOp)
+                        assert ("id" `elem` paramNames)
+                        assert ("format" `elem` paramNames)
+                    _wrongParamCount -> assert False
+            _unexpectedResult -> assert False

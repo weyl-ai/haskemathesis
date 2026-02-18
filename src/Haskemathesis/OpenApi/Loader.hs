@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 {- | Load OpenAPI specs from YAML or JSON files.
 
 This module provides functions for loading OpenAPI specifications
@@ -34,21 +36,43 @@ can happen due to:
 * YAML files (.yaml, .yml extension)
 * JSON files (.json extension)
 * Files without extension (auto-detected by content)
+
+=== OpenAPI 3.1 Support
+
+This loader automatically transforms OpenAPI 3.1 constructs to
+their OpenAPI 3.0 equivalents before parsing. This includes:
+
+* @exclusiveMinimum: \<number\>@ → @minimum: \<number\>, exclusiveMinimum: true@
+* @exclusiveMaximum: \<number\>@ → @maximum: \<number\>, exclusiveMaximum: true@
+
+This allows specs written for OpenAPI 3.1 (which uses JSON Schema 2020-12)
+to be loaded by the openapi3 library which only supports OpenAPI 3.0.
 -}
 module Haskemathesis.OpenApi.Loader (
     loadOpenApiFile,
+
+    -- * Internal (exported for testing)
+    transformOpenApi31To30,
 )
 where
 
+import Data.Aeson (Result (..), Value (..), fromJSON)
+import Data.Aeson.Key (Key)
+import qualified Data.Aeson.KeyMap as KM
 import Data.OpenApi (OpenApi)
+import Data.Scientific (isInteger)
 import Data.Text (Text)
 import qualified Data.Text as T
+import qualified Data.Vector as V
 import Data.Yaml (decodeFileEither, prettyPrintParseException)
 
 {- | Load an OpenAPI specification from a file.
 
 This function reads a YAML or JSON file and parses it into an
 'OpenApi' value. It automatically detects the file format.
+
+OpenAPI 3.1 specs are automatically transformed to OpenAPI 3.0
+format before parsing, allowing compatibility with the openapi3 library.
 
 === Parameters
 
@@ -73,7 +97,97 @@ main = do
 -}
 loadOpenApiFile :: FilePath -> IO (Either Text OpenApi)
 loadOpenApiFile path = do
+    -- First parse as raw Value to allow transformation
     result <- decodeFileEither path
     pure $ case result of
         Left err -> Left (T.pack (prettyPrintParseException err))
-        Right spec -> Right spec
+        Right value ->
+            -- Transform 3.1 constructs to 3.0, then decode to OpenApi
+            let transformed = transformOpenApi31To30 value
+             in case fromJSON transformed of
+                    Error err' -> Left (T.pack err')
+                    Success spec -> Right spec
+
+{- | Transform OpenAPI 3.1 JSON Schema constructs to OpenAPI 3.0 equivalents.
+
+This function recursively walks the JSON structure and transforms:
+
+* OpenAPI version @3.1.x@ to @3.0.3@ (highest supported by openapi3 library)
+* Numeric @exclusiveMinimum@ to @minimum@ + boolean @exclusiveMinimum: true@
+* Numeric @exclusiveMaximum@ to @maximum@ + boolean @exclusiveMaximum: true@
+
+This allows OpenAPI 3.1 specs (which use JSON Schema 2020-12 semantics)
+to be parsed by libraries that only support OpenAPI 3.0 (JSON Schema draft-04).
+-}
+transformOpenApi31To30 :: Value -> Value
+transformOpenApi31To30 = transformValue
+  where
+    transformValue :: Value -> Value
+    transformValue (Object obj) = Object (transformObject obj)
+    transformValue (Array arr) = Array (V.map transformValue arr)
+    transformValue other = other
+
+    transformObject :: KM.KeyMap Value -> KM.KeyMap Value
+    transformObject obj =
+        let
+            -- First recursively transform all nested values
+            recursed = KM.map transformValue obj
+            -- Transform OpenAPI version 3.1.x to 3.0.3
+            withVersion = transformOpenapiVersion recursed
+            -- Then apply exclusiveMinimum/Maximum transformations
+            withExclMin = transformExclusiveMinimum withVersion
+            withExclMax = transformExclusiveMaximum withExclMin
+         in
+            withExclMax
+
+    -- Transform openapi: "3.1.x" to "3.0.3"
+    transformOpenapiVersion :: KM.KeyMap Value -> KM.KeyMap Value
+    transformOpenapiVersion obj =
+        case KM.lookup openapiKey obj of
+            Just (String ver)
+                | T.isPrefixOf "3.1" ver ->
+                    KM.insert openapiKey (String "3.0.3") obj
+            _notOpenApi31 -> obj
+
+    -- Transform exclusiveMinimum: <number> to minimum: <number>, exclusiveMinimum: true
+    transformExclusiveMinimum :: KM.KeyMap Value -> KM.KeyMap Value
+    transformExclusiveMinimum obj =
+        case KM.lookup exclusiveMinimumKey obj of
+            Just (Number n)
+                | isInteger n || otherwise ->
+                    -- Remove the numeric exclusiveMinimum
+                    -- Add minimum with the value, and exclusiveMinimum: true
+                    let withoutOld = KM.delete exclusiveMinimumKey obj
+                        withMin = KM.insert minimumKey (Number n) withoutOld
+                        withExcl = KM.insert exclusiveMinimumKey (Bool True) withMin
+                     in withExcl
+            _notNumericExclMin -> obj
+
+    -- Transform exclusiveMaximum: <number> to maximum: <number>, exclusiveMaximum: true
+    transformExclusiveMaximum :: KM.KeyMap Value -> KM.KeyMap Value
+    transformExclusiveMaximum obj =
+        case KM.lookup exclusiveMaximumKey obj of
+            Just (Number n)
+                | isInteger n || otherwise ->
+                    -- Remove the numeric exclusiveMaximum
+                    -- Add maximum with the value, and exclusiveMaximum: true
+                    let withoutOld = KM.delete exclusiveMaximumKey obj
+                        withMax = KM.insert maximumKey (Number n) withoutOld
+                        withExcl = KM.insert exclusiveMaximumKey (Bool True) withMax
+                     in withExcl
+            _notNumericExclMax -> obj
+
+    openapiKey :: Key
+    openapiKey = "openapi"
+
+    exclusiveMinimumKey :: Key
+    exclusiveMinimumKey = "exclusiveMinimum"
+
+    exclusiveMaximumKey :: Key
+    exclusiveMaximumKey = "exclusiveMaximum"
+
+    minimumKey :: Key
+    minimumKey = "minimum"
+
+    maximumKey :: Key
+    maximumKey = "maximum"

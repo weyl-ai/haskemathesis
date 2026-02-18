@@ -6,6 +6,7 @@ import Data.Aeson (Value (..))
 import qualified Data.Aeson.Key as Key
 import qualified Data.Aeson.KeyMap as KeyMap
 import qualified Data.ByteString as BS
+
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 import qualified Data.Text as T
@@ -245,9 +246,10 @@ prop_format_uuid =
         case value of
             String txt -> do
                 -- UUID format: 8-4-4-4-12 hex chars
-                let parts = T.splitOn "-" txt
-                assert (length parts == 5)
-                assert (map T.length parts == [8, 4, 4, 4, 12])
+                case T.splitOn "-" txt of
+                    [p1, p2, p3, p4, p5] ->
+                        assert (map (BS.length . encodeUtf8) [p1, p2, p3, p4, p5] == [8, 4, 4, 4, 12])
+                    _wrongPartCount -> failure
             _other -> failure
 
 -- | Test that genDate generates ISO 8601 date strings
@@ -258,11 +260,9 @@ prop_format_date =
         case value of
             String txt -> do
                 -- Date format: YYYY-MM-DD
-                let parts = T.splitOn "-" txt
-                assert (length parts == 3)
-                case parts of
-                    (year : _) -> assert (T.length year == 4)
-                    [] -> failure
+                case T.splitOn "-" txt of
+                    [year, _month, _day] -> assert (BS.length (encodeUtf8 year) == 4)
+                    _wrongFormat -> failure
             _other -> failure
 
 -- | Test that genDateTime generates ISO 8601 datetime strings
