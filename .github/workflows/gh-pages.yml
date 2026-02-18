@@ -23,7 +23,7 @@ jobs:
       - name: Prep Docs Dir
         run: |
           mkdir ./docs-gen
-          cp -R result-doc/share/doc/*/html ./docs-gen
+          cp -R result-doc/share/doc/*/html/. ./docs-gen
       - name: Pages deploy
         uses: JamesIves/github-pages-deploy-action@v4
         with:

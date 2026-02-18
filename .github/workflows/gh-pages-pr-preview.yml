@@ -20,7 +20,7 @@ jobs:
       - name: Prep Docs Dir
         run: |
           mkdir ./docs-gen
-          cp -R result-doc/share/doc/*/html ./docs-gen
+          cp -R result-doc/share/doc/*/html/. ./docs-gen
       - name: Deploy PR preview
         uses: rossjrw/pr-preview-action@v1
         with:
