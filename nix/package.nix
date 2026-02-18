@@ -4,6 +4,13 @@
 
   perSystem =
     { self', pkgs, ... }:
+    let
+      pkg = self'.packages.haskemathesis.overrideAttrs (old: {
+        meta = (old.meta or { }) // {
+          mainProgram = "haskemathesis-cli";
+        };
+      });
+    in
     {
       haskellProjects.default = {
         settings = {
@@ -24,12 +31,12 @@
       };
 
       packages = {
-        default = self'.packages.haskemathesis;
-        docs = self'.packages.haskemathesis.doc;
+        default = pkg;
+        docs = pkg.doc;
       };
       checks = {
-        default = self'.packages.haskemathesis;
-        docs = self'.packages.haskemathesis.doc;
+        default = pkg;
+        docs = pkg.doc;
       };
     };
 }
