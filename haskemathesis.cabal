@@ -96,6 +96,7 @@ test-suite haskemathesis-test
     Haskemathesis.Test.Properties.Negative.Mutations
     Haskemathesis.Test.Properties.Render
     Haskemathesis.Test.Properties.Request
+    Haskemathesis.Test.Properties.Resolve
     Haskemathesis.Test.Properties.ResponseHeaders
     Haskemathesis.Test.Properties.ResponseSchema
     Haskemathesis.Test.Properties.StatusCode

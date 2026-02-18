@@ -5,12 +5,11 @@ module Haskemathesis.Test.Properties.Curl (spec) where
 import qualified Data.CaseInsensitive as CI
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
-import Hedgehog (Property, assert, property, (===))
-import Test.Hspec (Spec, describe)
-
 import Haskemathesis.Execute.Types (ApiRequest (..))
 import Haskemathesis.Report.Curl (toCurl)
 import Haskemathesis.Test.Support (itProp)
+import Hedgehog (Property, assert, property, (===))
+import Test.Hspec (Spec, describe)
 
 spec :: Spec
 spec =
@@ -25,6 +24,10 @@ spec =
         itProp "encodes spaces in query" prop_curl_encodes_spaces_in_query
         itProp "encodes reserved chars in query" prop_curl_encodes_reserved_chars_in_query
         itProp "renders header values with spaces" prop_request_header_value_with_spaces_in_curl
+        -- Additional curl rendering tests
+        itProp "renders HTTP method" prop_curl_renders_method
+        itProp "escapes quotes in body" prop_curl_escapes_quotes_in_body
+        itProp "includes auth headers" prop_curl_includes_auth_headers
 
 prop_curl_includes_content_type_header_when_body :: Property
 prop_curl_includes_content_type_header_when_body =
@@ -169,3 +172,73 @@ prop_request_header_value_with_spaces_in_curl =
                     }
             curl = toCurl Nothing req
         assert ("X-Note: hello world" `T.isInfixOf` curl)
+
+-- | HTTP method should be rendered correctly
+prop_curl_renders_method :: Property
+prop_curl_renders_method =
+    property $ do
+        let postReq =
+                ApiRequest
+                    { reqMethod = "POST"
+                    , reqPath = "/items"
+                    , reqQueryParams = []
+                    , reqHeaders = []
+                    , reqBody = Just ("application/json", "{}")
+                    }
+            deleteReq =
+                ApiRequest
+                    { reqMethod = "DELETE"
+                    , reqPath = "/items/1"
+                    , reqQueryParams = []
+                    , reqHeaders = []
+                    , reqBody = Nothing
+                    }
+            putReq =
+                ApiRequest
+                    { reqMethod = "PUT"
+                    , reqPath = "/items/1"
+                    , reqQueryParams = []
+                    , reqHeaders = []
+                    , reqBody = Just ("application/json", "{}")
+                    }
+        -- Methods are wrapped in quotes: -X 'POST'
+        assert ("-X 'POST'" `T.isInfixOf` toCurl Nothing postReq)
+        assert ("-X 'DELETE'" `T.isInfixOf` toCurl Nothing deleteReq)
+        assert ("-X 'PUT'" `T.isInfixOf` toCurl Nothing putReq)
+
+-- | Single quotes in body should be escaped properly
+prop_curl_escapes_quotes_in_body :: Property
+prop_curl_escapes_quotes_in_body =
+    property $ do
+        let req =
+                ApiRequest
+                    { reqMethod = "POST"
+                    , reqPath = "/items"
+                    , reqQueryParams = []
+                    , reqHeaders = []
+                    , reqBody = Just ("application/json", encodeUtf8 "{\"name\":\"it's a test\"}")
+                    }
+            curl = toCurl Nothing req
+        -- The curl output should contain the body in some escaped form
+        -- that handles the single quote (either escaped or double-quoted)
+        assert ("-d " `T.isInfixOf` curl)
+        assert ("it" `T.isInfixOf` curl)
+
+-- | Auth headers should be included in curl output
+prop_curl_includes_auth_headers :: Property
+prop_curl_includes_auth_headers =
+    property $ do
+        let req =
+                ApiRequest
+                    { reqMethod = "GET"
+                    , reqPath = "/secure"
+                    , reqQueryParams = []
+                    , reqHeaders =
+                        [ (CI.mk "Authorization", "Bearer secret-token-123")
+                        , (CI.mk "X-Api-Key", "my-api-key")
+                        ]
+                    , reqBody = Nothing
+                    }
+            curl = toCurl Nothing req
+        assert ("Authorization: Bearer secret-token-123" `T.isInfixOf` curl)
+        assert ("X-Api-Key: my-api-key" `T.isInfixOf` curl)

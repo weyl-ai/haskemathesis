@@ -1,7 +1,5 @@
 module Haskemathesis.Test.Spec (spec) where
 
-import Test.Hspec (Spec, describe)
-
 import qualified Haskemathesis.Test.Properties.Auth as Auth
 import qualified Haskemathesis.Test.Properties.Config as Config
 import qualified Haskemathesis.Test.Properties.ContentType as ContentType
@@ -10,10 +8,12 @@ import qualified Haskemathesis.Test.Properties.Gen as Gen
 import qualified Haskemathesis.Test.Properties.Negative as Negative
 import qualified Haskemathesis.Test.Properties.Render as Render
 import qualified Haskemathesis.Test.Properties.Request as Request
+import qualified Haskemathesis.Test.Properties.Resolve as Resolve
 import qualified Haskemathesis.Test.Properties.ResponseHeaders as ResponseHeaders
 import qualified Haskemathesis.Test.Properties.ResponseSchema as ResponseSchema
 import qualified Haskemathesis.Test.Properties.StatusCode as StatusCode
 import qualified Haskemathesis.Test.Properties.Validate as Validate
+import Test.Hspec (Spec, describe)
 
 spec :: Spec
 spec =
@@ -30,3 +30,4 @@ spec =
         ResponseSchema.spec
         Validate.spec
         Render.spec
+        Resolve.spec

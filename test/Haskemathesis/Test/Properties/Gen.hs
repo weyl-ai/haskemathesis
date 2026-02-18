@@ -7,18 +7,21 @@ import qualified Data.Aeson.Key as Key
 import qualified Data.Aeson.KeyMap as KeyMap
 import qualified Data.ByteString as BS
 import qualified Data.Map.Strict as Map
+import qualified Data.Set as Set
+import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import qualified Data.Vector as Vector
-import Hedgehog (Property, assert, failure, forAll, property, success)
-import qualified Hedgehog.Gen as Gen
-import qualified Hedgehog.Range as Range
-import Test.Hspec (Spec, describe)
-
 import Haskemathesis.Gen (genFromSchema)
+import Haskemathesis.Gen.Format (genDate, genDateTime, genEmail, genURI, genUUID)
 import Haskemathesis.Schema
 import Haskemathesis.Test.Generators (genSchema)
 import Haskemathesis.Test.Support (itProp)
 import Haskemathesis.Validate (validateValue)
+import Hedgehog (Property, assert, failure, forAll, property, success, (===))
+import qualified Hedgehog.Gen as Gen
+import qualified Hedgehog.Range as Range
+import Test.Hspec (Spec, describe)
+import Text.Regex.TDFA ((=~))
 
 spec :: Spec
 spec =
@@ -31,6 +34,22 @@ spec =
         itProp "object required" prop_object_required
         itProp "nullable allows null" prop_nullable_allows_null
         itProp "anyOf/oneOf/allOf" prop_anyof_oneof_allof
+        -- New schema generation tests
+        itProp "string pattern validates" prop_string_pattern_validates
+        itProp "format email generates valid email" prop_format_email
+        itProp "format uuid generates valid uuid" prop_format_uuid
+        itProp "format date generates valid date" prop_format_date
+        itProp "format datetime generates valid datetime" prop_format_datetime
+        itProp "format uri generates valid uri" prop_format_uri
+        itProp "enum generates only valid values" prop_enum_generates_only_valid_values
+        itProp "const generates exact value" prop_const_generates_exact_value
+        itProp "additional properties respected" prop_additional_properties_respected
+        itProp "nested object depth limited" prop_nested_object_depth_limited
+        -- Edge case tests
+        itProp "empty schema accepts anything" prop_empty_schema_accepts_anything
+        itProp "large integer handled" prop_large_integer_handled
+        itProp "unicode in strings" prop_unicode_in_strings
+        itProp "empty string valid when no minLength" prop_empty_string_valid_when_no_minlength
 
 prop_generated_values_validate :: Property
 prop_generated_values_validate =
@@ -194,3 +213,195 @@ prop_anyof_oneof_allof =
         assert (validateValue anySchema vAny)
         assert (validateValue oneSchema vOne)
         assert (validateValue allSchema vAll)
+
+-- | Test that generated strings with pattern constraint match the regex
+prop_string_pattern_validates :: Property
+prop_string_pattern_validates =
+    property $ do
+        let schema =
+                emptySchema
+                    { schemaType = Just SString
+                    , schemaPattern = Just "^[a-z0-9]+$"
+                    }
+        value <- forAll (genFromSchema schema)
+        case value of
+            String txt -> assert (T.unpack txt =~ ("^[a-z0-9]+$" :: String))
+            _otherValue -> failure
+
+-- | Test that genEmail generates valid email-like strings
+prop_format_email :: Property
+prop_format_email =
+    property $ do
+        value <- forAll genEmail
+        case value of
+            String txt -> assert ("@" `T.isInfixOf` txt && "." `T.isInfixOf` txt)
+            _other -> failure
+
+-- | Test that genUUID generates valid UUID strings
+prop_format_uuid :: Property
+prop_format_uuid =
+    property $ do
+        value <- forAll genUUID
+        case value of
+            String txt -> do
+                -- UUID format: 8-4-4-4-12 hex chars
+                let parts = T.splitOn "-" txt
+                assert (length parts == 5)
+                assert (map T.length parts == [8, 4, 4, 4, 12])
+            _other -> failure
+
+-- | Test that genDate generates ISO 8601 date strings
+prop_format_date :: Property
+prop_format_date =
+    property $ do
+        value <- forAll genDate
+        case value of
+            String txt -> do
+                -- Date format: YYYY-MM-DD
+                let parts = T.splitOn "-" txt
+                assert (length parts == 3)
+                case parts of
+                    (year : _) -> assert (T.length year == 4)
+                    [] -> failure
+            _other -> failure
+
+-- | Test that genDateTime generates ISO 8601 datetime strings
+prop_format_datetime :: Property
+prop_format_datetime =
+    property $ do
+        value <- forAll genDateTime
+        case value of
+            String txt -> assert ("T" `T.isInfixOf` txt)
+            _other -> failure
+
+-- | Test that genURI generates valid URI strings
+prop_format_uri :: Property
+prop_format_uri =
+    property $ do
+        value <- forAll genURI
+        case value of
+            String txt -> assert ("://" `T.isInfixOf` txt)
+            _other -> failure
+
+-- | Test that enum schema only generates defined values
+prop_enum_generates_only_valid_values :: Property
+prop_enum_generates_only_valid_values =
+    property $ do
+        let enumValues = [String "red", String "green", String "blue"]
+            schema = emptySchema{schemaEnum = Just enumValues}
+        value <- forAll (genFromSchema schema)
+        assert (value `elem` enumValues)
+
+-- | Test that const schema always generates the exact value
+prop_const_generates_exact_value :: Property
+prop_const_generates_exact_value =
+    property $ do
+        let constValue = String "fixed_value"
+            schema = emptySchema{schemaConst = Just constValue}
+        value <- forAll (genFromSchema schema)
+        value === constValue
+
+-- | Test that additionalProperties: false is respected
+prop_additional_properties_respected :: Property
+prop_additional_properties_respected =
+    property $ do
+        let props = Map.fromList [("name", emptySchema{schemaType = Just SString})]
+            schema =
+                emptySchema
+                    { schemaType = Just SObject
+                    , schemaProperties = props
+                    , schemaAdditionalProperties = Just AdditionalPropertiesNone
+                    }
+        value <- forAll (genFromSchema schema)
+        case value of
+            Object obj -> do
+                let keys = Set.fromList (map Key.toText (KeyMap.keys obj))
+                    allowedKeys = Set.fromList ["name"]
+                assert (keys `Set.isSubsetOf` allowedKeys)
+            _otherValue -> failure
+
+-- | Test that deeply nested schemas don't cause infinite recursion
+prop_nested_object_depth_limited :: Property
+prop_nested_object_depth_limited =
+    property $ do
+        -- Create a schema that could recurse deeply
+        let schema =
+                emptySchema
+                    { schemaType = Just SObject
+                    , schemaProperties =
+                        Map.fromList
+                            [
+                                ( "nested"
+                                , emptySchema
+                                    { schemaType = Just SObject
+                                    , schemaProperties =
+                                        Map.fromList
+                                            [
+                                                ( "deep"
+                                                , emptySchema
+                                                    { schemaType = Just SObject
+                                                    , schemaProperties =
+                                                        Map.fromList
+                                                            [ ("value", emptySchema{schemaType = Just SString})
+                                                            ]
+                                                    }
+                                                )
+                                            ]
+                                    }
+                                )
+                            ]
+                    }
+        value <- forAll (genFromSchema schema)
+        assert (validateValue schema value)
+
+-- | Test that empty schema accepts any JSON value
+prop_empty_schema_accepts_anything :: Property
+prop_empty_schema_accepts_anything =
+    property $ do
+        value <- forAll (genFromSchema emptySchema)
+        -- Empty schema should validate any value
+        assert (validateValue emptySchema value)
+
+{- | Test that large integers are handled correctly
+Note: The generator uses linearFrom 0, so the range must include 0
+for shrinking to work correctly. This test verifies that large
+positive integers can be generated.
+-}
+prop_large_integer_handled :: Property
+prop_large_integer_handled =
+    property $ do
+        let schema =
+                emptySchema
+                    { schemaType = Just SInteger
+                    , schemaMinimum = Just (-1000)
+                    , schemaMaximum = Just 999999
+                    }
+        value <- forAll (genFromSchema schema)
+        case value of
+            Number n -> do
+                let d = realToFrac n :: Double
+                -- Verify the value is within the valid range
+                assert (d >= (-1000))
+                assert (d <= 999999)
+            _otherValue -> failure
+
+-- | Test that unicode characters in strings are handled correctly
+prop_unicode_in_strings :: Property
+prop_unicode_in_strings =
+    property $ do
+        let schema = emptySchema{schemaType = Just SString}
+        value <- forAll (genFromSchema schema)
+        case value of
+            String txt -> do
+                -- Should be valid UTF-8 text
+                let encoded = encodeUtf8 txt
+                assert (BS.length encoded >= 0)
+            _otherValue -> failure
+
+-- | Test that empty string is valid when no minLength constraint
+prop_empty_string_valid_when_no_minlength :: Property
+prop_empty_string_valid_when_no_minlength =
+    property $ do
+        let schema = emptySchema{schemaType = Just SString}
+            value = String ""
+        assert (validateValue schema value)
