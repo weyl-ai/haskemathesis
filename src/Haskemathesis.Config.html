@@ -134,16 +134,16 @@ config = defaultTestConfig
 -}</span></span><span>
 </span><span id="line-110"></span><span class="annot"><a href="Haskemathesis.Config.html#filterByOperationId"><span class="hs-identifier hs-type">filterByOperationId</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Haskemathesis.OpenApi.Types.html#ResolvedOperation"><span class="hs-identifier hs-type">ResolvedOperation</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span>
 </span><span id="line-111"></span><span id="filterByOperationId"><span class="annot"><span class="annottext">filterByOperationId :: Text -&gt; ResolvedOperation -&gt; Bool
-</span><a href="Haskemathesis.Config.html#filterByOperationId"><span class="hs-identifier hs-var hs-var">filterByOperationId</span></a></span></span><span> </span><span id="local-6989586621679222823"><span class="annot"><span class="annottext">Text
-</span><a href="#local-6989586621679222823"><span class="hs-identifier hs-var">opId</span></a></span></span><span> </span><span id="local-6989586621679222824"><span class="annot"><span class="annottext">ResolvedOperation
-</span><a href="#local-6989586621679222824"><span class="hs-identifier hs-var">op</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">ResolvedOperation -&gt; Maybe Text
+</span><a href="Haskemathesis.Config.html#filterByOperationId"><span class="hs-identifier hs-var hs-var">filterByOperationId</span></a></span></span><span> </span><span id="local-6989586621679222860"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679222860"><span class="hs-identifier hs-var">opId</span></a></span></span><span> </span><span id="local-6989586621679222861"><span class="annot"><span class="annottext">ResolvedOperation
+</span><a href="#local-6989586621679222861"><span class="hs-identifier hs-var">op</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">ResolvedOperation -&gt; Maybe Text
 </span><a href="Haskemathesis.OpenApi.Types.html#roOperationId"><span class="hs-identifier hs-var">roOperationId</span></a></span><span> </span><span class="annot"><span class="annottext">ResolvedOperation
-</span><a href="#local-6989586621679222824"><span class="hs-identifier hs-var">op</span></a></span><span> </span><span class="annot"><span class="annottext">Maybe Text -&gt; Maybe Text -&gt; Bool
+</span><a href="#local-6989586621679222861"><span class="hs-identifier hs-var">op</span></a></span><span> </span><span class="annot"><span class="annottext">Maybe Text -&gt; Maybe Text -&gt; Bool
 forall a. Eq a =&gt; a -&gt; a -&gt; Bool
 </span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Maybe Text
 forall a. a -&gt; Maybe a
 </span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">Text
-</span><a href="#local-6989586621679222823"><span class="hs-identifier hs-var">opId</span></a></span><span>
+</span><a href="#local-6989586621679222860"><span class="hs-identifier hs-var">opId</span></a></span><span>
 </span><span id="line-112"></span><span>
 </span><span id="line-113"></span><span class="annot"><span class="hs-comment">{- | Create a filter that matches operations by path prefix.
 
@@ -157,13 +157,13 @@ config = defaultTestConfig
 -}</span></span><span>
 </span><span id="line-123"></span><span class="annot"><a href="Haskemathesis.Config.html#filterByPathPrefix"><span class="hs-identifier hs-type">filterByPathPrefix</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Haskemathesis.OpenApi.Types.html#ResolvedOperation"><span class="hs-identifier hs-type">ResolvedOperation</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span>
 </span><span id="line-124"></span><span id="filterByPathPrefix"><span class="annot"><span class="annottext">filterByPathPrefix :: Text -&gt; ResolvedOperation -&gt; Bool
-</span><a href="Haskemathesis.Config.html#filterByPathPrefix"><span class="hs-identifier hs-var hs-var">filterByPathPrefix</span></a></span></span><span> </span><span id="local-6989586621679222826"><span class="annot"><span class="annottext">Text
-</span><a href="#local-6989586621679222826"><span class="hs-identifier hs-var">prefix</span></a></span></span><span> </span><span id="local-6989586621679222827"><span class="annot"><span class="annottext">ResolvedOperation
-</span><a href="#local-6989586621679222827"><span class="hs-identifier hs-var">op</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Bool
+</span><a href="Haskemathesis.Config.html#filterByPathPrefix"><span class="hs-identifier hs-var hs-var">filterByPathPrefix</span></a></span></span><span> </span><span id="local-6989586621679222863"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679222863"><span class="hs-identifier hs-var">prefix</span></a></span></span><span> </span><span id="local-6989586621679222864"><span class="annot"><span class="annottext">ResolvedOperation
+</span><a href="#local-6989586621679222864"><span class="hs-identifier hs-var">op</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Bool
 </span><span class="hs-identifier hs-var">T.isPrefixOf</span></span><span> </span><span class="annot"><span class="annottext">Text
-</span><a href="#local-6989586621679222826"><span class="hs-identifier hs-var">prefix</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">ResolvedOperation -&gt; Text
+</span><a href="#local-6989586621679222863"><span class="hs-identifier hs-var">prefix</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">ResolvedOperation -&gt; Text
 </span><a href="Haskemathesis.OpenApi.Types.html#roPath"><span class="hs-identifier hs-var">roPath</span></a></span><span> </span><span class="annot"><span class="annottext">ResolvedOperation
-</span><a href="#local-6989586621679222827"><span class="hs-identifier hs-var">op</span></a></span><span class="hs-special">)</span><span>
+</span><a href="#local-6989586621679222864"><span class="hs-identifier hs-var">op</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-125"></span><span>
 </span><span id="line-126"></span><span class="annot"><span class="hs-comment">{- | Create a filter that matches operations by tag.
 
@@ -177,13 +177,13 @@ config = defaultTestConfig
 -}</span></span><span>
 </span><span id="line-136"></span><span class="annot"><a href="Haskemathesis.Config.html#filterByTag"><span class="hs-identifier hs-type">filterByTag</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Haskemathesis.OpenApi.Types.html#ResolvedOperation"><span class="hs-identifier hs-type">ResolvedOperation</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span>
 </span><span id="line-137"></span><span id="filterByTag"><span class="annot"><span class="annottext">filterByTag :: Text -&gt; ResolvedOperation -&gt; Bool
-</span><a href="Haskemathesis.Config.html#filterByTag"><span class="hs-identifier hs-var hs-var">filterByTag</span></a></span></span><span> </span><span id="local-6989586621679222830"><span class="annot"><span class="annottext">Text
-</span><a href="#local-6989586621679222830"><span class="hs-identifier hs-var">tag</span></a></span></span><span> </span><span id="local-6989586621679222831"><span class="annot"><span class="annottext">ResolvedOperation
-</span><a href="#local-6989586621679222831"><span class="hs-identifier hs-var">op</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Text
-</span><a href="#local-6989586621679222830"><span class="hs-identifier hs-var">tag</span></a></span><span> </span><span class="annot"><span class="annottext">Text -&gt; [Text] -&gt; Bool
+</span><a href="Haskemathesis.Config.html#filterByTag"><span class="hs-identifier hs-var hs-var">filterByTag</span></a></span></span><span> </span><span id="local-6989586621679222867"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679222867"><span class="hs-identifier hs-var">tag</span></a></span></span><span> </span><span id="local-6989586621679222868"><span class="annot"><span class="annottext">ResolvedOperation
+</span><a href="#local-6989586621679222868"><span class="hs-identifier hs-var">op</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679222867"><span class="hs-identifier hs-var">tag</span></a></span><span> </span><span class="annot"><span class="annottext">Text -&gt; [Text] -&gt; Bool
 forall a. Eq a =&gt; a -&gt; [a] -&gt; Bool
 forall (t :: * -&gt; *) a. (Foldable t, Eq a) =&gt; a -&gt; t a -&gt; Bool
 </span><span class="hs-operator hs-var">`elem`</span></span><span> </span><span class="annot"><span class="annottext">ResolvedOperation -&gt; [Text]
 </span><a href="Haskemathesis.OpenApi.Types.html#roTags"><span class="hs-identifier hs-var">roTags</span></a></span><span> </span><span class="annot"><span class="annottext">ResolvedOperation
-</span><a href="#local-6989586621679222831"><span class="hs-identifier hs-var">op</span></a></span><span>
+</span><a href="#local-6989586621679222868"><span class="hs-identifier hs-var">op</span></a></span><span>
 </span><span id="line-138"></span></pre></body></html>

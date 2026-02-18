@@ -23,7 +23,7 @@ cyclic dependencies.
 </span><span id="line-23"></span><span>    </span><span class="hs-glyph">=</span><span> </span><span id="Test"><span class="annot"><a href="Haskemathesis.CLI.Options.html#Test"><span class="hs-identifier hs-var">Test</span></a></span></span><span> </span><span class="hs-glyph">!</span><span class="annot"><a href="Haskemathesis.CLI.Options.html#TestOptions"><span class="hs-identifier hs-type">TestOptions</span></a></span><span>
 </span><span id="line-24"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span id="Validate"><span class="annot"><a href="Haskemathesis.CLI.Options.html#Validate"><span class="hs-identifier hs-var">Validate</span></a></span></span><span> </span><span class="hs-glyph">!</span><span class="annot"><a href="Haskemathesis.CLI.Options.html#ValidateOptions"><span class="hs-identifier hs-type">ValidateOptions</span></a></span><span>
 </span><span id="line-25"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span id="Curl"><span class="annot"><a href="Haskemathesis.CLI.Options.html#Curl"><span class="hs-identifier hs-var">Curl</span></a></span></span><span> </span><span class="hs-glyph">!</span><span class="annot"><a href="Haskemathesis.CLI.Options.html#CurlOptions"><span class="hs-identifier hs-type">CurlOptions</span></a></span><span>
-</span><span id="line-26"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679218255"><span id="local-6989586621679218266"><span class="annot"><span class="annottext">Command -&gt; Command -&gt; Bool
+</span><span id="line-26"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679218280"><span id="local-6989586621679218291"><span class="annot"><span class="annottext">Command -&gt; Command -&gt; Bool
 (Command -&gt; Command -&gt; Bool)
 -&gt; (Command -&gt; Command -&gt; Bool) -&gt; Eq Command
 forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
@@ -31,7 +31,7 @@ $c== :: Command -&gt; Command -&gt; Bool
 == :: Command -&gt; Command -&gt; Bool
 $c/= :: Command -&gt; Command -&gt; Bool
 /= :: Command -&gt; Command -&gt; Bool
-</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679218271"><span id="local-6989586621679218283"><span id="local-6989586621679218287"><span class="annot"><span class="annottext">Int -&gt; Command -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679218296"><span id="local-6989586621679218308"><span id="local-6989586621679218312"><span class="annot"><span class="annottext">Int -&gt; Command -&gt; ShowS
 [Command] -&gt; ShowS
 Command -&gt; String
 (Int -&gt; Command -&gt; ShowS)
@@ -88,7 +88,7 @@ showList :: [Command] -&gt; ShowS
 </span><a href="Haskemathesis.CLI.Options.html#testWorkdir"><span class="hs-identifier hs-var hs-var">testWorkdir</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-glyph">!</span><span class="annot"><a href="Haskemathesis.CLI.Options.html#WorkdirOption"><span class="hs-identifier hs-type">WorkdirOption</span></a></span><span>
 </span><span id="line-55"></span><span>    </span><span class="annot"><span class="hs-comment">-- ^ Working directory for tests (to isolate side effects)</span></span><span>
 </span><span id="line-56"></span><span>    </span><span class="hs-special">}</span><span>
-</span><span id="line-57"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679218307"><span id="local-6989586621679218330"><span class="annot"><span class="annottext">TestOptions -&gt; TestOptions -&gt; Bool
+</span><span id="line-57"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679218332"><span id="local-6989586621679218355"><span class="annot"><span class="annottext">TestOptions -&gt; TestOptions -&gt; Bool
 (TestOptions -&gt; TestOptions -&gt; Bool)
 -&gt; (TestOptions -&gt; TestOptions -&gt; Bool) -&gt; Eq TestOptions
 forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
@@ -96,7 +96,7 @@ $c== :: TestOptions -&gt; TestOptions -&gt; Bool
 == :: TestOptions -&gt; TestOptions -&gt; Bool
 $c/= :: TestOptions -&gt; TestOptions -&gt; Bool
 /= :: TestOptions -&gt; TestOptions -&gt; Bool
-</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679218334"><span id="local-6989586621679218358"><span id="local-6989586621679218361"><span class="annot"><span class="annottext">Int -&gt; TestOptions -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679218359"><span id="local-6989586621679218383"><span id="local-6989586621679218386"><span class="annot"><span class="annottext">Int -&gt; TestOptions -&gt; ShowS
 [TestOptions] -&gt; ShowS
 TestOptions -&gt; String
 (Int -&gt; TestOptions -&gt; ShowS)
@@ -121,7 +121,7 @@ showList :: [TestOptions] -&gt; ShowS
 </span><span id="line-64"></span><span>      </span><span id="WorkdirTemp"><span class="annot"><a href="Haskemathesis.CLI.Options.html#WorkdirTemp"><span class="hs-identifier hs-var">WorkdirTemp</span></a></span></span><span>
 </span><span id="line-65"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="hs-comment">-- | Run in a specific directory</span></span><span>
 </span><span id="line-66"></span><span>      </span><span id="WorkdirPath"><span class="annot"><a href="Haskemathesis.CLI.Options.html#WorkdirPath"><span class="hs-identifier hs-var">WorkdirPath</span></a></span></span><span> </span><span class="hs-glyph">!</span><span class="annot"><span class="hs-identifier hs-type">FilePath</span></span><span>
-</span><span id="line-67"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679218368"><span id="local-6989586621679218374"><span class="annot"><span class="annottext">WorkdirOption -&gt; WorkdirOption -&gt; Bool
+</span><span id="line-67"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679218393"><span id="local-6989586621679218399"><span class="annot"><span class="annottext">WorkdirOption -&gt; WorkdirOption -&gt; Bool
 (WorkdirOption -&gt; WorkdirOption -&gt; Bool)
 -&gt; (WorkdirOption -&gt; WorkdirOption -&gt; Bool) -&gt; Eq WorkdirOption
 forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
@@ -129,7 +129,7 @@ $c== :: WorkdirOption -&gt; WorkdirOption -&gt; Bool
 == :: WorkdirOption -&gt; WorkdirOption -&gt; Bool
 $c/= :: WorkdirOption -&gt; WorkdirOption -&gt; Bool
 /= :: WorkdirOption -&gt; WorkdirOption -&gt; Bool
-</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679218377"><span id="local-6989586621679218382"><span id="local-6989586621679218385"><span class="annot"><span class="annottext">Int -&gt; WorkdirOption -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679218402"><span id="local-6989586621679218407"><span id="local-6989586621679218410"><span class="annot"><span class="annottext">Int -&gt; WorkdirOption -&gt; ShowS
 [WorkdirOption] -&gt; ShowS
 WorkdirOption -&gt; String
 (Int -&gt; WorkdirOption -&gt; ShowS)
@@ -155,7 +155,7 @@ showList :: [WorkdirOption] -&gt; ShowS
 </span><a href="Haskemathesis.CLI.Options.html#validateVerbose"><span class="hs-identifier hs-var hs-var">validateVerbose</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-glyph">!</span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span>
 </span><span id="line-74"></span><span>    </span><span class="annot"><span class="hs-comment">-- ^ Show detailed validation information</span></span><span>
 </span><span id="line-75"></span><span>    </span><span class="hs-special">}</span><span>
-</span><span id="line-76"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679218391"><span id="local-6989586621679218396"><span class="annot"><span class="annottext">ValidateOptions -&gt; ValidateOptions -&gt; Bool
+</span><span id="line-76"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679218416"><span id="local-6989586621679218421"><span class="annot"><span class="annottext">ValidateOptions -&gt; ValidateOptions -&gt; Bool
 (ValidateOptions -&gt; ValidateOptions -&gt; Bool)
 -&gt; (ValidateOptions -&gt; ValidateOptions -&gt; Bool)
 -&gt; Eq ValidateOptions
@@ -164,7 +164,7 @@ $c== :: ValidateOptions -&gt; ValidateOptions -&gt; Bool
 == :: ValidateOptions -&gt; ValidateOptions -&gt; Bool
 $c/= :: ValidateOptions -&gt; ValidateOptions -&gt; Bool
 /= :: ValidateOptions -&gt; ValidateOptions -&gt; Bool
-</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679218399"><span id="local-6989586621679218405"><span id="local-6989586621679218408"><span class="annot"><span class="annottext">Int -&gt; ValidateOptions -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679218424"><span id="local-6989586621679218430"><span id="local-6989586621679218433"><span class="annot"><span class="annottext">Int -&gt; ValidateOptions -&gt; ShowS
 [ValidateOptions] -&gt; ShowS
 ValidateOptions -&gt; String
 (Int -&gt; ValidateOptions -&gt; ShowS)
@@ -202,7 +202,7 @@ showList :: [ValidateOptions] -&gt; ShowS
 </span><a href="Haskemathesis.CLI.Options.html#curlTags"><span class="hs-identifier hs-var hs-var">curlTags</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-glyph">!</span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span class="hs-special">]</span><span>
 </span><span id="line-91"></span><span>    </span><span class="annot"><span class="hs-comment">-- ^ Filter operations by tags</span></span><span>
 </span><span id="line-92"></span><span>    </span><span class="hs-special">}</span><span>
-</span><span id="line-93"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679218418"><span id="local-6989586621679218427"><span class="annot"><span class="annottext">CurlOptions -&gt; CurlOptions -&gt; Bool
+</span><span id="line-93"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679218443"><span id="local-6989586621679218452"><span class="annot"><span class="annottext">CurlOptions -&gt; CurlOptions -&gt; Bool
 (CurlOptions -&gt; CurlOptions -&gt; Bool)
 -&gt; (CurlOptions -&gt; CurlOptions -&gt; Bool) -&gt; Eq CurlOptions
 forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
@@ -210,7 +210,7 @@ $c== :: CurlOptions -&gt; CurlOptions -&gt; Bool
 == :: CurlOptions -&gt; CurlOptions -&gt; Bool
 $c/= :: CurlOptions -&gt; CurlOptions -&gt; Bool
 /= :: CurlOptions -&gt; CurlOptions -&gt; Bool
-</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679218430"><span id="local-6989586621679218440"><span id="local-6989586621679218443"><span class="annot"><span class="annottext">Int -&gt; CurlOptions -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679218455"><span id="local-6989586621679218465"><span id="local-6989586621679218468"><span class="annot"><span class="annottext">Int -&gt; CurlOptions -&gt; ShowS
 [CurlOptions] -&gt; ShowS
 CurlOptions -&gt; String
 (Int -&gt; CurlOptions -&gt; ShowS)
@@ -231,7 +231,7 @@ showList :: [CurlOptions] -&gt; ShowS
 </span><span id="line-96"></span><span class="hs-keyword">data</span><span> </span><span id="OutputFormat"><span class="annot"><a href="Haskemathesis.CLI.Options.html#OutputFormat"><span class="hs-identifier hs-var">OutputFormat</span></a></span></span><span>
 </span><span id="line-97"></span><span>    </span><span class="hs-glyph">=</span><span> </span><span id="OutputText"><span class="annot"><a href="Haskemathesis.CLI.Options.html#OutputText"><span class="hs-identifier hs-var">OutputText</span></a></span></span><span>
 </span><span id="line-98"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span id="OutputJson"><span class="annot"><a href="Haskemathesis.CLI.Options.html#OutputJson"><span class="hs-identifier hs-var">OutputJson</span></a></span></span><span>
-</span><span id="line-99"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679218448"><span id="local-6989586621679218452"><span class="annot"><span class="annottext">OutputFormat -&gt; OutputFormat -&gt; Bool
+</span><span id="line-99"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679218473"><span id="local-6989586621679218477"><span class="annot"><span class="annottext">OutputFormat -&gt; OutputFormat -&gt; Bool
 (OutputFormat -&gt; OutputFormat -&gt; Bool)
 -&gt; (OutputFormat -&gt; OutputFormat -&gt; Bool) -&gt; Eq OutputFormat
 forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
@@ -239,7 +239,7 @@ $c== :: OutputFormat -&gt; OutputFormat -&gt; Bool
 == :: OutputFormat -&gt; OutputFormat -&gt; Bool
 $c/= :: OutputFormat -&gt; OutputFormat -&gt; Bool
 /= :: OutputFormat -&gt; OutputFormat -&gt; Bool
-</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679218455"><span id="local-6989586621679218457"><span id="local-6989586621679218460"><span class="annot"><span class="annottext">Int -&gt; OutputFormat -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679218480"><span id="local-6989586621679218482"><span id="local-6989586621679218485"><span class="annot"><span class="annottext">Int -&gt; OutputFormat -&gt; ShowS
 [OutputFormat] -&gt; ShowS
 OutputFormat -&gt; String
 (Int -&gt; OutputFormat -&gt; ShowS)
