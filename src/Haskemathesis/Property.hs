@@ -57,7 +57,8 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Haskemathesis.Auth.Config (applyAuthForOperation)
 import Haskemathesis.Check.Negative (negativeTestRejection)
-import Haskemathesis.Check.Types (Check (..), CheckResult (..))
+import Haskemathesis.Check.Standard.Helpers (operationLabel)
+import Haskemathesis.Check.Types (Check (..), CheckResult (..), FailureDetail)
 import Haskemathesis.Config (TestConfig (..))
 import Haskemathesis.Execute.Types (ApiRequest (..), ApiResponse, BaseUrl)
 import Haskemathesis.Gen.Negative (genNegativeRequest, renderNegativeMutation)
@@ -132,11 +133,7 @@ propertyForOperationWithConfig openApi config execute op =
     withTests (fromIntegral (tcPropertyCount config)) $
         property $ do
             req <- forAll (genApiRequest op)
-            let reqAuth =
-                    case tcAuthConfig config of
-                        Nothing -> req
-                        Just auth -> applyAuthForOperation openApi auth op req
-            let req' = reqAuth{reqHeaders = tcHeaders config ++ reqHeaders reqAuth}
+            let req' = applyConfigToRequest openApi config op req
             res <- evalIO (execute req')
             runChecks (tcBaseUrl config) (tcChecks config) req' res op
 
@@ -180,19 +177,11 @@ propertyForOperationNegative openApi config execute op =
             case mReq of
                 Nothing -> success
                 Just (req, mutation) -> do
-                    let reqAuth =
-                            case tcAuthConfig config of
-                                Nothing -> req
-                                Just auth -> applyAuthForOperation openApi auth op req
-                    let req' = reqAuth{reqHeaders = tcHeaders config ++ reqHeaders reqAuth}
+                    let req' = applyConfigToRequest openApi config op req
                     res <- evalIO (execute req')
                     case negativeTestRejection (renderNegativeMutation mutation) req' res op of
                         CheckPassed -> success
-                        CheckFailed detail -> do
-                            mSeed <- evalIO (lookupEnv "HEDGEHOG_SEED")
-                            let seedText = T.pack <$> mSeed
-                            annotate (T.unpack (renderFailureDetailAnsi (tcBaseUrl config) seedText detail))
-                            failure
+                        CheckFailed detail -> reportFailure (tcBaseUrl config) detail
 
 {- | Generate properties for all operations in a spec using basic configuration.
 
@@ -329,6 +318,22 @@ propertiesForSpecNegative ::
 propertiesForSpecNegative openApi config =
     propertiesForSpecWithConfig openApi (config{tcNegativeTesting = True})
 
+-- | Internal helper to apply auth and config headers to a request.
+applyConfigToRequest :: OpenApi -> TestConfig -> ResolvedOperation -> ApiRequest -> ApiRequest
+applyConfigToRequest openApi config op req =
+    let reqAuth = case tcAuthConfig config of
+            Nothing -> req
+            Just auth -> applyAuthForOperation openApi auth op req
+     in reqAuth{reqHeaders = tcHeaders config ++ reqHeaders reqAuth}
+
+-- | Internal helper to report a failure with seed and details.
+reportFailure :: Maybe BaseUrl -> FailureDetail -> PropertyT IO ()
+reportFailure mBase detail = do
+    mSeed <- evalIO (lookupEnv "HEDGEHOG_SEED")
+    let seedText = T.pack <$> mSeed
+    annotate (T.unpack (renderFailureDetailAnsi mBase seedText detail))
+    failure
+
 -- | Internal helper to run all checks and report first failure.
 runChecks ::
     Maybe BaseUrl ->
@@ -340,20 +345,9 @@ runChecks ::
 runChecks mBase checks req res op =
     case firstFailure of
         Nothing -> success
-        Just detail -> do
-            mSeed <- evalIO (lookupEnv "HEDGEHOG_SEED")
-            let seedText = T.pack <$> mSeed
-            annotate (T.unpack (renderFailureDetailAnsi mBase seedText detail))
-            failure
+        Just detail -> reportFailure mBase detail
   where
     firstFailure =
         case [detail | Check{checkRun = run} <- checks, CheckFailed detail <- [run req res op]] of
             [] -> Nothing
             (detail : _) -> Just detail
-
--- | Internal helper to create a human-readable label for an operation.
-operationLabel :: ResolvedOperation -> Text
-operationLabel op =
-    case roOperationId op of
-        Just opId -> opId
-        Nothing -> roMethod op <> " " <> roPath op

@@ -41,8 +41,8 @@ module Haskemathesis.Integration.Hspec (
 where
 
 import Data.OpenApi (OpenApi)
-import Data.Text (Text)
 import qualified Data.Text as T
+import Haskemathesis.Check.Standard.Helpers (operationLabel)
 import Haskemathesis.Check.Types (Check)
 import Haskemathesis.Config (TestConfig (..))
 import Haskemathesis.Execute.Http (executeHttp)
@@ -315,9 +315,3 @@ specForOperationWithConfig openApi config execute op
     | otherwise =
         it (T.unpack (operationLabel op)) $
             check (propertyForOperationWithConfig openApi config execute op) >>= (`shouldBe` True)
-
-operationLabel :: ResolvedOperation -> Text
-operationLabel op =
-    case roOperationId op of
-        Just opId -> opId
-        Nothing -> roMethod op <> " " <> roPath op

@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 {- |
 Module      : Haskemathesis.OpenApi.Resolve
 Description : OpenAPI specification resolution
@@ -203,69 +205,54 @@ convertLocation location =
         ParamHeader -> HOT.ParamHeader
         ParamCookie -> HOT.ParamCookie
 
-resolveReferencedSchema :: Components -> Referenced Schema -> Maybe Schema
-resolveReferencedSchema components ref =
+-- | Resolve a referenced value, returning the inline value or looking up the reference.
+resolveReferenced :: (Reference -> Maybe a) -> Referenced a -> Maybe a
+resolveReferenced resolveRef ref =
     case ref of
-        Inline s -> Just s
-        Ref r -> resolveSchemaRef components r
+        Inline x -> Just x
+        Ref r -> resolveRef r
+
+-- | Resolve a component reference by section name and accessor.
+resolveComponentRef :: Text -> (Components -> InsOrdHashMap.InsOrdHashMap Text a) -> Components -> Reference -> Maybe a
+resolveComponentRef section accessor components (Reference refText) = do
+    name <- refName section refText
+    InsOrdHashMap.lookup name (accessor components)
+
+resolveReferencedSchema :: Components -> Referenced Schema -> Maybe Schema
+resolveReferencedSchema components = resolveReferenced (resolveSchemaRef components)
 
 resolveReferencedParam :: Components -> Referenced Param -> Maybe Param
-resolveReferencedParam components ref =
-    case ref of
-        Inline p -> Just p
-        Ref r -> resolveParamRef components r
+resolveReferencedParam components = resolveReferenced (resolveParamRef components)
 
 resolveReferencedRequestBody :: Components -> Referenced RequestBody -> Maybe RequestBody
-resolveReferencedRequestBody components ref =
-    case ref of
-        Inline b -> Just b
-        Ref r -> resolveRequestBodyRef components r
+resolveReferencedRequestBody components = resolveReferenced (resolveRequestBodyRef components)
 
 resolveReferencedResponse :: Components -> Referenced Response -> Maybe Response
-resolveReferencedResponse components ref =
-    case ref of
-        Inline r -> Just r
-        Ref r -> resolveResponseRef components r
+resolveReferencedResponse components = resolveReferenced (resolveResponseRef components)
 
 resolveReferencedHeader :: Components -> Referenced Header -> Maybe Header
-resolveReferencedHeader components ref =
-    case ref of
-        Inline h -> Just h
-        Ref r -> resolveHeaderRef components r
+resolveReferencedHeader components = resolveReferenced (resolveHeaderRef components)
 
 resolveSchemaRef :: Components -> Reference -> Maybe Schema
-resolveSchemaRef components (Reference refText) = do
-    name <- refName (T.pack "schemas") refText
-    InsOrdHashMap.lookup name (_componentsSchemas components)
+resolveSchemaRef = resolveComponentRef "schemas" _componentsSchemas
 
 resolveParamRef :: Components -> Reference -> Maybe Param
-resolveParamRef components (Reference refText) = do
-    name <- refName (T.pack "parameters") refText
-    InsOrdHashMap.lookup name (_componentsParameters components)
+resolveParamRef = resolveComponentRef "parameters" _componentsParameters
 
 resolveRequestBodyRef :: Components -> Reference -> Maybe RequestBody
-resolveRequestBodyRef components (Reference refText) = do
-    name <- refName (T.pack "requestBodies") refText
-    InsOrdHashMap.lookup name (_componentsRequestBodies components)
+resolveRequestBodyRef = resolveComponentRef "requestBodies" _componentsRequestBodies
 
 resolveResponseRef :: Components -> Reference -> Maybe Response
-resolveResponseRef components (Reference refText) = do
-    name <- refName (T.pack "responses") refText
-    InsOrdHashMap.lookup name (_componentsResponses components)
+resolveResponseRef = resolveComponentRef "responses" _componentsResponses
 
 resolveHeaderRef :: Components -> Reference -> Maybe Header
-resolveHeaderRef components (Reference refText) = do
-    name <- refName (T.pack "headers") refText
-    InsOrdHashMap.lookup name (_componentsHeaders components)
+resolveHeaderRef = resolveComponentRef "headers" _componentsHeaders
 
 refName :: Text -> Text -> Maybe Text
 refName section refText =
-    case T.splitOn (T.pack "/") refText of
-        [hash, componentsKey, sectionName, name]
-            | hash == T.pack "#"
-                && componentsKey == T.pack "components"
-                && sectionName == section ->
-                Just name
+    case T.splitOn "/" refText of
+        ["#", "components", sectionName, name]
+            | sectionName == section -> Just name
         _otherParts -> Nothing
 
 renderMediaType :: MediaType -> Text

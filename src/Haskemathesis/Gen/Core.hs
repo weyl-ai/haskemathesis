@@ -110,21 +110,16 @@ genWithCombinators depth schema
 
 genBase :: Int -> Schema -> Gen Value
 genBase depth schema =
-    case schemaConst schema of
-        Just v -> pure v
-        Nothing ->
-            case schemaEnum schema of
-                Just xs | not (null xs) -> Gen.element xs
-                _otherEnum ->
-                    case schemaType schema of
-                        Just SString -> genString schema
-                        Just SInteger -> genInteger schema
-                        Just SNumber -> genNumber schema
-                        Just SBoolean -> genBoolean schema
-                        Just SArray -> genArray depth schema
-                        Just SObject -> genObject depth schema
-                        Just SNull -> pure Null
-                        Nothing -> genFromConstraints depth schema
+    genConstOrEnum schema $
+        case schemaType schema of
+            Just SString -> genString schema
+            Just SInteger -> genInteger schema
+            Just SNumber -> genNumber schema
+            Just SBoolean -> genBoolean schema
+            Just SArray -> genArray depth schema
+            Just SObject -> genObject depth schema
+            Just SNull -> pure Null
+            Nothing -> genFromConstraints depth schema
 
 genFromConstraints :: Int -> Schema -> Gen Value
 genFromConstraints depth schema =

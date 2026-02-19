@@ -12,7 +12,6 @@ and that header values conform to their documented schemas.
 module Haskemathesis.Check.Standard.Headers (responseHeadersConformance) where
 
 import Data.Aeson (Value (..))
-import Data.Bifunctor (first)
 import Data.ByteString (ByteString)
 import qualified Data.CaseInsensitive as CI
 import Data.List.NonEmpty (NonEmpty (..))
@@ -25,7 +24,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeUtf8, encodeUtf8)
 import qualified Data.Vector as Vector
-import Haskemathesis.Check.Standard.Helpers (failureDetail, responseSchemasForStatus)
+import Haskemathesis.Check.Standard.Helpers (failureDetail, normalizeMapKeys, responseSchemasForStatus)
 import Haskemathesis.Check.Types (Check (..), CheckResult (..))
 import Haskemathesis.Execute.Types (ApiResponse (..))
 import Haskemathesis.OpenApi.Types (ResponseSpec (..))
@@ -110,28 +109,19 @@ validateHeaderSchema headerValues (name, schema) =
                             ["header " <> name <> " violates schema: " <> T.intercalate ", " errs]
 
 normalizeHeaderMap :: Map Text Schema -> Map Text Schema
-normalizeHeaderMap =
-    Map.fromList . map (first normalizeHeader) . Map.toList
+normalizeHeaderMap = normalizeMapKeys normalizeHeader
 
 headerValueToJson :: Schema -> NonEmpty ByteString -> Either Text Value
 headerValueToJson schema raws =
     case schemaType schema of
-        Just SArray ->
-            parseArray raws
-        Just SString ->
-            parseScalar schema (NE.head raws)
-        Just SInteger ->
-            parseScalar schema (NE.head raws)
-        Just SNumber ->
-            parseScalar schema (NE.head raws)
-        Just SBoolean ->
-            parseScalar schema (NE.head raws)
-        Just SObject ->
-            parseScalar schema (NE.head raws)
-        Just SNull ->
-            parseScalar schema (NE.head raws)
-        Nothing ->
-            parseScalar schema (NE.head raws)
+        Just SArray -> parseArray raws
+        Just SString -> parseScalar schema (NE.head raws)
+        Just SInteger -> parseScalar schema (NE.head raws)
+        Just SNumber -> parseScalar schema (NE.head raws)
+        Just SBoolean -> parseScalar schema (NE.head raws)
+        Just SObject -> parseScalar schema (NE.head raws)
+        Just SNull -> parseScalar schema (NE.head raws)
+        Nothing -> parseScalar schema (NE.head raws)
   where
     parseArray values =
         let itemSchema = fromMaybe emptySchema (schemaItems schema)

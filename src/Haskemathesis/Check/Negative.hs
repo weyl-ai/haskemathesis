@@ -33,9 +33,10 @@ module Haskemathesis.Check.Negative (
 where
 
 import Data.Text (Text)
+import Haskemathesis.Check.Standard.Helpers (operationLabel)
 import Haskemathesis.Check.Types (CheckResult (..), FailureDetail (..))
 import Haskemathesis.Execute.Types (ApiRequest, ApiResponse (..))
-import Haskemathesis.OpenApi.Types (ResolvedOperation (..))
+import Haskemathesis.OpenApi.Types (ResolvedOperation)
 
 {- | Check that a negative test request was properly rejected.
 
@@ -87,9 +88,3 @@ negativeTestRejection mutation req res op =
                     , fdSchemaDiff = Nothing
                     , fdMutation = Just mutation
                     }
-
-operationLabel :: ResolvedOperation -> Text
-operationLabel op =
-    case roOperationId op of
-        Just opId -> opId
-        Nothing -> roMethod op <> " " <> roPath op

@@ -73,8 +73,8 @@ module Haskemathesis.Integration.Tasty (
 where
 
 import Data.OpenApi (OpenApi)
-import Data.Text (Text)
 import qualified Data.Text as T
+import Haskemathesis.Check.Standard.Helpers (operationLabel)
 import Haskemathesis.Check.Types (Check)
 import Haskemathesis.Config (TestConfig (..))
 import Haskemathesis.Execute.Http (executeHttp)
@@ -348,10 +348,3 @@ testTreeForUrlNegative ::
     TestTree
 testTreeForUrlNegative config openApi manager baseUrl =
     testTreeForExecutorNegative openApi (config{tcBaseUrl = Just baseUrl}) (executeHttp manager baseUrl) (resolveOperations openApi)
-
--- | Internal helper to create a human-readable label for an operation.
-operationLabel :: ResolvedOperation -> Text
-operationLabel op =
-    case roOperationId op of
-        Just opId -> opId
-        Nothing -> roMethod op <> " " <> roPath op

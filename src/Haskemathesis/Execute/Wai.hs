@@ -32,7 +32,7 @@ import qualified Data.ByteString.Lazy as LBS
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import Haskemathesis.Execute.Types
-import Network.HTTP.Types (hContentType, renderQueryText, statusCode)
+import Network.HTTP.Types (renderQueryText, statusCode)
 import Network.Wai (Application, Request (..), defaultRequest)
 import Network.Wai.Test (SRequest (..), SResponse (..), runSession, srequest)
 
@@ -95,13 +95,6 @@ toWaiRequest req =
         { requestMethod = reqMethod req
         , rawPathInfo = encodeUtf8 (reqPath req)
         , pathInfo = filter (not . T.null) (T.split (== '/') (reqPath req))
-        , rawQueryString = LBS.toStrict (toLazyByteString (renderQueryText True (map toQuery (reqQueryParams req))))
-        , requestHeaders = contentTypeHeader ++ reqHeaders req
+        , rawQueryString = LBS.toStrict (toLazyByteString (renderQueryText True (map queryToMaybe (reqQueryParams req))))
+        , requestHeaders = contentTypeHeaders req ++ reqHeaders req
         }
-  where
-    toQuery (k, v) = (k, Just v)
-    contentTypeHeader =
-        case reqBody req of
-            Nothing -> []
-            Just (mediaType, _) ->
-                [(hContentType, encodeUtf8 mediaType)]

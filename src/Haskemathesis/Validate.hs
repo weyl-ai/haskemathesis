@@ -127,34 +127,24 @@ validateType schema value
     | otherwise =
         case schemaType schema of
             Nothing -> []
-            Just SString ->
-                case value of
-                    String _ -> []
-                    _otherValue -> ["expected string"]
-            Just SInteger ->
-                case value of
-                    Number n | isInteger n -> []
-                    _otherValue -> ["expected integer"]
-            Just SNumber ->
-                case value of
-                    Number _ -> []
-                    _otherValue -> ["expected number"]
-            Just SBoolean ->
-                case value of
-                    Bool _ -> []
-                    _otherValue -> ["expected boolean"]
-            Just SArray ->
-                case value of
-                    Array _ -> []
-                    _otherValue -> ["expected array"]
-            Just SObject ->
-                case value of
-                    Object _ -> []
-                    _otherValue -> ["expected object"]
-            Just SNull ->
-                case value of
-                    Null -> []
-                    _otherValue -> ["expected null"]
+            Just st -> checkType st value
+
+-- | Check if a value matches the expected schema type.
+checkType :: SchemaType -> Value -> [Text]
+checkType SString (String _) = []
+checkType SString _ = ["expected string"]
+checkType SInteger (Number n) | isInteger n = []
+checkType SInteger _ = ["expected integer"]
+checkType SNumber (Number _) = []
+checkType SNumber _ = ["expected number"]
+checkType SBoolean (Bool _) = []
+checkType SBoolean _ = ["expected boolean"]
+checkType SArray (Array _) = []
+checkType SArray _ = ["expected array"]
+checkType SObject (Object _) = []
+checkType SObject _ = ["expected object"]
+checkType SNull Null = []
+checkType SNull _ = ["expected null"]
 
 -- | Validate enum constraints.
 validateEnum :: Schema -> Value -> [Text]

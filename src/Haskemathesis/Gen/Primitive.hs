@@ -25,6 +25,7 @@ module Haskemathesis.Gen.Primitive (
     genInteger,
     genNumber,
     genBoolean,
+    genConstOrEnum,
 )
 where
 
@@ -38,6 +39,16 @@ import Hedgehog (Gen)
 import qualified Hedgehog.Gen as Gen
 import qualified Hedgehog.Range as Range
 import Text.Regex.TDFA ((=~))
+
+-- | Try to generate from const or enum first, otherwise use the fallback generator.
+genConstOrEnum :: Schema -> Gen Value -> Gen Value
+genConstOrEnum schema fallback =
+    case schemaConst schema of
+        Just v -> pure v
+        Nothing ->
+            case schemaEnum schema of
+                Just xs | not (null xs) -> Gen.element xs
+                _noEnum -> fallback
 
 {- | Generate a string value according to schema constraints.
 
@@ -69,24 +80,19 @@ value <- genString schema
 -}
 genString :: Schema -> Gen Value
 genString schema =
-    case schemaEnum schema of
-        Just xs | not (null xs) -> Gen.element xs
-        _otherEnum ->
-            case schemaConst schema of
-                Just v -> pure v
-                Nothing ->
-                    case schemaPattern schema of
-                        Just pat ->
-                            let minL = fromMaybe 0 (schemaMinLength schema)
-                                maxL = fromMaybe (minL + 8) (schemaMaxLength schema)
-                                range = Range.linear minL maxL
-                             in Gen.filter
-                                    (matchesPattern pat)
-                                    (String <$> Gen.text range Gen.alphaNum)
-                        Nothing -> do
-                            let minL = fromMaybe 0 (schemaMinLength schema)
-                                maxL = fromMaybe (minL + 32) (schemaMaxLength schema)
-                            String <$> Gen.text (Range.linear minL maxL) Gen.alphaNum
+    genConstOrEnum schema $
+        case schemaPattern schema of
+            Just pat ->
+                let minL = fromMaybe 0 (schemaMinLength schema)
+                    maxL = fromMaybe (minL + 8) (schemaMaxLength schema)
+                    range = Range.linear minL maxL
+                 in Gen.filter
+                        (matchesPattern pat)
+                        (String <$> Gen.text range Gen.alphaNum)
+            Nothing -> do
+                let minL = fromMaybe 0 (schemaMinLength schema)
+                    maxL = fromMaybe (minL + 32) (schemaMaxLength schema)
+                String <$> Gen.text (Range.linear minL maxL) Gen.alphaNum
 
 {- | Generate an integer value according to schema constraints.
 

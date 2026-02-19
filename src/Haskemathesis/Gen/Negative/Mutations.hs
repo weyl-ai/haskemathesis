@@ -16,7 +16,6 @@ module Haskemathesis.Gen.Negative.Mutations (
 where
 
 import Data.Aeson (Value (..), encode)
-import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy as LBS
 import qualified Data.CaseInsensitive as CI
 import Data.List (find)
@@ -101,51 +100,52 @@ mutationCandidates op req =
         , invalidContentType op req
         ]
 
+-- | Get required parameters at a given location.
+requiredParamsAt :: ParamLocation -> ResolvedOperation -> [ResolvedParam]
+requiredParamsAt location op =
+    [param | param <- roParameters op, rpLocation param == location, rpRequired param]
+
+-- | Get all parameters at a given location.
+paramsAt :: ParamLocation -> ResolvedOperation -> [ResolvedParam]
+paramsAt location op =
+    [param | param <- roParameters op, rpLocation param == location]
+
 removeRequiredPaths :: ResolvedOperation -> ApiRequest -> [(NegativeMutation, ApiRequest -> ApiRequest)]
 removeRequiredPaths op req =
     [ (RemoveRequiredPath (rpName param), const (dropPathParam op req (rpName param)))
-    | param <- roParameters op
-    , rpLocation param == ParamPath
-    , rpRequired param
+    | param <- requiredParamsAt ParamPath op
     ]
 
 removeRequiredHeaders :: ResolvedOperation -> [(NegativeMutation, ApiRequest -> ApiRequest)]
 removeRequiredHeaders op =
     [ (RemoveRequiredHeader (rpName param), dropHeader (rpName param))
-    | param <- roParameters op
-    , rpLocation param == ParamHeader
-    , rpRequired param
+    | param <- requiredParamsAt ParamHeader op
     ]
 
 removeRequiredQueries :: ResolvedOperation -> [(NegativeMutation, ApiRequest -> ApiRequest)]
 removeRequiredQueries op =
     [ (RemoveRequiredQuery (rpName param), dropQuery (rpName param))
-    | param <- roParameters op
-    , rpLocation param == ParamQuery
-    , rpRequired param
+    | param <- requiredParamsAt ParamQuery op
     ]
 
 invalidPathParams :: ResolvedOperation -> ApiRequest -> [(NegativeMutation, ApiRequest -> ApiRequest)]
 invalidPathParams op req =
     [ (InvalidPathParam (rpName param), const (setPathParam op req (rpName param) invalidValue))
-    | param <- roParameters op
-    , rpLocation param == ParamPath
+    | param <- paramsAt ParamPath op
     , Just invalidValue <- [invalidValueText (rpSchema param)]
     ]
 
 invalidHeaders :: ResolvedOperation -> [(NegativeMutation, ApiRequest -> ApiRequest)]
 invalidHeaders op =
     [ (InvalidHeader (rpName param), setHeaderValue (rpName param) invalidValue)
-    | param <- roParameters op
-    , rpLocation param == ParamHeader
+    | param <- paramsAt ParamHeader op
     , Just invalidValue <- [invalidValueText (rpSchema param)]
     ]
 
 invalidQueries :: ResolvedOperation -> [(NegativeMutation, ApiRequest -> ApiRequest)]
 invalidQueries op =
     [ (InvalidQueryParam (rpName param), setQueryValue (rpName param) invalidValue)
-    | param <- roParameters op
-    , rpLocation param == ParamQuery
+    | param <- paramsAt ParamQuery op
     , Just invalidValue <- [invalidValueText (rpSchema param)]
     ]
 
@@ -217,31 +217,18 @@ setHeaderValue :: Text -> Text -> ApiRequest -> ApiRequest
 setHeaderValue name value req =
     let headerName = CI.mk (encodeUtf8 name)
         newValue = encodeUtf8 value
-     in req{reqHeaders = replaceHeader headerName newValue (reqHeaders req)}
+     in req{reqHeaders = replaceAssoc headerName newValue (reqHeaders req)}
 
 setQueryValue :: Text -> Text -> ApiRequest -> ApiRequest
 setQueryValue name value req =
-    req{reqQueryParams = replaceQuery name value (reqQueryParams req)}
+    req{reqQueryParams = replaceAssoc name value (reqQueryParams req)}
 
-replaceHeader :: CI.CI BS.ByteString -> BS.ByteString -> [(CI.CI BS.ByteString, BS.ByteString)] -> [(CI.CI BS.ByteString, BS.ByteString)]
-replaceHeader name value headers =
-    case find ((== name) . fst) headers of
-        Nothing -> (name, value) : headers
-        Just _ -> map update headers
-  where
-    update entry@(headerName, _)
-        | headerName == name = (headerName, value)
-        | otherwise = entry
-
-replaceQuery :: Text -> Text -> [(Text, Text)] -> [(Text, Text)]
-replaceQuery name value params =
-    case find ((== name) . fst) params of
-        Nothing -> (name, value) : params
-        Just _ -> map update params
-  where
-    update entry@(paramName, _)
-        | paramName == name = (paramName, value)
-        | otherwise = entry
+-- | Replace or insert a value in an association list.
+replaceAssoc :: (Eq k) => k -> v -> [(k, v)] -> [(k, v)]
+replaceAssoc key val assocs =
+    case find ((== key) . fst) assocs of
+        Nothing -> (key, val) : assocs
+        Just _ -> map (\(k, v) -> if k == key then (k, val) else (k, v)) assocs
 
 dropHeader :: Text -> ApiRequest -> ApiRequest
 dropHeader name req =

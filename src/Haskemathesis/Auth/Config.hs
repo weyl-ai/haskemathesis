@@ -41,6 +41,7 @@ import Data.ByteString (ByteString)
 import qualified Data.ByteString.Base64 as Base64
 import qualified Data.ByteString.Char8 as BS8
 import qualified Data.CaseInsensitive as CI
+import Data.Foldable (asum)
 import qualified Data.HashMap.Strict.InsOrd as InsOrdHashMap
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
@@ -175,7 +176,7 @@ selectAuthForOperation openApi config op =
 
 findSatisfied :: Map Text SecurityScheme -> [SecurityRequirement] -> AuthConfig -> Maybe [AppliedAuth]
 findSatisfied schemes requirements config =
-    findJust (map (applyRequirement schemes config) requirements)
+    asum (map (applyRequirement schemes config) requirements)
 
 applyRequirement :: Map Text SecurityScheme -> AuthConfig -> SecurityRequirement -> Maybe [AppliedAuth]
 applyRequirement schemes config (SecurityRequirement requirement) =
@@ -222,16 +223,6 @@ securitySchemesMap :: Components -> Map Text SecurityScheme
 securitySchemesMap components =
     case _componentsSecuritySchemes components of
         SecurityDefinitions defs -> Map.fromList (InsOrdHashMap.toList defs)
-
-findJust :: [Maybe a] -> Maybe a
-findJust = findMaybe
-
-findMaybe :: [Maybe a] -> Maybe a
-findMaybe [] = Nothing
-findMaybe (x : xs) =
-    case x of
-        Just v -> Just v
-        Nothing -> findMaybe xs
 
 -- Internal representation for applying auth to a request.
 data AppliedAuth

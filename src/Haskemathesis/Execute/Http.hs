@@ -27,7 +27,7 @@ where
 import Data.ByteString.Builder (toLazyByteString)
 import qualified Data.ByteString.Lazy as LBS
 import qualified Data.Text as T
-import Data.Text.Encoding (decodeUtf8, encodeUtf8)
+import Data.Text.Encoding (decodeUtf8)
 import Haskemathesis.Execute.Types
 import Network.HTTP.Client (
     Manager,
@@ -39,7 +39,7 @@ import Network.HTTP.Client (
     responseHeaders,
     responseStatus,
  )
-import Network.HTTP.Types (hContentType, renderQueryText, statusCode)
+import Network.HTTP.Types (renderQueryText, statusCode)
 
 {- | Execute an HTTP request against a base URL.
 
@@ -83,7 +83,7 @@ executeHttp manager baseUrl req = do
     let fullReq =
             baseReq
                 { method = reqMethod req
-                , requestHeaders = contentTypeHeader ++ reqHeaders req
+                , requestHeaders = contentTypeHeaders req ++ reqHeaders req
                 , requestBody = requestBodyFrom req
                 }
     response <- httpLbs fullReq manager
@@ -94,12 +94,6 @@ executeHttp manager baseUrl req = do
             , resBody = LBS.toStrict (responseBody response)
             , resTime = 0
             }
-  where
-    contentTypeHeader =
-        case reqBody req of
-            Nothing -> []
-            Just (mediaType, _) ->
-                [(hContentType, encodeUtf8 mediaType)]
 
 buildUrl :: BaseUrl -> ApiRequest -> String
 buildUrl baseUrl req =
@@ -110,10 +104,9 @@ buildUrl baseUrl req =
     baseUrl' = toString baseUrl
     reqPathText = toString (reqPath req)
     queryStr =
-        let q = renderQueryText True (map toQuery (reqQueryParams req))
+        let q = renderQueryText True (map queryToMaybe (reqQueryParams req))
             qText = decodeUtf8 (LBS.toStrict (toLazyByteString q))
          in if T.null qText then "" else T.unpack qText
-    toQuery (k, v) = (k, Just v)
     toString = T.unpack
 
 requestBodyFrom :: ApiRequest -> RequestBody

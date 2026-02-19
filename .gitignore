@@ -1,4 +1,6 @@
 .direnv
 result*
+.hie
 
 dist-newstyle
+stan.html

@@ -149,45 +149,25 @@ transformOpenApi31To30 = transformValue
                     KM.insert openapiKey (String "3.0.3") obj
             _notOpenApi31 -> obj
 
-    -- Transform exclusiveMinimum: <number> to minimum: <number>, exclusiveMinimum: true
-    transformExclusiveMinimum :: KM.KeyMap Value -> KM.KeyMap Value
-    transformExclusiveMinimum obj =
-        case KM.lookup exclusiveMinimumKey obj of
+    -- Transform exclusive<Bound>: <number> to <bound>: <number>, exclusive<Bound>: true
+    transformExclusiveBound :: Key -> Key -> KM.KeyMap Value -> KM.KeyMap Value
+    transformExclusiveBound exclusiveKey boundKey obj =
+        case KM.lookup exclusiveKey obj of
             Just (Number n)
                 | isInteger n || otherwise ->
-                    -- Remove the numeric exclusiveMinimum
-                    -- Add minimum with the value, and exclusiveMinimum: true
-                    let withoutOld = KM.delete exclusiveMinimumKey obj
-                        withMin = KM.insert minimumKey (Number n) withoutOld
-                        withExcl = KM.insert exclusiveMinimumKey (Bool True) withMin
+                    -- Remove the numeric exclusive bound
+                    -- Add bound with the value, and exclusive bound: true
+                    let withoutOld = KM.delete exclusiveKey obj
+                        withBound = KM.insert boundKey (Number n) withoutOld
+                        withExcl = KM.insert exclusiveKey (Bool True) withBound
                      in withExcl
-            _notNumericExclMin -> obj
+            _notNumericExcl -> obj
 
-    -- Transform exclusiveMaximum: <number> to maximum: <number>, exclusiveMaximum: true
+    transformExclusiveMinimum :: KM.KeyMap Value -> KM.KeyMap Value
+    transformExclusiveMinimum = transformExclusiveBound "exclusiveMinimum" "minimum"
+
     transformExclusiveMaximum :: KM.KeyMap Value -> KM.KeyMap Value
-    transformExclusiveMaximum obj =
-        case KM.lookup exclusiveMaximumKey obj of
-            Just (Number n)
-                | isInteger n || otherwise ->
-                    -- Remove the numeric exclusiveMaximum
-                    -- Add maximum with the value, and exclusiveMaximum: true
-                    let withoutOld = KM.delete exclusiveMaximumKey obj
-                        withMax = KM.insert maximumKey (Number n) withoutOld
-                        withExcl = KM.insert exclusiveMaximumKey (Bool True) withMax
-                     in withExcl
-            _notNumericExclMax -> obj
+    transformExclusiveMaximum = transformExclusiveBound "exclusiveMaximum" "maximum"
 
     openapiKey :: Key
     openapiKey = "openapi"
-
-    exclusiveMinimumKey :: Key
-    exclusiveMinimumKey = "exclusiveMinimum"
-
-    exclusiveMaximumKey :: Key
-    exclusiveMaximumKey = "exclusiveMaximum"
-
-    minimumKey :: Key
-    minimumKey = "minimum"
-
-    maximumKey :: Key
-    maximumKey = "maximum"

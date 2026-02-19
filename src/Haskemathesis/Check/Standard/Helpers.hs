@@ -6,6 +6,7 @@ module Haskemathesis.Check.Standard.Helpers (
     responseSchemasForStatus,
     findResponseSchema,
     pickSchema,
+    normalizeMapKeys,
     normalizeContent,
     normalizeMediaType,
     matchesContentType,
@@ -70,9 +71,12 @@ pickSchema mContentType schemas =
         Just contentType ->
             Map.lookup (normalizeMediaType contentType) (normalizeContent schemas)
 
+-- | Normalize keys in a map using the given transformation function.
+normalizeMapKeys :: (Text -> Text) -> Map Text a -> Map Text a
+normalizeMapKeys f = Map.fromList . map (first f) . Map.toList
+
 normalizeContent :: Map Text Schema -> Map Text Schema
-normalizeContent =
-    Map.fromList . map (first normalizeMediaType) . Map.toList
+normalizeContent = normalizeMapKeys normalizeMediaType
 
 normalizeMediaType :: Text -> Text
 normalizeMediaType =

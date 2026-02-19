@@ -43,13 +43,16 @@ module Haskemathesis.Execute.Types (
     ApiResponse (..),
     MediaType,
     BaseUrl,
+    contentTypeHeaders,
+    queryToMaybe,
 )
 where
 
 import Data.ByteString (ByteString)
 import Data.Text (Text)
+import Data.Text.Encoding (encodeUtf8)
 import Data.Time (NominalDiffTime)
-import Network.HTTP.Types (HeaderName, Method)
+import Network.HTTP.Types (HeaderName, Method, hContentType)
 
 -- | Media type as a text string (e.g., "application/json").
 type MediaType = Text
@@ -92,3 +95,14 @@ data ApiResponse = ApiResponse
     -- ^ Time taken for the request/response cycle.
     }
     deriving (Eq, Show)
+
+-- | Extract Content-Type header from request body if present.
+contentTypeHeaders :: ApiRequest -> [(HeaderName, ByteString)]
+contentTypeHeaders req =
+    case reqBody req of
+        Nothing -> []
+        Just (mediaType, _) -> [(hContentType, encodeUtf8 mediaType)]
+
+-- | Convert a key-value pair to query format with Maybe value.
+queryToMaybe :: (Text, Text) -> (Text, Maybe Text)
+queryToMaybe (k, v) = (k, Just v)

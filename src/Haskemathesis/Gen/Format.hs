@@ -121,11 +121,17 @@ The generated values are suitable for JSON Schema @date@ format.
 -}
 genDate :: Gen Value
 genDate = do
+    (year, month, day) <- genDateComponents
+    pure . String . T.pack $
+        pad 4 year <> "-" <> pad 2 month <> "-" <> pad 2 day
+
+-- | Generate date components (year, month, day).
+genDateComponents :: Gen (Int, Int, Int)
+genDateComponents = do
     year <- Gen.int (Range.linear 1970 2030)
     month <- Gen.int (Range.linear 1 12)
     day <- Gen.int (Range.linear 1 28)
-    pure . String . T.pack $
-        pad 4 year <> "-" <> pad 2 month <> "-" <> pad 2 day
+    pure (year, month, day)
 
 {- | Generate an ISO 8601 date-time value (YYYY-MM-DDTHH:MM:SSZ).
 
@@ -141,9 +147,7 @@ The generated values are suitable for JSON Schema @date-time@ format.
 -}
 genDateTime :: Gen Value
 genDateTime = do
-    year <- Gen.int (Range.linear 1970 2030)
-    month <- Gen.int (Range.linear 1 12)
-    day <- Gen.int (Range.linear 1 28)
+    (year, month, day) <- genDateComponents
     hour <- Gen.int (Range.linear 0 23)
     minute <- Gen.int (Range.linear 0 59)
     second <- Gen.int (Range.linear 0 59)
