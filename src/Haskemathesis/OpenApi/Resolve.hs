@@ -142,7 +142,9 @@ resolvePathItem components globalSecurity extensions path item =
         let tags = InsOrdHashSet.toList (_operationTags op)
         let security = resolveSecurity globalSec (_operationSecurity op)
         let pathText = T.pack p
-        let isStreaming = detectStreaming responses
+        -- Detect streaming from raw responses (before schema resolution)
+        -- This ensures we detect streaming even if schema refs can't be resolved
+        let isStreaming = detectStreamingFromRaw comps (_operationResponses op)
         let timeout = lookupTimeout exts pathText method
         pure
             HOT.ResolvedOperation
@@ -159,14 +161,25 @@ resolvePathItem components globalSecurity extensions path item =
                 , HOT.roTimeout = timeout
                 }
 
--- | Detect if any success response (2xx) has streaming content types
-detectStreaming :: Map Int HOT.ResponseSpec -> Bool
-detectStreaming responses =
+{- | Detect if any success response (2xx) has streaming content types.
+This works on the raw Responses before schema resolution, so it correctly
+detects streaming even when schemas use $ref that may fail to resolve.
+-}
+detectStreamingFromRaw :: Components -> Responses -> Bool
+detectStreamingFromRaw components responses =
     any hasStreamingContent successResponses
   where
-    successResponses = Map.filterWithKey (\code _ -> code >= 200 && code < 300) responses
-    hasStreamingContent spec =
-        any HOT.isStreamingContentType (Map.keys (HOT.rsContent spec))
+    -- Get success responses (2xx status codes)
+    successResponses =
+        [ resp
+        | (code, respRef) <- InsOrdHashMap.toList (_responsesResponses responses)
+        , code >= 200 && code < 300
+        , Just resp <- [resolveReferencedResponse components respRef]
+        ]
+    -- Check if a response has any streaming content types
+    hasStreamingContent resp =
+        any (HOT.isStreamingContentType . renderMediaType) $
+            InsOrdHashMap.keys (_responseContent resp)
 
 -- | Look up timeout from extensions map
 lookupTimeout :: Map OperationKey OperationExtensions -> Text -> Text -> Maybe Int

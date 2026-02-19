@@ -14,11 +14,24 @@ module Haskemathesis.Test.Properties.Streaming (spec) where
 import Data.Aeson (Value (..))
 import Data.Aeson.Key (fromText)
 import qualified Data.Aeson.KeyMap as KM
+import qualified Data.HashMap.Strict.InsOrd as InsOrdHashMap
 import Data.List (partition)
 import qualified Data.Map.Strict as Map
+import Data.OpenApi (
+    MediaTypeObject (..),
+    OpenApi (..),
+    Operation (..),
+    PathItem (..),
+    Reference (..),
+    Referenced (..),
+    Response (..),
+    Responses (..),
+    Schema,
+ )
 import qualified Data.Text as T
 import Haskemathesis.Config (TestConfig (..), defaultTestConfig)
 import Haskemathesis.OpenApi.Loader (OperationExtensions (..), extractOperationExtensions)
+import Haskemathesis.OpenApi.Resolve (resolveOperations)
 import Haskemathesis.OpenApi.Types (
     ResolvedOperation (..),
     ResponseSpec (..),
@@ -28,7 +41,7 @@ import Haskemathesis.OpenApi.Types (
 import Haskemathesis.Property (effectiveTimeout)
 import Haskemathesis.Schema (emptySchema)
 import Haskemathesis.Test.Support (emptyOperation, itProp)
-import Hedgehog (Property, assert, forAll, property, (===))
+import Hedgehog (Property, annotateShow, assert, forAll, property, (===))
 import qualified Hedgehog.Gen as Gen
 import qualified Hedgehog.Range as Range
 import Test.Hspec (Spec, describe)
@@ -51,6 +64,12 @@ spec = describe "Streaming" $ do
         itProp "x-timeout takes precedence over streaming default" propXTimeoutPrecedence
         itProp "streaming operations use config timeout" propStreamingUsesConfigTimeout
         itProp "non-streaming without x-timeout has no timeout" propNonStreamingNoTimeout
+
+    describe "resolveOperations streaming detection" $ do
+        itProp "marks text/event-stream response as streaming" propResolvesEventStreamAsStreaming
+        itProp "marks application/x-ndjson response as streaming" propResolvesNdjsonAsStreaming
+        itProp "marks application/json response as non-streaming" propResolvesJsonAsNonStreaming
+        itProp "detects streaming with $ref schema" propResolvesStreamingWithRef
 
     describe "WAI streaming filter" $ do
         itProp "partitions streaming from non-streaming ops" propPartitionsStreamingOps
@@ -156,6 +175,203 @@ propNonStreamingNoTimeout = property $ do
     let config = defaultTestConfig{tcStreamingTimeout = Just configTimeout}
         op = emptyOperation -- not streaming, no x-timeout
     effectiveTimeout config op === Nothing
+
+-- -----------------------------------------------------------------------------
+-- Resolution-phase streaming detection tests
+-- -----------------------------------------------------------------------------
+
+-- | Simple string schema for testing
+stringSchema :: Schema
+stringSchema = mempty
+
+-- | Operations with text/event-stream response should be marked as streaming
+propResolvesEventStreamAsStreaming :: Property
+propResolvesEventStreamAsStreaming = property $ do
+    let resolved = resolveOperations makeEventStreamOpenApi
+    case resolved of
+        [resolvedOp] -> do
+            annotateShow (roResponses resolvedOp)
+            annotateShow (roIsStreaming resolvedOp)
+            -- Check that content type was preserved
+            case Map.lookup 200 (roResponses resolvedOp) of
+                Just respSpec -> do
+                    let contentTypes = Map.keys (rsContent respSpec)
+                    annotateShow contentTypes
+                    assert ("text/event-stream" `elem` contentTypes)
+                Nothing -> assert False
+            -- Check that streaming is detected
+            assert (roIsStreaming resolvedOp)
+        other -> do
+            annotateShow other
+            assert False
+
+-- | Operations with application/x-ndjson response should be marked as streaming
+propResolvesNdjsonAsStreaming :: Property
+propResolvesNdjsonAsStreaming = property $ do
+    let resolved = resolveOperations makeNdjsonOpenApi
+    case resolved of
+        [resolvedOp] -> assert (roIsStreaming resolvedOp)
+        _ -> assert False
+
+-- | Operations with application/json response should NOT be marked as streaming
+propResolvesJsonAsNonStreaming :: Property
+propResolvesJsonAsNonStreaming = property $ do
+    let resolved = resolveOperations makeJsonOpenApi
+    case resolved of
+        [resolvedOp] -> assert (not (roIsStreaming resolvedOp))
+        _ -> assert False
+
+{- | Streaming should be detected even when schema uses $ref
+This is a regression test for a bug where schemas with $ref would
+fail to resolve, causing the content type to be dropped from rsContent,
+which in turn caused streaming detection to fail.
+-}
+propResolvesStreamingWithRef :: Property
+propResolvesStreamingWithRef = property $ do
+    let resolved = resolveOperations makeEventStreamWithRefOpenApi
+    case resolved of
+        [resolvedOp] -> do
+            annotateShow (roIsStreaming resolvedOp)
+            -- Even though the schema $ref may not resolve, streaming should still be detected
+            assert (roIsStreaming resolvedOp)
+        other -> do
+            annotateShow other
+            assert False
+
+-- | Create an OpenAPI spec with text/event-stream response
+makeEventStreamOpenApi :: OpenApi
+makeEventStreamOpenApi =
+    let mediaTypeObj =
+            mempty
+                { _mediaTypeObjectSchema = Just (Inline stringSchema)
+                }
+        response =
+            mempty
+                { _responseContent =
+                    InsOrdHashMap.fromList
+                        [("text/event-stream", mediaTypeObj)]
+                }
+        responses =
+            mempty
+                { _responsesResponses =
+                    InsOrdHashMap.fromList
+                        [(200, Inline response)]
+                }
+        operation =
+            mempty
+                { _operationResponses = responses
+                }
+        pathItem =
+            mempty
+                { _pathItemGet = Just operation
+                }
+     in mempty
+            { _openApiPaths =
+                InsOrdHashMap.fromList
+                    [("/events", pathItem)]
+            }
+
+-- | Create an OpenAPI spec with application/x-ndjson response
+makeNdjsonOpenApi :: OpenApi
+makeNdjsonOpenApi =
+    let mediaTypeObj =
+            mempty
+                { _mediaTypeObjectSchema = Just (Inline stringSchema)
+                }
+        response =
+            mempty
+                { _responseContent =
+                    InsOrdHashMap.fromList
+                        [("application/x-ndjson", mediaTypeObj)]
+                }
+        responses =
+            mempty
+                { _responsesResponses =
+                    InsOrdHashMap.fromList
+                        [(200, Inline response)]
+                }
+        operation =
+            mempty
+                { _operationResponses = responses
+                }
+        pathItem =
+            mempty
+                { _pathItemGet = Just operation
+                }
+     in mempty
+            { _openApiPaths =
+                InsOrdHashMap.fromList
+                    [("/stream", pathItem)]
+            }
+
+-- | Create an OpenAPI spec with application/json response
+makeJsonOpenApi :: OpenApi
+makeJsonOpenApi =
+    let mediaTypeObj =
+            mempty
+                { _mediaTypeObjectSchema = Just (Inline stringSchema)
+                }
+        response =
+            mempty
+                { _responseContent =
+                    InsOrdHashMap.fromList
+                        [("application/json", mediaTypeObj)]
+                }
+        responses =
+            mempty
+                { _responsesResponses =
+                    InsOrdHashMap.fromList
+                        [(200, Inline response)]
+                }
+        operation =
+            mempty
+                { _operationResponses = responses
+                }
+        pathItem =
+            mempty
+                { _pathItemGet = Just operation
+                }
+     in mempty
+            { _openApiPaths =
+                InsOrdHashMap.fromList
+                    [("/api", pathItem)]
+            }
+
+{- | Create an OpenAPI spec with text/event-stream response using a $ref schema.
+The $ref intentionally points to a non-existent component to test that
+streaming detection works even when schema resolution fails.
+-}
+makeEventStreamWithRefOpenApi :: OpenApi
+makeEventStreamWithRefOpenApi =
+    let mediaTypeObj =
+            mempty
+                { _mediaTypeObjectSchema = Just (Ref (Reference "#/components/schemas/Event"))
+                }
+        response =
+            mempty
+                { _responseContent =
+                    InsOrdHashMap.fromList
+                        [("text/event-stream", mediaTypeObj)]
+                }
+        responses =
+            mempty
+                { _responsesResponses =
+                    InsOrdHashMap.fromList
+                        [(200, Inline response)]
+                }
+        operation =
+            mempty
+                { _operationResponses = responses
+                }
+        pathItem =
+            mempty
+                { _pathItemGet = Just operation
+                }
+     in mempty
+            { _openApiPaths =
+                InsOrdHashMap.fromList
+                    [("/events", pathItem)]
+            }
 
 -- Helper: Create OpenAPI JSON with x-timeout on an operation
 makeOpenApiWithTimeout :: T.Text -> T.Text -> Int -> Value
