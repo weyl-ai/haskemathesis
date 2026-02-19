@@ -71,21 +71,21 @@ forall a. ParserInfo a -&gt; IO a
 </span><span id="line-67"></span><span class="annot"><a href="Haskemathesis.CLI.html#runCLI"><span class="hs-identifier hs-type">runCLI</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
 </span><span id="line-68"></span><span id="runCLI"><span class="annot"><span class="annottext">runCLI :: IO ()
 </span><a href="Haskemathesis.CLI.html#runCLI"><span class="hs-identifier hs-var hs-var">runCLI</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
-</span><span id="line-69"></span><span>    </span><span id="local-6989586621679229210"><span class="annot"><a href="#local-6989586621679229210"><span class="hs-identifier hs-var">cmd</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">IO Command
+</span><span id="line-69"></span><span>    </span><span id="local-6989586621679244290"><span class="annot"><a href="#local-6989586621679244290"><span class="hs-identifier hs-var">cmd</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">IO Command
 </span><a href="Haskemathesis.CLI.html#parseCommand"><span class="hs-identifier hs-var">parseCommand</span></a></span><span>
-</span><span id="line-70"></span><span>    </span><span class="hs-keyword">case</span><span> </span><span class="annot"><a href="#local-6989586621679229210"><span class="hs-identifier hs-type">cmd</span></a></span><span> </span><span class="hs-keyword">of</span><span>
-</span><span id="line-71"></span><span>        </span><span class="annot"><a href="Haskemathesis.CLI.Options.html#Test"><span class="hs-identifier hs-type">Test</span></a></span><span> </span><span id="local-6989586621679229212"><span class="annot"><span class="annottext">TestOptions
-</span><a href="#local-6989586621679229212"><span class="hs-identifier hs-var">opts</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">TestOptions -&gt; IO ()
+</span><span id="line-70"></span><span>    </span><span class="hs-keyword">case</span><span> </span><span class="annot"><a href="#local-6989586621679244290"><span class="hs-identifier hs-type">cmd</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-71"></span><span>        </span><span class="annot"><a href="Haskemathesis.CLI.Options.html#Test"><span class="hs-identifier hs-type">Test</span></a></span><span> </span><span id="local-6989586621679244292"><span class="annot"><span class="annottext">TestOptions
+</span><a href="#local-6989586621679244292"><span class="hs-identifier hs-var">opts</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">TestOptions -&gt; IO ()
 </span><a href="Haskemathesis.CLI.Runner.html#runTestCommand"><span class="hs-identifier hs-var">runTestCommand</span></a></span><span> </span><span class="annot"><span class="annottext">TestOptions
-</span><a href="#local-6989586621679229212"><span class="hs-identifier hs-var">opts</span></a></span><span>
-</span><span id="line-72"></span><span>        </span><span class="annot"><a href="Haskemathesis.CLI.Options.html#Validate"><span class="hs-identifier hs-type">Validate</span></a></span><span> </span><span id="local-6989586621679229214"><span class="annot"><span class="annottext">ValidateOptions
-</span><a href="#local-6989586621679229214"><span class="hs-identifier hs-var">opts</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">ValidateOptions -&gt; IO ()
+</span><a href="#local-6989586621679244292"><span class="hs-identifier hs-var">opts</span></a></span><span>
+</span><span id="line-72"></span><span>        </span><span class="annot"><a href="Haskemathesis.CLI.Options.html#Validate"><span class="hs-identifier hs-type">Validate</span></a></span><span> </span><span id="local-6989586621679244294"><span class="annot"><span class="annottext">ValidateOptions
+</span><a href="#local-6989586621679244294"><span class="hs-identifier hs-var">opts</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">ValidateOptions -&gt; IO ()
 </span><a href="Haskemathesis.CLI.Runner.html#runValidateCommand"><span class="hs-identifier hs-var">runValidateCommand</span></a></span><span> </span><span class="annot"><span class="annottext">ValidateOptions
-</span><a href="#local-6989586621679229214"><span class="hs-identifier hs-var">opts</span></a></span><span>
-</span><span id="line-73"></span><span>        </span><span class="annot"><a href="Haskemathesis.CLI.Options.html#Curl"><span class="hs-identifier hs-type">Curl</span></a></span><span> </span><span id="local-6989586621679229216"><span class="annot"><span class="annottext">CurlOptions
-</span><a href="#local-6989586621679229216"><span class="hs-identifier hs-var">opts</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">CurlOptions -&gt; IO ()
+</span><a href="#local-6989586621679244294"><span class="hs-identifier hs-var">opts</span></a></span><span>
+</span><span id="line-73"></span><span>        </span><span class="annot"><a href="Haskemathesis.CLI.Options.html#Curl"><span class="hs-identifier hs-type">Curl</span></a></span><span> </span><span id="local-6989586621679244296"><span class="annot"><span class="annottext">CurlOptions
+</span><a href="#local-6989586621679244296"><span class="hs-identifier hs-var">opts</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">CurlOptions -&gt; IO ()
 </span><a href="Haskemathesis.CLI.Runner.html#runCurlCommand"><span class="hs-identifier hs-var">runCurlCommand</span></a></span><span> </span><span class="annot"><span class="annottext">CurlOptions
-</span><a href="#local-6989586621679229216"><span class="hs-identifier hs-var">opts</span></a></span><span>
+</span><a href="#local-6989586621679244296"><span class="hs-identifier hs-var">opts</span></a></span><span>
 </span><span id="line-74"></span><span>
 </span><span id="line-75"></span><span class="annot"><span class="hs-comment">-- | CLI parser info with help text.</span></span><span>
 </span><span id="line-76"></span><span class="annot"><a href="Haskemathesis.CLI.html#cliParserInfo"><span class="hs-identifier hs-type">cliParserInfo</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="file:///nix/store/bhmncsg1m7xjd88jdzgihj8jfhrnvzah-optparse-applicative-0.18.1.0-doc/share/doc/optparse-applicative-0.18.1.0/html/src/Options.Applicative.Types.html#ParserInfo"><span class="hs-identifier hs-type">ParserInfo</span></a></span><span> </span><span class="annot"><a href="Haskemathesis.CLI.Options.html#Command"><span class="hs-identifier hs-type">Command</span></a></span><span>
@@ -886,7 +886,7 @@ forall a. ReadM a -&gt; Mod OptionFields a -&gt; Parser a
 </span><span id="line-215"></span><span>        </span><span class="hs-special">(</span><span class="annot"><span class="annottext">(String -&gt; Either String OutputFormat) -&gt; ReadM OutputFormat
 forall a. (String -&gt; Either String a) -&gt; ReadM a
 </span><a href="file:///nix/store/bhmncsg1m7xjd88jdzgihj8jfhrnvzah-optparse-applicative-0.18.1.0-doc/share/doc/optparse-applicative-0.18.1.0/html/src/Options.Applicative.Builder.html#eitherReader"><span class="hs-identifier hs-var">eitherReader</span></a></span><span> </span><span class="annot"><span class="annottext">String -&gt; Either String OutputFormat
-</span><a href="#local-6989586621679229263"><span class="hs-identifier hs-var">parseOutputFormat</span></a></span><span class="hs-special">)</span><span>
+</span><a href="#local-6989586621679244343"><span class="hs-identifier hs-var">parseOutputFormat</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-216"></span><span>        </span><span class="hs-special">(</span><span> </span><span class="annot"><span class="annottext">String -&gt; Mod OptionFields OutputFormat
 forall (f :: * -&gt; *) a. HasName f =&gt; String -&gt; Mod f a
 </span><a href="file:///nix/store/bhmncsg1m7xjd88jdzgihj8jfhrnvzah-optparse-applicative-0.18.1.0-doc/share/doc/optparse-applicative-0.18.1.0/html/src/Options.Applicative.Builder.html#long"><span class="hs-identifier hs-var">long</span></a></span><span> </span><span class="annot"><span class="annottext">String
@@ -930,25 +930,25 @@ forall (f :: * -&gt; *) a. String -&gt; Mod f a
 </span><span class="hs-string">&quot;Output format: text, json, or junit&quot;</span></span><span>
 </span><span id="line-222"></span><span>        </span><span class="hs-special">)</span><span>
 </span><span id="line-223"></span><span>  </span><span class="hs-keyword">where</span><span>
-</span><span id="line-224"></span><span>    </span><span class="annot"><a href="#local-6989586621679229263"><span class="hs-identifier hs-type">parseOutputFormat</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Either</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span> </span><span class="annot"><a href="Haskemathesis.CLI.Options.html#OutputFormat"><span class="hs-identifier hs-type">OutputFormat</span></a></span><span>
-</span><span id="line-225"></span><span>    </span><span id="local-6989586621679229263"><span class="annot"><span class="annottext">parseOutputFormat :: String -&gt; Either String OutputFormat
-</span><a href="#local-6989586621679229263"><span class="hs-identifier hs-var hs-var">parseOutputFormat</span></a></span></span><span> </span><span class="annot"><span class="annottext">String
+</span><span id="line-224"></span><span>    </span><span class="annot"><a href="#local-6989586621679244343"><span class="hs-identifier hs-type">parseOutputFormat</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Either</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span> </span><span class="annot"><a href="Haskemathesis.CLI.Options.html#OutputFormat"><span class="hs-identifier hs-type">OutputFormat</span></a></span><span>
+</span><span id="line-225"></span><span>    </span><span id="local-6989586621679244343"><span class="annot"><span class="annottext">parseOutputFormat :: String -&gt; Either String OutputFormat
+</span><a href="#local-6989586621679244343"><span class="hs-identifier hs-var hs-var">parseOutputFormat</span></a></span></span><span> </span><span class="annot"><span class="annottext">String
 </span><span class="hs-string">&quot;text&quot;</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">OutputFormat -&gt; Either String OutputFormat
 forall a b. b -&gt; Either a b
 </span><span class="hs-identifier hs-var">Right</span></span><span> </span><span class="annot"><span class="annottext">OutputFormat
 </span><a href="Haskemathesis.CLI.Options.html#OutputText"><span class="hs-identifier hs-var">OutputText</span></a></span><span>
-</span><span id="line-226"></span><span>    </span><span class="annot"><a href="#local-6989586621679229263"><span class="hs-identifier hs-var">parseOutputFormat</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span id="line-226"></span><span>    </span><span class="annot"><a href="#local-6989586621679244343"><span class="hs-identifier hs-var">parseOutputFormat</span></a></span><span> </span><span class="annot"><span class="annottext">String
 </span><span class="hs-string">&quot;json&quot;</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">OutputFormat -&gt; Either String OutputFormat
 forall a b. b -&gt; Either a b
 </span><span class="hs-identifier hs-var">Right</span></span><span> </span><span class="annot"><span class="annottext">OutputFormat
 </span><a href="Haskemathesis.CLI.Options.html#OutputJson"><span class="hs-identifier hs-var">OutputJson</span></a></span><span>
-</span><span id="line-227"></span><span>    </span><span class="annot"><a href="#local-6989586621679229263"><span class="hs-identifier hs-var">parseOutputFormat</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span id="line-227"></span><span>    </span><span class="annot"><a href="#local-6989586621679244343"><span class="hs-identifier hs-var">parseOutputFormat</span></a></span><span> </span><span class="annot"><span class="annottext">String
 </span><span class="hs-string">&quot;junit&quot;</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">OutputFormat -&gt; Either String OutputFormat
 forall a b. b -&gt; Either a b
 </span><span class="hs-identifier hs-var">Right</span></span><span> </span><span class="annot"><span class="annottext">OutputFormat
 </span><a href="Haskemathesis.CLI.Options.html#OutputJUnit"><span class="hs-identifier hs-var">OutputJUnit</span></a></span><span>
-</span><span id="line-228"></span><span>    </span><span class="annot"><a href="#local-6989586621679229263"><span class="hs-identifier hs-var">parseOutputFormat</span></a></span><span> </span><span id="local-6989586621679229269"><span class="annot"><span class="annottext">String
-</span><a href="#local-6989586621679229269"><span class="hs-identifier hs-var">s</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">String -&gt; Either String OutputFormat
+</span><span id="line-228"></span><span>    </span><span class="annot"><a href="#local-6989586621679244343"><span class="hs-identifier hs-var">parseOutputFormat</span></a></span><span> </span><span id="local-6989586621679244349"><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679244349"><span class="hs-identifier hs-var">s</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">String -&gt; Either String OutputFormat
 forall a b. a -&gt; Either a b
 </span><span class="hs-identifier hs-var">Left</span></span><span> </span><span class="annot"><span class="annottext">(String -&gt; Either String OutputFormat)
 -&gt; String -&gt; Either String OutputFormat
@@ -957,7 +957,7 @@ forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-string">&quot;Unknown format: &quot;</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; String -&gt; String
 forall a. [a] -&gt; [a] -&gt; [a]
 </span><span class="hs-operator hs-var">++</span></span><span> </span><span class="annot"><span class="annottext">String
-</span><a href="#local-6989586621679229269"><span class="hs-identifier hs-var">s</span></a></span><span> </span><span class="annot"><span class="annottext">String -&gt; String -&gt; String
+</span><a href="#local-6989586621679244349"><span class="hs-identifier hs-var">s</span></a></span><span> </span><span class="annot"><span class="annottext">String -&gt; String -&gt; String
 forall a. [a] -&gt; [a] -&gt; [a]
 </span><span class="hs-operator hs-var">++</span></span><span> </span><span class="annot"><span class="annottext">String
 </span><span class="hs-string">&quot;. Use 'text', 'json', or 'junit'.&quot;</span></span><span>
@@ -1194,7 +1194,7 @@ forall a. ReadM a -&gt; Mod OptionFields a -&gt; Parser a
 </span><span id="line-303"></span><span>        </span><span class="hs-special">(</span><span class="annot"><span class="annottext">(String -&gt; Either String WorkdirOption) -&gt; ReadM WorkdirOption
 forall a. (String -&gt; Either String a) -&gt; ReadM a
 </span><a href="file:///nix/store/bhmncsg1m7xjd88jdzgihj8jfhrnvzah-optparse-applicative-0.18.1.0-doc/share/doc/optparse-applicative-0.18.1.0/html/src/Options.Applicative.Builder.html#eitherReader"><span class="hs-identifier hs-var">eitherReader</span></a></span><span> </span><span class="annot"><span class="annottext">String -&gt; Either String WorkdirOption
-</span><a href="#local-6989586621679229270"><span class="hs-identifier hs-var">parseWorkdir</span></a></span><span class="hs-special">)</span><span>
+</span><a href="#local-6989586621679244350"><span class="hs-identifier hs-var">parseWorkdir</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-304"></span><span>        </span><span class="hs-special">(</span><span> </span><span class="annot"><span class="annottext">String -&gt; Mod OptionFields WorkdirOption
 forall (f :: * -&gt; *) a. HasName f =&gt; String -&gt; Mod f a
 </span><a href="file:///nix/store/bhmncsg1m7xjd88jdzgihj8jfhrnvzah-optparse-applicative-0.18.1.0-doc/share/doc/optparse-applicative-0.18.1.0/html/src/Options.Applicative.Builder.html#long"><span class="hs-identifier hs-var">long</span></a></span><span> </span><span class="annot"><span class="annottext">String
@@ -1231,22 +1231,22 @@ forall (f :: * -&gt; *) a. String -&gt; Mod f a
 </span><span class="hs-string">&quot;Working directory: 'temp' (default, cleaned up after), 'current', or a path&quot;</span></span><span>
 </span><span id="line-309"></span><span>        </span><span class="hs-special">)</span><span>
 </span><span id="line-310"></span><span>  </span><span class="hs-keyword">where</span><span>
-</span><span id="line-311"></span><span>    </span><span class="annot"><a href="#local-6989586621679229270"><span class="hs-identifier hs-type">parseWorkdir</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Either</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span> </span><span class="annot"><a href="Haskemathesis.CLI.Options.html#WorkdirOption"><span class="hs-identifier hs-type">WorkdirOption</span></a></span><span>
-</span><span id="line-312"></span><span>    </span><span id="local-6989586621679229270"><span class="annot"><span class="annottext">parseWorkdir :: String -&gt; Either String WorkdirOption
-</span><a href="#local-6989586621679229270"><span class="hs-identifier hs-var hs-var">parseWorkdir</span></a></span></span><span> </span><span class="annot"><span class="annottext">String
+</span><span id="line-311"></span><span>    </span><span class="annot"><a href="#local-6989586621679244350"><span class="hs-identifier hs-type">parseWorkdir</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Either</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span> </span><span class="annot"><a href="Haskemathesis.CLI.Options.html#WorkdirOption"><span class="hs-identifier hs-type">WorkdirOption</span></a></span><span>
+</span><span id="line-312"></span><span>    </span><span id="local-6989586621679244350"><span class="annot"><span class="annottext">parseWorkdir :: String -&gt; Either String WorkdirOption
+</span><a href="#local-6989586621679244350"><span class="hs-identifier hs-var hs-var">parseWorkdir</span></a></span></span><span> </span><span class="annot"><span class="annottext">String
 </span><span class="hs-string">&quot;temp&quot;</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">WorkdirOption -&gt; Either String WorkdirOption
 forall a b. b -&gt; Either a b
 </span><span class="hs-identifier hs-var">Right</span></span><span> </span><span class="annot"><span class="annottext">WorkdirOption
 </span><a href="Haskemathesis.CLI.Options.html#WorkdirTemp"><span class="hs-identifier hs-var">WorkdirTemp</span></a></span><span>
-</span><span id="line-313"></span><span>    </span><span class="annot"><a href="#local-6989586621679229270"><span class="hs-identifier hs-var">parseWorkdir</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span id="line-313"></span><span>    </span><span class="annot"><a href="#local-6989586621679244350"><span class="hs-identifier hs-var">parseWorkdir</span></a></span><span> </span><span class="annot"><span class="annottext">String
 </span><span class="hs-string">&quot;current&quot;</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">WorkdirOption -&gt; Either String WorkdirOption
 forall a b. b -&gt; Either a b
 </span><span class="hs-identifier hs-var">Right</span></span><span> </span><span class="annot"><span class="annottext">WorkdirOption
 </span><a href="Haskemathesis.CLI.Options.html#WorkdirCurrent"><span class="hs-identifier hs-var">WorkdirCurrent</span></a></span><span>
-</span><span id="line-314"></span><span>    </span><span class="annot"><a href="#local-6989586621679229270"><span class="hs-identifier hs-var">parseWorkdir</span></a></span><span> </span><span id="local-6989586621679229273"><span class="annot"><span class="annottext">String
-</span><a href="#local-6989586621679229273"><span class="hs-identifier hs-var">path</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">WorkdirOption -&gt; Either String WorkdirOption
+</span><span id="line-314"></span><span>    </span><span class="annot"><a href="#local-6989586621679244350"><span class="hs-identifier hs-var">parseWorkdir</span></a></span><span> </span><span id="local-6989586621679244353"><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679244353"><span class="hs-identifier hs-var">path</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">WorkdirOption -&gt; Either String WorkdirOption
 forall a b. b -&gt; Either a b
 </span><span class="hs-identifier hs-var">Right</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">String -&gt; WorkdirOption
 </span><a href="Haskemathesis.CLI.Options.html#WorkdirPath"><span class="hs-identifier hs-var">WorkdirPath</span></a></span><span> </span><span class="annot"><span class="annottext">String
-</span><a href="#local-6989586621679229273"><span class="hs-identifier hs-var">path</span></a></span><span class="hs-special">)</span><span>
+</span><a href="#local-6989586621679244353"><span class="hs-identifier hs-var">path</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-315"></span></pre></body></html>

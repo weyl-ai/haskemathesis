@@ -1,0 +1,981 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE OverloadedStrings #-}</span><span>
+</span><span id="line-2"></span><span>
+</span><span id="line-3"></span><span class="annot"><span class="hs-comment">{- | Heuristic link detection for stateful API testing.
+
+This module infers links between API operations when explicit OpenAPI Links
+are not defined. It uses heuristics based on:
+
+1. __Path pattern matching__: @POST /users@ links to @GET /users/{id}@
+2. __Response schema analysis__: Response field @id@ matches path param @{id}@
+3. __Naming conventions__: @userId@ in response matches @user_id@ parameter
+
+These heuristics enable stateful testing even for specs without explicit links.
+
+=== Usage
+
+@
+import Haskemathesis.Stateful.Heuristics
+import Haskemathesis.Stateful.Links (extractLinks)
+
+-- Combine explicit and inferred links
+allLinks :: OpenApi -&gt; [ResolvedOperation] -&gt; [OperationLink]
+allLinks spec ops = extractLinks spec &lt;&gt; inferLinks ops
+@
+-}</span></span><span>
+</span><span id="line-25"></span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="Haskemathesis.Stateful.Heuristics.html"><span class="hs-identifier">Haskemathesis.Stateful.Heuristics</span></a></span><span> </span><span class="hs-special">(</span><span>
+</span><span id="line-26"></span><span>    </span><span class="annot"><span class="hs-comment">-- * Combined Link Inference</span></span><span>
+</span><span id="line-27"></span><span>    </span><span class="annot"><a href="Haskemathesis.Stateful.Heuristics.html#inferLinks"><span class="hs-identifier">inferLinks</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-28"></span><span>
+</span><span id="line-29"></span><span>    </span><span class="annot"><span class="hs-comment">-- * Path-Based Inference</span></span><span>
+</span><span id="line-30"></span><span>    </span><span class="annot"><a href="Haskemathesis.Stateful.Heuristics.html#inferLinksFromPaths"><span class="hs-identifier">inferLinksFromPaths</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-31"></span><span>    </span><span class="annot"><a href="Haskemathesis.Stateful.Heuristics.html#findRelatedOperations"><span class="hs-identifier">findRelatedOperations</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-32"></span><span>    </span><span class="annot"><a href="Haskemathesis.Stateful.Heuristics.html#extractBasePath"><span class="hs-identifier">extractBasePath</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-33"></span><span>    </span><span class="annot"><a href="Haskemathesis.Stateful.Heuristics.html#extractPathParams"><span class="hs-identifier">extractPathParams</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-34"></span><span>
+</span><span id="line-35"></span><span>    </span><span class="annot"><span class="hs-comment">-- * Schema-Based Inference</span></span><span>
+</span><span id="line-36"></span><span>    </span><span class="annot"><a href="Haskemathesis.Stateful.Heuristics.html#inferLinksFromSchemas"><span class="hs-identifier">inferLinksFromSchemas</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-37"></span><span>    </span><span class="annot"><a href="Haskemathesis.Stateful.Heuristics.html#matchResponseFieldsToParams"><span class="hs-identifier">matchResponseFieldsToParams</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-38"></span><span>
+</span><span id="line-39"></span><span>    </span><span class="annot"><span class="hs-comment">-- * Naming Normalization</span></span><span>
+</span><span id="line-40"></span><span>    </span><span class="annot"><a href="Haskemathesis.Stateful.Heuristics.html#normalizeParamName"><span class="hs-identifier">normalizeParamName</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-41"></span><span>    </span><span class="annot"><a href="Haskemathesis.Stateful.Heuristics.html#namesMatch"><span class="hs-identifier">namesMatch</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-42"></span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-43"></span><span>
+</span><span id="line-44"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Char</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">isUpper</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">toLower</span></span><span class="hs-special">)</span><span>
+</span><span id="line-45"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.Map.Strict</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Map</span></span><span>
+</span><span id="line-46"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Maybe</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">mapMaybe</span></span><span class="hs-special">)</span><span>
+</span><span id="line-47"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.Set</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Set</span></span><span>
+</span><span id="line-48"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Text</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Text</span></span><span class="hs-special">)</span><span>
+</span><span id="line-49"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.Text</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">T</span></span><span>
+</span><span id="line-50"></span><span>
+</span><span id="line-51"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Haskemathesis.OpenApi.Types.html"><span class="hs-identifier">Haskemathesis.OpenApi.Types</span></a></span><span> </span><span class="hs-special">(</span><span>
+</span><span id="line-52"></span><span>    </span><span class="annot"><a href="Haskemathesis.OpenApi.Types.html#ParamLocation"><span class="hs-identifier">ParamLocation</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-53"></span><span>    </span><span class="annot"><a href="Haskemathesis.OpenApi.Types.html#ResolvedOperation"><span class="hs-identifier">ResolvedOperation</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-54"></span><span>    </span><span class="annot"><a href="Haskemathesis.OpenApi.Types.html#ResolvedParam"><span class="hs-identifier">ResolvedParam</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-55"></span><span>    </span><span class="annot"><a href="Haskemathesis.OpenApi.Types.html#ResponseSpec"><span class="hs-identifier">ResponseSpec</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-56"></span><span> </span><span class="hs-special">)</span><span>
+</span><span id="line-57"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Haskemathesis.Schema.html"><span class="hs-identifier">Haskemathesis.Schema</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Haskemathesis.Schema.html#Schema"><span class="hs-identifier">Schema</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Haskemathesis.Schema.html#SchemaType"><span class="hs-identifier">SchemaType</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-58"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Haskemathesis.Stateful.Types.html"><span class="hs-identifier">Haskemathesis.Stateful.Types</span></a></span><span> </span><span class="hs-special">(</span><span>
+</span><span id="line-59"></span><span>    </span><span class="annot"><a href="Haskemathesis.Stateful.Types.html#OperationLink"><span class="hs-identifier">OperationLink</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-60"></span><span>    </span><span class="annot"><a href="Haskemathesis.Stateful.Types.html#ParameterBinding"><span class="hs-identifier">ParameterBinding</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-61"></span><span>    </span><span class="annot"><a href="Haskemathesis.Stateful.Types.html#ValueSource"><span class="hs-identifier">ValueSource</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-62"></span><span> </span><span class="hs-special">)</span><span>
+</span><span id="line-63"></span><span>
+</span><span id="line-64"></span><span class="annot"><span class="hs-comment">{- | Infer all links from a list of operations using heuristics.
+
+Combines path-based and schema-based inference, deduplicating results.
+
+&gt;&gt;&gt; inferLinks [postUsersOp, getUsersIdOp, deleteUsersIdOp]
+[OperationLink &quot;createUser&quot; &quot;getUser&quot; [...], OperationLink &quot;createUser&quot; &quot;deleteUser&quot; [...]]
+-}</span></span><span>
+</span><span id="line-71"></span><span class="annot"><a href="Haskemathesis.Stateful.Heuristics.html#inferLinks"><span class="hs-identifier hs-type">inferLinks</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="Haskemathesis.OpenApi.Types.html#ResolvedOperation"><span class="hs-identifier hs-type">ResolvedOperation</span></a></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="Haskemathesis.Stateful.Types.html#OperationLink"><span class="hs-identifier hs-type">OperationLink</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-72"></span><span id="inferLinks"><span class="annot"><span class="annottext">inferLinks :: [ResolvedOperation] -&gt; [OperationLink]
+</span><a href="Haskemathesis.Stateful.Heuristics.html#inferLinks"><span class="hs-identifier hs-var hs-var">inferLinks</span></a></span></span><span> </span><span id="local-6989586621679240430"><span class="annot"><span class="annottext">[ResolvedOperation]
+</span><a href="#local-6989586621679240430"><span class="hs-identifier hs-var">ops</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(OperationLink -&gt; (Text, Text))
+-&gt; [OperationLink] -&gt; [OperationLink]
+forall k a. Ord k =&gt; (a -&gt; k) -&gt; [a] -&gt; [a]
+</span><a href="#local-6989586621679240431"><span class="hs-identifier hs-var">nubByKey</span></a></span><span> </span><span class="annot"><span class="annottext">OperationLink -&gt; (Text, Text)
+</span><a href="#local-6989586621679240432"><span class="hs-identifier hs-var">linkKey</span></a></span><span> </span><span class="annot"><span class="annottext">([OperationLink] -&gt; [OperationLink])
+-&gt; [OperationLink] -&gt; [OperationLink]
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">[ResolvedOperation] -&gt; [OperationLink]
+</span><a href="Haskemathesis.Stateful.Heuristics.html#inferLinksFromPaths"><span class="hs-identifier hs-var">inferLinksFromPaths</span></a></span><span> </span><span class="annot"><span class="annottext">[ResolvedOperation]
+</span><a href="#local-6989586621679240430"><span class="hs-identifier hs-var">ops</span></a></span><span> </span><span class="annot"><span class="annottext">[OperationLink] -&gt; [OperationLink] -&gt; [OperationLink]
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">[ResolvedOperation] -&gt; [OperationLink]
+</span><a href="Haskemathesis.Stateful.Heuristics.html#inferLinksFromSchemas"><span class="hs-identifier hs-var">inferLinksFromSchemas</span></a></span><span> </span><span class="annot"><span class="annottext">[ResolvedOperation]
+</span><a href="#local-6989586621679240430"><span class="hs-identifier hs-var">ops</span></a></span><span>
+</span><span id="line-73"></span><span>  </span><span class="hs-keyword">where</span><span>
+</span><span id="line-74"></span><span>    </span><span class="hs-comment">-- Deduplicate by (source, target) pair using a Set for O(n log n)</span><span>
+</span><span id="line-75"></span><span>    </span><span class="annot"><a href="#local-6989586621679240432"><span class="hs-identifier hs-type">linkKey</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Haskemathesis.Stateful.Types.html#OperationLink"><span class="hs-identifier hs-type">OperationLink</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span class="hs-special">)</span><span>
+</span><span id="line-76"></span><span>    </span><span id="local-6989586621679240432"><span class="annot"><span class="annottext">linkKey :: OperationLink -&gt; (Text, Text)
+</span><a href="#local-6989586621679240432"><span class="hs-identifier hs-var hs-var">linkKey</span></a></span></span><span> </span><span id="local-6989586621679240433"><span class="annot"><span class="annottext">OperationLink
+</span><a href="#local-6989586621679240433"><span class="hs-identifier hs-var">link</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">OperationLink -&gt; Text
+</span><a href="Haskemathesis.Stateful.Types.html#olSourceOperation"><span class="hs-identifier hs-var">olSourceOperation</span></a></span><span> </span><span class="annot"><span class="annottext">OperationLink
+</span><a href="#local-6989586621679240433"><span class="hs-identifier hs-var">link</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">OperationLink -&gt; Text
+</span><a href="Haskemathesis.Stateful.Types.html#olTargetOperation"><span class="hs-identifier hs-var">olTargetOperation</span></a></span><span> </span><span class="annot"><span class="annottext">OperationLink
+</span><a href="#local-6989586621679240433"><span class="hs-identifier hs-var">link</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-77"></span><span>
+</span><span id="line-78"></span><span>    </span><span id="local-6989586621679240307"><span id="local-6989586621679240308"><span class="annot"><a href="#local-6989586621679240431"><span class="hs-identifier hs-type">nubByKey</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Ord</span></span><span> </span><span class="annot"><a href="#local-6989586621679240307"><span class="hs-identifier hs-type">k</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679240308"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679240307"><span class="hs-identifier hs-type">k</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="#local-6989586621679240308"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="#local-6989586621679240308"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">]</span></span></span><span>
+</span><span id="line-79"></span><span>    </span><span id="local-6989586621679240431"><span class="annot"><span class="annottext">nubByKey :: forall k a. Ord k =&gt; (a -&gt; k) -&gt; [a] -&gt; [a]
+</span><a href="#local-6989586621679240431"><span class="hs-identifier hs-var hs-var">nubByKey</span></a></span></span><span> </span><span id="local-6989586621679240439"><span class="annot"><span class="annottext">a -&gt; k
+</span><a href="#local-6989586621679240439"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Set k -&gt; [a] -&gt; [a]
+</span><a href="#local-6989586621679240440"><span class="hs-identifier hs-var">go</span></a></span><span> </span><span class="annot"><span class="annottext">Set k
+forall a. Set a
+</span><span class="hs-identifier hs-var">Set.empty</span></span><span>
+</span><span id="line-80"></span><span>      </span><span class="hs-keyword">where</span><span>
+</span><span id="line-81"></span><span>        </span><span id="local-6989586621679240440"><span class="annot"><span class="annottext">go :: Set k -&gt; [a] -&gt; [a]
+</span><a href="#local-6989586621679240440"><span class="hs-identifier hs-var hs-var">go</span></a></span></span><span> </span><span id="local-6989586621679240445"><span class="annot"><span class="annottext">Set k
+</span><a href="#local-6989586621679240445"><span class="hs-identifier hs-var">_seen</span></a></span></span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>
+</span><span id="line-82"></span><span>        </span><span class="annot"><a href="#local-6989586621679240440"><span class="hs-identifier hs-var">go</span></a></span><span> </span><span id="local-6989586621679240446"><span class="annot"><span class="annottext">Set k
+</span><a href="#local-6989586621679240446"><span class="hs-identifier hs-var">seen</span></a></span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621679240447"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679240447"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span class="annot"><span class="hs-glyph hs-type">:</span></span><span> </span><span id="local-6989586621679240448"><span class="annot"><span class="annottext">[a]
+</span><a href="#local-6989586621679240448"><span class="hs-identifier hs-var">xs</span></a></span></span><span class="hs-special">)</span><span>
+</span><span id="line-83"></span><span>            </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">k -&gt; Set k -&gt; Bool
+forall a. Ord a =&gt; a -&gt; Set a -&gt; Bool
+</span><span class="hs-identifier hs-var">Set.member</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">a -&gt; k
+</span><a href="#local-6989586621679240439"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679240447"><span class="hs-identifier hs-var">x</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Set k
+</span><a href="#local-6989586621679240446"><span class="hs-identifier hs-var">seen</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Set k -&gt; [a] -&gt; [a]
+</span><a href="#local-6989586621679240440"><span class="hs-identifier hs-var">go</span></a></span><span> </span><span class="annot"><span class="annottext">Set k
+</span><a href="#local-6989586621679240446"><span class="hs-identifier hs-var">seen</span></a></span><span> </span><span class="annot"><span class="annottext">[a]
+</span><a href="#local-6989586621679240448"><span class="hs-identifier hs-var">xs</span></a></span><span>
+</span><span id="line-84"></span><span>            </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">otherwise</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679240447"><span class="hs-identifier hs-var">x</span></a></span><span> </span><span class="annot"><span class="annottext">a -&gt; [a] -&gt; [a]
+forall a. a -&gt; [a] -&gt; [a]
+</span><span class="hs-glyph hs-var">:</span></span><span> </span><span class="annot"><span class="annottext">Set k -&gt; [a] -&gt; [a]
+</span><a href="#local-6989586621679240440"><span class="hs-identifier hs-var">go</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">k -&gt; Set k -&gt; Set k
+forall a. Ord a =&gt; a -&gt; Set a -&gt; Set a
+</span><span class="hs-identifier hs-var">Set.insert</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">a -&gt; k
+</span><a href="#local-6989586621679240439"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679240447"><span class="hs-identifier hs-var">x</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Set k
+</span><a href="#local-6989586621679240446"><span class="hs-identifier hs-var">seen</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[a]
+</span><a href="#local-6989586621679240448"><span class="hs-identifier hs-var">xs</span></a></span><span>
+</span><span id="line-85"></span><span>
+</span><span id="line-86"></span><span class="annot"><span class="hs-comment">{- | Infer links based on path pattern matching.
+
+Detects common REST patterns:
+
+* @POST /resources@ -&gt; @GET /resources/{id}@
+* @POST /resources@ -&gt; @PUT /resources/{id}@
+* @POST /resources@ -&gt; @DELETE /resources/{id}@
+* @POST /resources@ -&gt; @PATCH /resources/{id}@
+
+Also handles nested resources like @POST /users/{userId}/posts@ -&gt;
+@GET /users/{userId}/posts/{id}@.
+
+=== Algorithm
+
+1. Find all &quot;creator&quot; operations (POST methods)
+2. For each creator, find operations with same base path plus additional params
+3. Create links with bindings from response body to path params
+-}</span></span><span>
+</span><span id="line-104"></span><span class="annot"><a href="Haskemathesis.Stateful.Heuristics.html#inferLinksFromPaths"><span class="hs-identifier hs-type">inferLinksFromPaths</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="Haskemathesis.OpenApi.Types.html#ResolvedOperation"><span class="hs-identifier hs-type">ResolvedOperation</span></a></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="Haskemathesis.Stateful.Types.html#OperationLink"><span class="hs-identifier hs-type">OperationLink</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-105"></span><span id="inferLinksFromPaths"><span class="annot"><span class="annottext">inferLinksFromPaths :: [ResolvedOperation] -&gt; [OperationLink]
+</span><a href="Haskemathesis.Stateful.Heuristics.html#inferLinksFromPaths"><span class="hs-identifier hs-var hs-var">inferLinksFromPaths</span></a></span></span><span> </span><span id="local-6989586621679240451"><span class="annot"><span class="annottext">[ResolvedOperation]
+</span><a href="#local-6989586621679240451"><span class="hs-identifier hs-var">ops</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(ResolvedOperation -&gt; [OperationLink])
+-&gt; [ResolvedOperation] -&gt; [OperationLink]
+forall (t :: * -&gt; *) a b. Foldable t =&gt; (a -&gt; [b]) -&gt; t a -&gt; [b]
+</span><span class="hs-identifier hs-var">concatMap</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">[ResolvedOperation] -&gt; ResolvedOperation -&gt; [OperationLink]
+</span><a href="Haskemathesis.Stateful.Heuristics.html#linksFromCreator"><span class="hs-identifier hs-var">linksFromCreator</span></a></span><span> </span><span class="annot"><span class="annottext">[ResolvedOperation]
+</span><a href="#local-6989586621679240451"><span class="hs-identifier hs-var">ops</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[ResolvedOperation]
+</span><a href="#local-6989586621679240454"><span class="hs-identifier hs-var">creators</span></a></span><span>
+</span><span id="line-106"></span><span>  </span><span class="hs-keyword">where</span><span>
+</span><span id="line-107"></span><span>    </span><span class="hs-comment">-- POST operations are typically resource creators</span><span>
+</span><span id="line-108"></span><span>    </span><span id="local-6989586621679240454"><span class="annot"><span class="annottext">creators :: [ResolvedOperation]
+</span><a href="#local-6989586621679240454"><span class="hs-identifier hs-var hs-var">creators</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(ResolvedOperation -&gt; Bool)
+-&gt; [ResolvedOperation] -&gt; [ResolvedOperation]
+forall a. (a -&gt; Bool) -&gt; [a] -&gt; [a]
+</span><span class="hs-identifier hs-var">filter</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">(</span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Bool
+forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;POST&quot;</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">(Text -&gt; Bool)
+-&gt; (ResolvedOperation -&gt; Text) -&gt; ResolvedOperation -&gt; Bool
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">ResolvedOperation -&gt; Text
+</span><a href="Haskemathesis.OpenApi.Types.html#roMethod"><span class="hs-identifier hs-var">roMethod</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[ResolvedOperation]
+</span><a href="#local-6989586621679240451"><span class="hs-identifier hs-var">ops</span></a></span><span>
+</span><span id="line-109"></span><span>
+</span><span id="line-110"></span><span class="annot"><span class="hs-comment">-- | Find links from a single creator operation to related operations.</span></span><span>
+</span><span id="line-111"></span><span class="annot"><a href="Haskemathesis.Stateful.Heuristics.html#linksFromCreator"><span class="hs-identifier hs-type">linksFromCreator</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="Haskemathesis.OpenApi.Types.html#ResolvedOperation"><span class="hs-identifier hs-type">ResolvedOperation</span></a></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Haskemathesis.OpenApi.Types.html#ResolvedOperation"><span class="hs-identifier hs-type">ResolvedOperation</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="Haskemathesis.Stateful.Types.html#OperationLink"><span class="hs-identifier hs-type">OperationLink</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-112"></span><span id="linksFromCreator"><span class="annot"><span class="annottext">linksFromCreator :: [ResolvedOperation] -&gt; ResolvedOperation -&gt; [OperationLink]
+</span><a href="Haskemathesis.Stateful.Heuristics.html#linksFromCreator"><span class="hs-identifier hs-var hs-var">linksFromCreator</span></a></span></span><span> </span><span id="local-6989586621679240459"><span class="annot"><span class="annottext">[ResolvedOperation]
+</span><a href="#local-6989586621679240459"><span class="hs-identifier hs-var">allOps</span></a></span></span><span> </span><span id="local-6989586621679240460"><span class="annot"><span class="annottext">ResolvedOperation
+</span><a href="#local-6989586621679240460"><span class="hs-identifier hs-var">creator</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-113"></span><span>    </span><span class="annot"><span class="annottext">(ResolvedOperation -&gt; Maybe OperationLink)
+-&gt; [ResolvedOperation] -&gt; [OperationLink]
+forall a b. (a -&gt; Maybe b) -&gt; [a] -&gt; [b]
+</span><span class="hs-identifier hs-var">mapMaybe</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">ResolvedOperation -&gt; ResolvedOperation -&gt; Maybe OperationLink
+</span><a href="Haskemathesis.Stateful.Heuristics.html#createLink"><span class="hs-identifier hs-var">createLink</span></a></span><span> </span><span class="annot"><span class="annottext">ResolvedOperation
+</span><a href="#local-6989586621679240460"><span class="hs-identifier hs-var">creator</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">[ResolvedOperation] -&gt; ResolvedOperation -&gt; [ResolvedOperation]
+</span><a href="Haskemathesis.Stateful.Heuristics.html#findRelatedOperations"><span class="hs-identifier hs-var">findRelatedOperations</span></a></span><span> </span><span class="annot"><span class="annottext">[ResolvedOperation]
+</span><a href="#local-6989586621679240459"><span class="hs-identifier hs-var">allOps</span></a></span><span> </span><span class="annot"><span class="annottext">ResolvedOperation
+</span><a href="#local-6989586621679240460"><span class="hs-identifier hs-var">creator</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-114"></span><span>
+</span><span id="line-115"></span><span class="annot"><span class="hs-comment">-- | Create a link from creator to target operation.</span></span><span>
+</span><span id="line-116"></span><span class="annot"><a href="Haskemathesis.Stateful.Heuristics.html#createLink"><span class="hs-identifier hs-type">createLink</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Haskemathesis.OpenApi.Types.html#ResolvedOperation"><span class="hs-identifier hs-type">ResolvedOperation</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Haskemathesis.OpenApi.Types.html#ResolvedOperation"><span class="hs-identifier hs-type">ResolvedOperation</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="Haskemathesis.Stateful.Types.html#OperationLink"><span class="hs-identifier hs-type">OperationLink</span></a></span><span>
+</span><span id="line-117"></span><span id="createLink"><span class="annot"><span class="annottext">createLink :: ResolvedOperation -&gt; ResolvedOperation -&gt; Maybe OperationLink
+</span><a href="Haskemathesis.Stateful.Heuristics.html#createLink"><span class="hs-identifier hs-var hs-var">createLink</span></a></span></span><span> </span><span id="local-6989586621679240462"><span class="annot"><span class="annottext">ResolvedOperation
+</span><a href="#local-6989586621679240462"><span class="hs-identifier hs-var">creator</span></a></span></span><span> </span><span id="local-6989586621679240463"><span class="annot"><span class="annottext">ResolvedOperation
+</span><a href="#local-6989586621679240463"><span class="hs-identifier hs-var">target</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-118"></span><span>    </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621679240464"><span class="annot"><span class="annottext">sourceId :: Text
+</span><a href="#local-6989586621679240464"><span class="hs-identifier hs-var hs-var">sourceId</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">ResolvedOperation -&gt; Text
+</span><a href="Haskemathesis.Stateful.Heuristics.html#operationLabel"><span class="hs-identifier hs-var">operationLabel</span></a></span><span> </span><span class="annot"><span class="annottext">ResolvedOperation
+</span><a href="#local-6989586621679240462"><span class="hs-identifier hs-var">creator</span></a></span><span>
+</span><span id="line-119"></span><span>        </span><span id="local-6989586621679240466"><span class="annot"><span class="annottext">targetId :: Text
+</span><a href="#local-6989586621679240466"><span class="hs-identifier hs-var hs-var">targetId</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">ResolvedOperation -&gt; Text
+</span><a href="Haskemathesis.Stateful.Heuristics.html#operationLabel"><span class="hs-identifier hs-var">operationLabel</span></a></span><span> </span><span class="annot"><span class="annottext">ResolvedOperation
+</span><a href="#local-6989586621679240463"><span class="hs-identifier hs-var">target</span></a></span><span>
+</span><span id="line-120"></span><span>        </span><span class="hs-comment">-- Find path params in target that aren't in creator</span><span>
+</span><span id="line-121"></span><span>        </span><span id="local-6989586621679240467"><span class="annot"><span class="annottext">creatorParams :: [Text]
+</span><a href="#local-6989586621679240467"><span class="hs-identifier hs-var hs-var">creatorParams</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Text -&gt; [Text]
+</span><a href="Haskemathesis.Stateful.Heuristics.html#extractPathParams"><span class="hs-identifier hs-var">extractPathParams</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">ResolvedOperation -&gt; Text
+</span><a href="Haskemathesis.OpenApi.Types.html#roPath"><span class="hs-identifier hs-var">roPath</span></a></span><span> </span><span class="annot"><span class="annottext">ResolvedOperation
+</span><a href="#local-6989586621679240462"><span class="hs-identifier hs-var">creator</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-122"></span><span>        </span><span id="local-6989586621679240469"><span class="annot"><span class="annottext">targetParams :: [Text]
+</span><a href="#local-6989586621679240469"><span class="hs-identifier hs-var hs-var">targetParams</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Text -&gt; [Text]
+</span><a href="Haskemathesis.Stateful.Heuristics.html#extractPathParams"><span class="hs-identifier hs-var">extractPathParams</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">ResolvedOperation -&gt; Text
+</span><a href="Haskemathesis.OpenApi.Types.html#roPath"><span class="hs-identifier hs-var">roPath</span></a></span><span> </span><span class="annot"><span class="annottext">ResolvedOperation
+</span><a href="#local-6989586621679240463"><span class="hs-identifier hs-var">target</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-123"></span><span>        </span><span id="local-6989586621679240472"><span class="annot"><span class="annottext">newParams :: [Text]
+</span><a href="#local-6989586621679240472"><span class="hs-identifier hs-var hs-var">newParams</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(Text -&gt; Bool) -&gt; [Text] -&gt; [Text]
+forall a. (a -&gt; Bool) -&gt; [a] -&gt; [a]
+</span><span class="hs-identifier hs-var">filter</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Text -&gt; [Text] -&gt; Bool
+forall (t :: * -&gt; *) a. (Foldable t, Eq a) =&gt; a -&gt; t a -&gt; Bool
+</span><span class="hs-operator hs-var">`notElem`</span></span><span> </span><span class="annot"><span class="annottext">[Text]
+</span><a href="#local-6989586621679240467"><span class="hs-identifier hs-var">creatorParams</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[Text]
+</span><a href="#local-6989586621679240469"><span class="hs-identifier hs-var">targetParams</span></a></span><span>
+</span><span id="line-124"></span><span>    </span><span class="hs-comment">-- Only create link if there are new params to bind</span><span>
+</span><span id="line-125"></span><span>    </span><span class="hs-keyword">if</span><span> </span><span class="annot"><span class="annottext">[Text] -&gt; Bool
+forall a. [a] -&gt; Bool
+forall (t :: * -&gt; *) a. Foldable t =&gt; t a -&gt; Bool
+</span><span class="hs-identifier hs-var">null</span></span><span> </span><span class="annot"><span class="annottext">[Text]
+</span><a href="#local-6989586621679240472"><span class="hs-identifier hs-var">newParams</span></a></span><span>
+</span><span id="line-126"></span><span>        </span><span class="hs-keyword">then</span><span> </span><span class="annot"><span class="annottext">Maybe OperationLink
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-127"></span><span>        </span><span class="hs-keyword">else</span><span>
+</span><span id="line-128"></span><span>            </span><span class="annot"><span class="annottext">OperationLink -&gt; Maybe OperationLink
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span>
+</span><span id="line-129"></span><span>                </span><span class="annot"><a href="Haskemathesis.Stateful.Types.html#OperationLink"><span class="hs-identifier hs-type">OperationLink</span></a></span><span>
+</span><span id="line-130"></span><span>                    </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">olSourceOperation :: Text
+</span><a href="Haskemathesis.Stateful.Types.html#olSourceOperation"><span class="hs-identifier hs-var">olSourceOperation</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679240464"><span class="hs-identifier hs-var">sourceId</span></a></span><span>
+</span><span id="line-131"></span><span>                    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">olTargetOperation :: Text
+</span><a href="Haskemathesis.Stateful.Types.html#olTargetOperation"><span class="hs-identifier hs-var">olTargetOperation</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679240466"><span class="hs-identifier hs-var">targetId</span></a></span><span>
+</span><span id="line-132"></span><span>                    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">olParameterBindings :: [ParameterBinding]
+</span><a href="Haskemathesis.Stateful.Types.html#olParameterBindings"><span class="hs-identifier hs-var">olParameterBindings</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(Text -&gt; ParameterBinding) -&gt; [Text] -&gt; [ParameterBinding]
+forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
+</span><span class="hs-identifier hs-var">map</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; ParameterBinding
+</span><a href="#local-6989586621679240477"><span class="hs-identifier hs-var">createBinding</span></a></span><span> </span><span class="annot"><span class="annottext">[Text]
+</span><a href="#local-6989586621679240472"><span class="hs-identifier hs-var">newParams</span></a></span><span>
+</span><span id="line-133"></span><span>                    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">olDescription :: Maybe Text
+</span><a href="Haskemathesis.Stateful.Types.html#olDescription"><span class="hs-identifier hs-var">olDescription</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Text -&gt; Maybe Text
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">(Text -&gt; Maybe Text) -&gt; Text -&gt; Maybe Text
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;Inferred: &quot;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">ResolvedOperation -&gt; Text
+</span><a href="Haskemathesis.OpenApi.Types.html#roMethod"><span class="hs-identifier hs-var">roMethod</span></a></span><span> </span><span class="annot"><span class="annottext">ResolvedOperation
+</span><a href="#local-6989586621679240463"><span class="hs-identifier hs-var">target</span></a></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot; after POST&quot;</span></span><span>
+</span><span id="line-134"></span><span>                    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">olLinkName :: Maybe Text
+</span><a href="Haskemathesis.Stateful.Types.html#olLinkName"><span class="hs-identifier hs-var">olLinkName</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe Text
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-135"></span><span>                    </span><span class="hs-special">}</span><span>
+</span><span id="line-136"></span><span>  </span><span class="hs-keyword">where</span><span>
+</span><span id="line-137"></span><span>    </span><span class="hs-comment">-- Create a binding from response body field to parameter</span><span>
+</span><span id="line-138"></span><span>    </span><span class="annot"><a href="#local-6989586621679240477"><span class="hs-identifier hs-type">createBinding</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Haskemathesis.Stateful.Types.html#ParameterBinding"><span class="hs-identifier hs-type">ParameterBinding</span></a></span><span>
+</span><span id="line-139"></span><span>    </span><span id="local-6989586621679240477"><span class="annot"><span class="annottext">createBinding :: Text -&gt; ParameterBinding
+</span><a href="#local-6989586621679240477"><span class="hs-identifier hs-var hs-var">createBinding</span></a></span></span><span> </span><span id="local-6989586621679240480"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679240480"><span class="hs-identifier hs-var">paramName</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-140"></span><span>        </span><span class="annot"><a href="Haskemathesis.Stateful.Types.html#ParameterBinding"><span class="hs-identifier hs-type">ParameterBinding</span></a></span><span>
+</span><span id="line-141"></span><span>            </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">pbTargetParam :: Text
+</span><a href="Haskemathesis.Stateful.Types.html#pbTargetParam"><span class="hs-identifier hs-var">pbTargetParam</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679240480"><span class="hs-identifier hs-var">paramName</span></a></span><span>
+</span><span id="line-142"></span><span>            </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">pbSource :: ValueSource
+</span><a href="Haskemathesis.Stateful.Types.html#pbSource"><span class="hs-identifier hs-var">pbSource</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Text -&gt; ValueSource
+</span><a href="Haskemathesis.Stateful.Types.html#FromResponseBody"><span class="hs-identifier hs-var">FromResponseBody</span></a></span><span> </span><span class="annot"><span class="annottext">(Text -&gt; ValueSource) -&gt; Text -&gt; ValueSource
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;$response.body#/&quot;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text
+</span><a href="#local-6989586621679240485"><span class="hs-identifier hs-var">normalizeForJsonPath</span></a></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679240480"><span class="hs-identifier hs-var">paramName</span></a></span><span>
+</span><span id="line-143"></span><span>            </span><span class="hs-special">}</span><span>
+</span><span id="line-144"></span><span>
+</span><span id="line-145"></span><span>    </span><span class="hs-comment">-- Convert parameter name to JSON path field name</span><span>
+</span><span id="line-146"></span><span>    </span><span class="hs-comment">-- E.g., &quot;userId&quot; stays as &quot;userId&quot;, but we also try common patterns</span><span>
+</span><span id="line-147"></span><span>    </span><span class="annot"><a href="#local-6989586621679240485"><span class="hs-identifier hs-type">normalizeForJsonPath</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
+</span><span id="line-148"></span><span>    </span><span id="local-6989586621679240485"><span class="annot"><span class="annottext">normalizeForJsonPath :: Text -&gt; Text
+</span><a href="#local-6989586621679240485"><span class="hs-identifier hs-var hs-var">normalizeForJsonPath</span></a></span></span><span> </span><span id="local-6989586621679240486"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679240486"><span class="hs-identifier hs-var">name</span></a></span></span><span>
+</span><span id="line-149"></span><span>        </span><span class="hs-comment">-- If param ends with &quot;Id&quot; and has at least 3 characters (e.g., &quot;xId&quot;)</span><span>
+</span><span id="line-150"></span><span>        </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;Id&quot;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Bool
+</span><span class="hs-operator hs-var">`T.isSuffixOf`</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679240486"><span class="hs-identifier hs-var">name</span></a></span><span> </span><span class="annot"><span class="annottext">Bool -&gt; Bool -&gt; Bool
+</span><span class="hs-operator hs-var">&amp;&amp;</span></span><span> </span><span class="annot"><span class="annottext">Bool -&gt; Bool
+</span><span class="hs-identifier hs-var">not</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Text -&gt; Bool
+</span><span class="hs-identifier hs-var">T.null</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Int -&gt; Text -&gt; Text
+</span><span class="hs-identifier hs-var">T.dropEnd</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">2</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679240486"><span class="hs-identifier hs-var">name</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-151"></span><span>            </span><span class="hs-comment">-- Keep original - extraction will try variations</span><span>
+</span><span id="line-152"></span><span>            </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679240486"><span class="hs-identifier hs-var">name</span></a></span><span>
+</span><span id="line-153"></span><span>        </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">otherwise</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679240486"><span class="hs-identifier hs-var">name</span></a></span><span>
+</span><span id="line-154"></span><span>
+</span><span id="line-155"></span><span class="annot"><span class="hs-comment">{- | Find operations related to a creator by path pattern.
+
+An operation is related if:
+
+1. It has the same base path as the creator
+2. It has additional path parameters
+3. It's a different method (GET, PUT, DELETE, PATCH)
+
+=== Example
+
+For @POST /users@, related operations might include:
+
+* @GET /users/{id}@
+* @PUT /users/{id}@
+* @DELETE /users/{id}@
+* @PATCH /users/{id}@
+-}</span></span><span>
+</span><span id="line-172"></span><span class="annot"><a href="Haskemathesis.Stateful.Heuristics.html#findRelatedOperations"><span class="hs-identifier hs-type">findRelatedOperations</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="Haskemathesis.OpenApi.Types.html#ResolvedOperation"><span class="hs-identifier hs-type">ResolvedOperation</span></a></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Haskemathesis.OpenApi.Types.html#ResolvedOperation"><span class="hs-identifier hs-type">ResolvedOperation</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="Haskemathesis.OpenApi.Types.html#ResolvedOperation"><span class="hs-identifier hs-type">ResolvedOperation</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-173"></span><span id="findRelatedOperations"><span class="annot"><span class="annottext">findRelatedOperations :: [ResolvedOperation] -&gt; ResolvedOperation -&gt; [ResolvedOperation]
+</span><a href="Haskemathesis.Stateful.Heuristics.html#findRelatedOperations"><span class="hs-identifier hs-var hs-var">findRelatedOperations</span></a></span></span><span> </span><span id="local-6989586621679240492"><span class="annot"><span class="annottext">[ResolvedOperation]
+</span><a href="#local-6989586621679240492"><span class="hs-identifier hs-var">allOps</span></a></span></span><span> </span><span id="local-6989586621679240493"><span class="annot"><span class="annottext">ResolvedOperation
+</span><a href="#local-6989586621679240493"><span class="hs-identifier hs-var">creator</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-174"></span><span>    </span><span class="annot"><span class="annottext">(ResolvedOperation -&gt; Bool)
+-&gt; [ResolvedOperation] -&gt; [ResolvedOperation]
+forall a. (a -&gt; Bool) -&gt; [a] -&gt; [a]
+</span><span class="hs-identifier hs-var">filter</span></span><span> </span><span class="annot"><span class="annottext">ResolvedOperation -&gt; Bool
+</span><a href="#local-6989586621679240494"><span class="hs-identifier hs-var">isRelated</span></a></span><span> </span><span class="annot"><span class="annottext">[ResolvedOperation]
+</span><a href="#local-6989586621679240492"><span class="hs-identifier hs-var">allOps</span></a></span><span>
+</span><span id="line-175"></span><span>  </span><span class="hs-keyword">where</span><span>
+</span><span id="line-176"></span><span>    </span><span id="local-6989586621679240495"><span class="annot"><span class="annottext">creatorBase :: Text
+</span><a href="#local-6989586621679240495"><span class="hs-identifier hs-var hs-var">creatorBase</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text
+</span><a href="Haskemathesis.Stateful.Heuristics.html#extractBasePath"><span class="hs-identifier hs-var">extractBasePath</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">ResolvedOperation -&gt; Text
+</span><a href="Haskemathesis.OpenApi.Types.html#roPath"><span class="hs-identifier hs-var">roPath</span></a></span><span> </span><span class="annot"><span class="annottext">ResolvedOperation
+</span><a href="#local-6989586621679240493"><span class="hs-identifier hs-var">creator</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-177"></span><span>    </span><span id="local-6989586621679240496"><span class="annot"><span class="annottext">creatorParams :: [Text]
+</span><a href="#local-6989586621679240496"><span class="hs-identifier hs-var hs-var">creatorParams</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Text -&gt; [Text]
+</span><a href="Haskemathesis.Stateful.Heuristics.html#extractPathParams"><span class="hs-identifier hs-var">extractPathParams</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">ResolvedOperation -&gt; Text
+</span><a href="Haskemathesis.OpenApi.Types.html#roPath"><span class="hs-identifier hs-var">roPath</span></a></span><span> </span><span class="annot"><span class="annottext">ResolvedOperation
+</span><a href="#local-6989586621679240493"><span class="hs-identifier hs-var">creator</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-178"></span><span>
+</span><span id="line-179"></span><span>    </span><span class="annot"><a href="#local-6989586621679240494"><span class="hs-identifier hs-type">isRelated</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Haskemathesis.OpenApi.Types.html#ResolvedOperation"><span class="hs-identifier hs-type">ResolvedOperation</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span>
+</span><span id="line-180"></span><span>    </span><span id="local-6989586621679240494"><span class="annot"><span class="annottext">isRelated :: ResolvedOperation -&gt; Bool
+</span><a href="#local-6989586621679240494"><span class="hs-identifier hs-var hs-var">isRelated</span></a></span></span><span> </span><span id="local-6989586621679240497"><span class="annot"><span class="annottext">ResolvedOperation
+</span><a href="#local-6989586621679240497"><span class="hs-identifier hs-var">op</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-181"></span><span>        </span><span class="hs-comment">-- Different operation</span><span>
+</span><span id="line-182"></span><span>        </span><span class="annot"><span class="annottext">ResolvedOperation -&gt; Text
+</span><a href="Haskemathesis.Stateful.Heuristics.html#operationLabel"><span class="hs-identifier hs-var">operationLabel</span></a></span><span> </span><span class="annot"><span class="annottext">ResolvedOperation
+</span><a href="#local-6989586621679240497"><span class="hs-identifier hs-var">op</span></a></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Bool
+forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">/=</span></span><span> </span><span class="annot"><span class="annottext">ResolvedOperation -&gt; Text
+</span><a href="Haskemathesis.Stateful.Heuristics.html#operationLabel"><span class="hs-identifier hs-var">operationLabel</span></a></span><span> </span><span class="annot"><span class="annottext">ResolvedOperation
+</span><a href="#local-6989586621679240493"><span class="hs-identifier hs-var">creator</span></a></span><span>
+</span><span id="line-183"></span><span>            </span><span class="annot"><span class="annottext">Bool -&gt; Bool -&gt; Bool
+</span><span class="hs-operator hs-var">&amp;&amp;</span></span><span>
+</span><span id="line-184"></span><span>            </span><span class="hs-comment">-- Not another POST (typically)</span><span>
+</span><span id="line-185"></span><span>            </span><span class="annot"><span class="annottext">ResolvedOperation -&gt; Text
+</span><a href="Haskemathesis.OpenApi.Types.html#roMethod"><span class="hs-identifier hs-var">roMethod</span></a></span><span> </span><span class="annot"><span class="annottext">ResolvedOperation
+</span><a href="#local-6989586621679240497"><span class="hs-identifier hs-var">op</span></a></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Bool
+forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">/=</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;POST&quot;</span></span><span>
+</span><span id="line-186"></span><span>            </span><span class="annot"><span class="annottext">Bool -&gt; Bool -&gt; Bool
+</span><span class="hs-operator hs-var">&amp;&amp;</span></span><span>
+</span><span id="line-187"></span><span>            </span><span class="hs-comment">-- Same base path</span><span>
+</span><span id="line-188"></span><span>            </span><span class="annot"><span class="annottext">Text -&gt; Text
+</span><a href="Haskemathesis.Stateful.Heuristics.html#extractBasePath"><span class="hs-identifier hs-var">extractBasePath</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">ResolvedOperation -&gt; Text
+</span><a href="Haskemathesis.OpenApi.Types.html#roPath"><span class="hs-identifier hs-var">roPath</span></a></span><span> </span><span class="annot"><span class="annottext">ResolvedOperation
+</span><a href="#local-6989586621679240497"><span class="hs-identifier hs-var">op</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Bool
+forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679240495"><span class="hs-identifier hs-var">creatorBase</span></a></span><span>
+</span><span id="line-189"></span><span>            </span><span class="annot"><span class="annottext">Bool -&gt; Bool -&gt; Bool
+</span><span class="hs-operator hs-var">&amp;&amp;</span></span><span>
+</span><span id="line-190"></span><span>            </span><span class="hs-comment">-- Has more path params (indicating a specific resource)</span><span>
+</span><span id="line-191"></span><span>            </span><span class="annot"><span class="annottext">[Text] -&gt; [Text] -&gt; Bool
+forall a. [a] -&gt; [a] -&gt; Bool
+</span><a href="#local-6989586621679240499"><span class="hs-identifier hs-var">hasMoreParams</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Text -&gt; [Text]
+</span><a href="Haskemathesis.Stateful.Heuristics.html#extractPathParams"><span class="hs-identifier hs-var">extractPathParams</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">ResolvedOperation -&gt; Text
+</span><a href="Haskemathesis.OpenApi.Types.html#roPath"><span class="hs-identifier hs-var">roPath</span></a></span><span> </span><span class="annot"><span class="annottext">ResolvedOperation
+</span><a href="#local-6989586621679240497"><span class="hs-identifier hs-var">op</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[Text]
+</span><a href="#local-6989586621679240496"><span class="hs-identifier hs-var">creatorParams</span></a></span><span>
+</span><span id="line-192"></span><span>
+</span><span id="line-193"></span><span>    </span><span class="hs-comment">-- Check if first list is longer than second without using length</span><span>
+</span><span id="line-194"></span><span>    </span><span id="local-6989586621679240341"><span class="annot"><a href="#local-6989586621679240499"><span class="hs-identifier hs-type">hasMoreParams</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="#local-6989586621679240341"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="#local-6989586621679240341"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span></span><span>
+</span><span id="line-195"></span><span>    </span><span id="local-6989586621679240499"><span class="annot"><span class="annottext">hasMoreParams :: forall a. [a] -&gt; [a] -&gt; Bool
+</span><a href="#local-6989586621679240499"><span class="hs-identifier hs-var hs-var">hasMoreParams</span></a></span></span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span> </span><span class="annot"><span class="annottext">[a]
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">False</span></span><span>
+</span><span id="line-196"></span><span>    </span><span class="annot"><a href="#local-6989586621679240499"><span class="hs-identifier hs-var">hasMoreParams</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">a
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="hs-glyph hs-type">:</span></span><span> </span><span class="annot"><span class="annottext">[a]
+</span><span class="hs-identifier">_</span></span><span class="hs-special">)</span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">True</span></span><span>
+</span><span id="line-197"></span><span>    </span><span class="annot"><a href="#local-6989586621679240499"><span class="hs-identifier hs-var">hasMoreParams</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">a
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="hs-glyph hs-type">:</span></span><span> </span><span id="local-6989586621679240500"><span class="annot"><span class="annottext">[a]
+</span><a href="#local-6989586621679240500"><span class="hs-identifier hs-var">xs</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">a
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="hs-glyph hs-type">:</span></span><span> </span><span id="local-6989586621679240501"><span class="annot"><span class="annottext">[a]
+</span><a href="#local-6989586621679240501"><span class="hs-identifier hs-var">ys</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[a] -&gt; [a] -&gt; Bool
+forall a. [a] -&gt; [a] -&gt; Bool
+</span><a href="#local-6989586621679240499"><span class="hs-identifier hs-var">hasMoreParams</span></a></span><span> </span><span class="annot"><span class="annottext">[a]
+</span><a href="#local-6989586621679240500"><span class="hs-identifier hs-var">xs</span></a></span><span> </span><span class="annot"><span class="annottext">[a]
+</span><a href="#local-6989586621679240501"><span class="hs-identifier hs-var">ys</span></a></span><span>
+</span><span id="line-198"></span><span>
+</span><span id="line-199"></span><span class="annot"><span class="hs-comment">{- | Extract the base path from a path template.
+
+Removes path parameter segments to get the &quot;collection&quot; path.
+
+&gt;&gt;&gt; extractBasePath &quot;/users/{id}&quot;
+&quot;/users&quot;
+
+&gt;&gt;&gt; extractBasePath &quot;/users/{userId}/posts/{postId}&quot;
+&quot;/users/{userId}/posts&quot;
+
+&gt;&gt;&gt; extractBasePath &quot;/users&quot;
+&quot;/users&quot;
+-}</span></span><span>
+</span><span id="line-212"></span><span class="annot"><a href="Haskemathesis.Stateful.Heuristics.html#extractBasePath"><span class="hs-identifier hs-type">extractBasePath</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
+</span><span id="line-213"></span><span id="extractBasePath"><span class="annot"><span class="annottext">extractBasePath :: Text -&gt; Text
+</span><a href="Haskemathesis.Stateful.Heuristics.html#extractBasePath"><span class="hs-identifier hs-var hs-var">extractBasePath</span></a></span></span><span> </span><span id="local-6989586621679240502"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679240502"><span class="hs-identifier hs-var">path</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-214"></span><span>    </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621679240506"><span class="annot"><span class="annottext">segments :: [Text]
+</span><a href="#local-6989586621679240506"><span class="hs-identifier hs-var hs-var">segments</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">HasCallStack =&gt; Text -&gt; Text -&gt; [Text]
+Text -&gt; Text -&gt; [Text]
+</span><span class="hs-identifier hs-var">T.splitOn</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;/&quot;</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679240502"><span class="hs-identifier hs-var">path</span></a></span><span>
+</span><span id="line-215"></span><span>        </span><span class="hs-comment">-- Remove trailing param segments</span><span>
+</span><span id="line-216"></span><span>        </span><span id="local-6989586621679240508"><span class="annot"><span class="annottext">baseSegments :: [Text]
+</span><a href="#local-6989586621679240508"><span class="hs-identifier hs-var hs-var">baseSegments</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[Text] -&gt; [Text]
+</span><a href="#local-6989586621679240509"><span class="hs-identifier hs-var">removeTrailingParams</span></a></span><span> </span><span class="annot"><span class="annottext">[Text]
+</span><a href="#local-6989586621679240506"><span class="hs-identifier hs-var">segments</span></a></span><span>
+</span><span id="line-217"></span><span>     </span><span class="hs-keyword">in</span><span> </span><span class="annot"><span class="annottext">Text -&gt; [Text] -&gt; Text
+</span><span class="hs-identifier hs-var">T.intercalate</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;/&quot;</span></span><span> </span><span class="annot"><span class="annottext">[Text]
+</span><a href="#local-6989586621679240508"><span class="hs-identifier hs-var">baseSegments</span></a></span><span>
+</span><span id="line-218"></span><span>  </span><span class="hs-keyword">where</span><span>
+</span><span id="line-219"></span><span>    </span><span class="annot"><a href="#local-6989586621679240509"><span class="hs-identifier hs-type">removeTrailingParams</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span class="hs-special">]</span><span>
+</span><span id="line-220"></span><span>    </span><span id="local-6989586621679240509"><span class="annot"><span class="annottext">removeTrailingParams :: [Text] -&gt; [Text]
+</span><a href="#local-6989586621679240509"><span class="hs-identifier hs-var hs-var">removeTrailingParams</span></a></span></span><span> </span><span id="local-6989586621679240511"><span class="annot"><span class="annottext">[Text]
+</span><a href="#local-6989586621679240511"><span class="hs-identifier hs-var">segs</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">[Text] -&gt; Maybe ([Text], Text)
+forall a. [a] -&gt; Maybe ([a], a)
+</span><a href="#local-6989586621679240512"><span class="hs-identifier hs-var">unsnoc</span></a></span><span> </span><span class="annot"><span class="annottext">[Text]
+</span><a href="#local-6989586621679240511"><span class="hs-identifier hs-var">segs</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-221"></span><span>        </span><span class="annot"><span class="annottext">Maybe ([Text], Text)
+</span><span class="hs-identifier hs-var">Nothing</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>
+</span><span id="line-222"></span><span>        </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621679240513"><span class="annot"><span class="annottext">[Text]
+</span><a href="#local-6989586621679240513"><span class="hs-identifier hs-var">initSegs</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679240514"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679240514"><span class="hs-identifier hs-var">lastSeg</span></a></span></span><span class="hs-special">)</span><span>
+</span><span id="line-223"></span><span>            </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Text -&gt; Bool
+</span><a href="#local-6989586621679240515"><span class="hs-identifier hs-var">isParamSegment</span></a></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679240514"><span class="hs-identifier hs-var">lastSeg</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">[Text] -&gt; [Text]
+</span><a href="#local-6989586621679240509"><span class="hs-identifier hs-var">removeTrailingParams</span></a></span><span> </span><span class="annot"><span class="annottext">[Text]
+</span><a href="#local-6989586621679240513"><span class="hs-identifier hs-var">initSegs</span></a></span><span>
+</span><span id="line-224"></span><span>            </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">otherwise</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">[Text]
+</span><a href="#local-6989586621679240511"><span class="hs-identifier hs-var">segs</span></a></span><span>
+</span><span id="line-225"></span><span>
+</span><span id="line-226"></span><span>    </span><span class="hs-comment">-- Safe version of (init, last) combined</span><span>
+</span><span id="line-227"></span><span>    </span><span id="local-6989586621679240343"><span class="annot"><a href="#local-6989586621679240512"><span class="hs-identifier hs-type">unsnoc</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="#local-6989586621679240343"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">[</span><span class="annot"><a href="#local-6989586621679240343"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">]</span><span class="hs-special">,</span><span> </span><span class="annot"><a href="#local-6989586621679240343"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span></span><span>
+</span><span id="line-228"></span><span>    </span><span id="local-6989586621679240512"><span class="annot"><span class="annottext">unsnoc :: forall a. [a] -&gt; Maybe ([a], a)
+</span><a href="#local-6989586621679240512"><span class="hs-identifier hs-var hs-var">unsnoc</span></a></span></span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe ([a], a)
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-229"></span><span>    </span><span class="annot"><a href="#local-6989586621679240512"><span class="hs-identifier hs-var">unsnoc</span></a></span><span> </span><span id="local-6989586621679240520"><span class="annot"><span class="annottext">[a]
+</span><a href="#local-6989586621679240520"><span class="hs-identifier hs-var">xs</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">([a], a) -&gt; Maybe ([a], a)
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">[a] -&gt; [a]
+forall a. HasCallStack =&gt; [a] -&gt; [a]
+</span><span class="hs-identifier hs-var">Prelude.init</span></span><span> </span><span class="annot"><span class="annottext">[a]
+</span><a href="#local-6989586621679240520"><span class="hs-identifier hs-var">xs</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">[a] -&gt; a
+forall a. HasCallStack =&gt; [a] -&gt; a
+</span><span class="hs-identifier hs-var">Prelude.last</span></span><span> </span><span class="annot"><span class="annottext">[a]
+</span><a href="#local-6989586621679240520"><span class="hs-identifier hs-var">xs</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-230"></span><span>
+</span><span id="line-231"></span><span>    </span><span class="annot"><a href="#local-6989586621679240515"><span class="hs-identifier hs-type">isParamSegment</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span>
+</span><span id="line-232"></span><span>    </span><span id="local-6989586621679240515"><span class="annot"><span class="annottext">isParamSegment :: Text -&gt; Bool
+</span><a href="#local-6989586621679240515"><span class="hs-identifier hs-var hs-var">isParamSegment</span></a></span></span><span> </span><span id="local-6989586621679240523"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679240523"><span class="hs-identifier hs-var">seg</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;{&quot;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Bool
+</span><span class="hs-operator hs-var">`T.isPrefixOf`</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679240523"><span class="hs-identifier hs-var">seg</span></a></span><span> </span><span class="annot"><span class="annottext">Bool -&gt; Bool -&gt; Bool
+</span><span class="hs-operator hs-var">&amp;&amp;</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;}&quot;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Bool
+</span><span class="hs-operator hs-var">`T.isSuffixOf`</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679240523"><span class="hs-identifier hs-var">seg</span></a></span><span>
+</span><span id="line-233"></span><span>
+</span><span id="line-234"></span><span class="annot"><span class="hs-comment">{- | Extract path parameter names from a path template.
+
+&gt;&gt;&gt; extractPathParams &quot;/users/{id}&quot;
+[&quot;id&quot;]
+
+&gt;&gt;&gt; extractPathParams &quot;/users/{userId}/posts/{postId}&quot;
+[&quot;userId&quot;, &quot;postId&quot;]
+
+&gt;&gt;&gt; extractPathParams &quot;/users&quot;
+[]
+-}</span></span><span>
+</span><span id="line-245"></span><span class="annot"><a href="Haskemathesis.Stateful.Heuristics.html#extractPathParams"><span class="hs-identifier hs-type">extractPathParams</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span class="hs-special">]</span><span>
+</span><span id="line-246"></span><span id="extractPathParams"><span class="annot"><span class="annottext">extractPathParams :: Text -&gt; [Text]
+</span><a href="Haskemathesis.Stateful.Heuristics.html#extractPathParams"><span class="hs-identifier hs-var hs-var">extractPathParams</span></a></span></span><span> </span><span id="local-6989586621679240525"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679240525"><span class="hs-identifier hs-var">path</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-247"></span><span>    </span><span class="annot"><span class="annottext">(Text -&gt; Maybe Text) -&gt; [Text] -&gt; [Text]
+forall a b. (a -&gt; Maybe b) -&gt; [a] -&gt; [b]
+</span><span class="hs-identifier hs-var">mapMaybe</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Maybe Text
+</span><a href="#local-6989586621679240526"><span class="hs-identifier hs-var">extractParam</span></a></span><span> </span><span class="annot"><span class="annottext">([Text] -&gt; [Text]) -&gt; [Text] -&gt; [Text]
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">HasCallStack =&gt; Text -&gt; Text -&gt; [Text]
+Text -&gt; Text -&gt; [Text]
+</span><span class="hs-identifier hs-var">T.splitOn</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;/&quot;</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679240525"><span class="hs-identifier hs-var">path</span></a></span><span>
+</span><span id="line-248"></span><span>  </span><span class="hs-keyword">where</span><span>
+</span><span id="line-249"></span><span>    </span><span class="annot"><a href="#local-6989586621679240526"><span class="hs-identifier hs-type">extractParam</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
+</span><span id="line-250"></span><span>    </span><span id="local-6989586621679240526"><span class="annot"><span class="annottext">extractParam :: Text -&gt; Maybe Text
+</span><a href="#local-6989586621679240526"><span class="hs-identifier hs-var hs-var">extractParam</span></a></span></span><span> </span><span id="local-6989586621679240527"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679240527"><span class="hs-identifier hs-var">seg</span></a></span></span><span>
+</span><span id="line-251"></span><span>        </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;{&quot;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Bool
+</span><span class="hs-operator hs-var">`T.isPrefixOf`</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679240527"><span class="hs-identifier hs-var">seg</span></a></span><span> </span><span class="annot"><span class="annottext">Bool -&gt; Bool -&gt; Bool
+</span><span class="hs-operator hs-var">&amp;&amp;</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;}&quot;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Bool
+</span><span class="hs-operator hs-var">`T.isSuffixOf`</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679240527"><span class="hs-identifier hs-var">seg</span></a></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-252"></span><span>            </span><span class="annot"><span class="annottext">Text -&gt; Maybe Text
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">(Text -&gt; Maybe Text) -&gt; Text -&gt; Maybe Text
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Text -&gt; Text
+</span><span class="hs-identifier hs-var">T.drop</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">1</span></span><span> </span><span class="annot"><span class="annottext">(Text -&gt; Text) -&gt; Text -&gt; Text
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Text -&gt; Text
+</span><span class="hs-identifier hs-var">T.dropEnd</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">1</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679240527"><span class="hs-identifier hs-var">seg</span></a></span><span>
+</span><span id="line-253"></span><span>        </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">otherwise</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe Text
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-254"></span><span>
+</span><span id="line-255"></span><span class="annot"><span class="hs-comment">{- | Infer links based on response schema field matching.
+
+Analyzes response schemas to find fields that match path parameters
+in other operations. This handles cases where:
+
+* Response has @id@ field -&gt; matches @{id}@ parameter
+* Response has @userId@ field -&gt; matches @{user_id}@ parameter
+* Response has @resourceId@ field -&gt; matches @{resourceId}@ parameter
+
+=== Algorithm
+
+1. For each operation with a response schema containing object fields
+2. Find operations with path parameters matching those field names
+3. Create links with bindings from response fields to parameters
+-}</span></span><span>
+</span><span id="line-270"></span><span class="annot"><a href="Haskemathesis.Stateful.Heuristics.html#inferLinksFromSchemas"><span class="hs-identifier hs-type">inferLinksFromSchemas</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="Haskemathesis.OpenApi.Types.html#ResolvedOperation"><span class="hs-identifier hs-type">ResolvedOperation</span></a></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="Haskemathesis.Stateful.Types.html#OperationLink"><span class="hs-identifier hs-type">OperationLink</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-271"></span><span id="inferLinksFromSchemas"><span class="annot"><span class="annottext">inferLinksFromSchemas :: [ResolvedOperation] -&gt; [OperationLink]
+</span><a href="Haskemathesis.Stateful.Heuristics.html#inferLinksFromSchemas"><span class="hs-identifier hs-var hs-var">inferLinksFromSchemas</span></a></span></span><span> </span><span id="local-6989586621679240529"><span class="annot"><span class="annottext">[ResolvedOperation]
+</span><a href="#local-6989586621679240529"><span class="hs-identifier hs-var">ops</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(ResolvedOperation -&gt; [OperationLink])
+-&gt; [ResolvedOperation] -&gt; [OperationLink]
+forall (t :: * -&gt; *) a b. Foldable t =&gt; (a -&gt; [b]) -&gt; t a -&gt; [b]
+</span><span class="hs-identifier hs-var">concatMap</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">[ResolvedOperation] -&gt; ResolvedOperation -&gt; [OperationLink]
+</span><a href="Haskemathesis.Stateful.Heuristics.html#linksFromResponseSchema"><span class="hs-identifier hs-var">linksFromResponseSchema</span></a></span><span> </span><span class="annot"><span class="annottext">[ResolvedOperation]
+</span><a href="#local-6989586621679240529"><span class="hs-identifier hs-var">ops</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[ResolvedOperation]
+</span><a href="#local-6989586621679240529"><span class="hs-identifier hs-var">ops</span></a></span><span>
+</span><span id="line-272"></span><span>
+</span><span id="line-273"></span><span class="annot"><span class="hs-comment">-- | Find links from an operation based on its response schema.</span></span><span>
+</span><span id="line-274"></span><span class="annot"><a href="Haskemathesis.Stateful.Heuristics.html#linksFromResponseSchema"><span class="hs-identifier hs-type">linksFromResponseSchema</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="Haskemathesis.OpenApi.Types.html#ResolvedOperation"><span class="hs-identifier hs-type">ResolvedOperation</span></a></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Haskemathesis.OpenApi.Types.html#ResolvedOperation"><span class="hs-identifier hs-type">ResolvedOperation</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="Haskemathesis.Stateful.Types.html#OperationLink"><span class="hs-identifier hs-type">OperationLink</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-275"></span><span id="linksFromResponseSchema"><span class="annot"><span class="annottext">linksFromResponseSchema :: [ResolvedOperation] -&gt; ResolvedOperation -&gt; [OperationLink]
+</span><a href="Haskemathesis.Stateful.Heuristics.html#linksFromResponseSchema"><span class="hs-identifier hs-var hs-var">linksFromResponseSchema</span></a></span></span><span> </span><span id="local-6989586621679240531"><span class="annot"><span class="annottext">[ResolvedOperation]
+</span><a href="#local-6989586621679240531"><span class="hs-identifier hs-var">allOps</span></a></span></span><span> </span><span id="local-6989586621679240532"><span class="annot"><span class="annottext">ResolvedOperation
+</span><a href="#local-6989586621679240532"><span class="hs-identifier hs-var">sourceOp</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-276"></span><span>    </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">ResolvedOperation -&gt; [Text]
+</span><a href="Haskemathesis.Stateful.Heuristics.html#getResponseFields"><span class="hs-identifier hs-var">getResponseFields</span></a></span><span> </span><span class="annot"><span class="annottext">ResolvedOperation
+</span><a href="#local-6989586621679240532"><span class="hs-identifier hs-var">sourceOp</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-277"></span><span>        </span><span class="hs-special">[</span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>
+</span><span id="line-278"></span><span>        </span><span id="local-6989586621679240534"><span class="annot"><span class="annottext">[Text]
+</span><a href="#local-6989586621679240534"><span class="hs-identifier hs-var">fields</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">(ResolvedOperation -&gt; [OperationLink])
+-&gt; [ResolvedOperation] -&gt; [OperationLink]
+forall (t :: * -&gt; *) a b. Foldable t =&gt; (a -&gt; [b]) -&gt; t a -&gt; [b]
+</span><span class="hs-identifier hs-var">concatMap</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">ResolvedOperation -&gt; [Text] -&gt; ResolvedOperation -&gt; [OperationLink]
+</span><a href="Haskemathesis.Stateful.Heuristics.html#findMatchingTargets"><span class="hs-identifier hs-var">findMatchingTargets</span></a></span><span> </span><span class="annot"><span class="annottext">ResolvedOperation
+</span><a href="#local-6989586621679240532"><span class="hs-identifier hs-var">sourceOp</span></a></span><span> </span><span class="annot"><span class="annottext">[Text]
+</span><a href="#local-6989586621679240534"><span class="hs-identifier hs-var">fields</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[ResolvedOperation]
+</span><a href="#local-6989586621679240531"><span class="hs-identifier hs-var">allOps</span></a></span><span>
+</span><span id="line-279"></span><span>
+</span><span id="line-280"></span><span class="annot"><span class="hs-comment">-- | Get field names from the operation's success response schema.</span></span><span>
+</span><span id="line-281"></span><span class="annot"><a href="Haskemathesis.Stateful.Heuristics.html#getResponseFields"><span class="hs-identifier hs-type">getResponseFields</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Haskemathesis.OpenApi.Types.html#ResolvedOperation"><span class="hs-identifier hs-type">ResolvedOperation</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span class="hs-special">]</span><span>
+</span><span id="line-282"></span><span id="getResponseFields"><span class="annot"><span class="annottext">getResponseFields :: ResolvedOperation -&gt; [Text]
+</span><a href="Haskemathesis.Stateful.Heuristics.html#getResponseFields"><span class="hs-identifier hs-var hs-var">getResponseFields</span></a></span></span><span> </span><span id="local-6989586621679240536"><span class="annot"><span class="annottext">ResolvedOperation
+</span><a href="#local-6989586621679240536"><span class="hs-identifier hs-var">op</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-283"></span><span>    </span><span class="hs-comment">-- Look for 200, 201 responses</span><span>
+</span><span id="line-284"></span><span>    </span><span class="annot"><span class="annottext">[Text] -&gt; (Schema -&gt; [Text]) -&gt; Maybe Schema -&gt; [Text]
+forall b a. b -&gt; (a -&gt; b) -&gt; Maybe a -&gt; b
+</span><span class="hs-identifier hs-var">maybe</span></span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span> </span><span class="annot"><span class="annottext">Schema -&gt; [Text]
+</span><a href="#local-6989586621679240538"><span class="hs-identifier hs-var">getSchemaFields</span></a></span><span> </span><span class="annot"><span class="annottext">Maybe Schema
+</span><a href="#local-6989586621679240539"><span class="hs-identifier hs-var">lookup200or201</span></a></span><span>
+</span><span id="line-285"></span><span>  </span><span class="hs-keyword">where</span><span>
+</span><span id="line-286"></span><span>    </span><span id="local-6989586621679240540"><span class="annot"><span class="annottext">responses :: Map Int ResponseSpec
+</span><a href="#local-6989586621679240540"><span class="hs-identifier hs-var hs-var">responses</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">ResolvedOperation -&gt; Map Int ResponseSpec
+</span><a href="Haskemathesis.OpenApi.Types.html#roResponses"><span class="hs-identifier hs-var">roResponses</span></a></span><span> </span><span class="annot"><span class="annottext">ResolvedOperation
+</span><a href="#local-6989586621679240536"><span class="hs-identifier hs-var">op</span></a></span><span>
+</span><span id="line-287"></span><span>
+</span><span id="line-288"></span><span>    </span><span class="annot"><a href="#local-6989586621679240539"><span class="hs-identifier hs-type">lookup200or201</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="Haskemathesis.Schema.html#Schema"><span class="hs-identifier hs-type">Schema</span></a></span><span>
+</span><span id="line-289"></span><span>    </span><span id="local-6989586621679240539"><span class="annot"><span class="annottext">lookup200or201 :: Maybe Schema
+</span><a href="#local-6989586621679240539"><span class="hs-identifier hs-var hs-var">lookup200or201</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-290"></span><span>        </span><span class="hs-comment">-- Try 201 first (common for POST), then 200</span><span>
+</span><span id="line-291"></span><span>        </span><span class="hs-keyword">case</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Int -&gt; Map Int ResponseSpec -&gt; Maybe ResponseSpec
+forall k a. Ord k =&gt; k -&gt; Map k a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Map.lookup</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">201</span></span><span> </span><span class="annot"><span class="annottext">Map Int ResponseSpec
+</span><a href="#local-6989586621679240540"><span class="hs-identifier hs-var">responses</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Int -&gt; Map Int ResponseSpec -&gt; Maybe ResponseSpec
+forall k a. Ord k =&gt; k -&gt; Map k a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Map.lookup</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">200</span></span><span> </span><span class="annot"><span class="annottext">Map Int ResponseSpec
+</span><a href="#local-6989586621679240540"><span class="hs-identifier hs-var">responses</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-292"></span><span>            </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span id="local-6989586621679240543"><span class="annot"><span class="annottext">ResponseSpec
+</span><a href="#local-6989586621679240543"><span class="hs-identifier hs-var">spec</span></a></span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Maybe ResponseSpec
+</span><span class="hs-identifier">_</span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">ResponseSpec -&gt; Maybe Schema
+</span><a href="#local-6989586621679240544"><span class="hs-identifier hs-var">firstSchema</span></a></span><span> </span><span class="annot"><span class="annottext">ResponseSpec
+</span><a href="#local-6989586621679240543"><span class="hs-identifier hs-var">spec</span></a></span><span>
+</span><span id="line-293"></span><span>            </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Maybe ResponseSpec
+</span><span class="hs-identifier hs-var">Nothing</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span id="local-6989586621679240545"><span class="annot"><span class="annottext">ResponseSpec
+</span><a href="#local-6989586621679240545"><span class="hs-identifier hs-var">spec</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">ResponseSpec -&gt; Maybe Schema
+</span><a href="#local-6989586621679240544"><span class="hs-identifier hs-var">firstSchema</span></a></span><span> </span><span class="annot"><span class="annottext">ResponseSpec
+</span><a href="#local-6989586621679240545"><span class="hs-identifier hs-var">spec</span></a></span><span>
+</span><span id="line-294"></span><span>            </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Maybe ResponseSpec
+</span><span class="hs-identifier hs-var">Nothing</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Maybe ResponseSpec
+</span><span class="hs-identifier hs-var">Nothing</span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Maybe Schema
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-295"></span><span>
+</span><span id="line-296"></span><span>    </span><span class="annot"><a href="#local-6989586621679240544"><span class="hs-identifier hs-type">firstSchema</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Haskemathesis.OpenApi.Types.html#ResponseSpec"><span class="hs-identifier hs-type">ResponseSpec</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="Haskemathesis.Schema.html#Schema"><span class="hs-identifier hs-type">Schema</span></a></span><span>
+</span><span id="line-297"></span><span>    </span><span id="local-6989586621679240544"><span class="annot"><span class="annottext">firstSchema :: ResponseSpec -&gt; Maybe Schema
+</span><a href="#local-6989586621679240544"><span class="hs-identifier hs-var hs-var">firstSchema</span></a></span></span><span> </span><span id="local-6989586621679240546"><span class="annot"><span class="annottext">ResponseSpec
+</span><a href="#local-6989586621679240546"><span class="hs-identifier hs-var">spec</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-298"></span><span>        </span><span class="hs-comment">-- Get the first content type's schema (prefer application/json)</span><span>
+</span><span id="line-299"></span><span>        </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">Text -&gt; Map Text Schema -&gt; Maybe Schema
+forall k a. Ord k =&gt; k -&gt; Map k a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Map.lookup</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;application/json&quot;</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">ResponseSpec -&gt; Map Text Schema
+</span><a href="Haskemathesis.OpenApi.Types.html#rsContent"><span class="hs-identifier hs-var">rsContent</span></a></span><span> </span><span class="annot"><span class="annottext">ResponseSpec
+</span><a href="#local-6989586621679240546"><span class="hs-identifier hs-var">spec</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-300"></span><span>            </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span id="local-6989586621679240548"><span class="annot"><span class="annottext">Schema
+</span><a href="#local-6989586621679240548"><span class="hs-identifier hs-var">s</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Schema -&gt; Maybe Schema
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">Schema
+</span><a href="#local-6989586621679240548"><span class="hs-identifier hs-var">s</span></a></span><span>
+</span><span id="line-301"></span><span>            </span><span class="annot"><span class="annottext">Maybe Schema
+</span><span class="hs-identifier hs-var">Nothing</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">Map Text Schema -&gt; [Schema]
+forall k a. Map k a -&gt; [a]
+</span><span class="hs-identifier hs-var">Map.elems</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">ResponseSpec -&gt; Map Text Schema
+</span><a href="Haskemathesis.OpenApi.Types.html#rsContent"><span class="hs-identifier hs-var">rsContent</span></a></span><span> </span><span class="annot"><span class="annottext">ResponseSpec
+</span><a href="#local-6989586621679240546"><span class="hs-identifier hs-var">spec</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-302"></span><span>                </span><span class="hs-special">(</span><span id="local-6989586621679240550"><span class="annot"><span class="annottext">Schema
+</span><a href="#local-6989586621679240550"><span class="hs-identifier hs-var">s</span></a></span></span><span> </span><span class="annot"><span class="hs-glyph hs-type">:</span></span><span> </span><span class="annot"><span class="annottext">[Schema]
+</span><span class="hs-identifier">_</span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Schema -&gt; Maybe Schema
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">Schema
+</span><a href="#local-6989586621679240550"><span class="hs-identifier hs-var">s</span></a></span><span>
+</span><span id="line-303"></span><span>                </span><span class="hs-special">[</span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Maybe Schema
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-304"></span><span>
+</span><span id="line-305"></span><span>    </span><span class="annot"><a href="#local-6989586621679240538"><span class="hs-identifier hs-type">getSchemaFields</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Haskemathesis.Schema.html#Schema"><span class="hs-identifier hs-type">Schema</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span class="hs-special">]</span><span>
+</span><span id="line-306"></span><span>    </span><span id="local-6989586621679240538"><span class="annot"><span class="annottext">getSchemaFields :: Schema -&gt; [Text]
+</span><a href="#local-6989586621679240538"><span class="hs-identifier hs-var hs-var">getSchemaFields</span></a></span></span><span> </span><span id="local-6989586621679240551"><span class="annot"><span class="annottext">Schema
+</span><a href="#local-6989586621679240551"><span class="hs-identifier hs-var">schema</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">Schema -&gt; Maybe SchemaType
+</span><a href="Haskemathesis.Schema.html#schemaType"><span class="hs-identifier hs-var">schemaType</span></a></span><span> </span><span class="annot"><span class="annottext">Schema
+</span><a href="#local-6989586621679240551"><span class="hs-identifier hs-var">schema</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-307"></span><span>        </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span class="annot"><span class="annottext">SchemaType
+</span><a href="Haskemathesis.Schema.html#SObject"><span class="hs-identifier hs-var">SObject</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Map Text Schema -&gt; [Text]
+forall k a. Map k a -&gt; [k]
+</span><span class="hs-identifier hs-var">Map.keys</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Schema -&gt; Map Text Schema
+</span><a href="Haskemathesis.Schema.html#schemaProperties"><span class="hs-identifier hs-var">schemaProperties</span></a></span><span> </span><span class="annot"><span class="annottext">Schema
+</span><a href="#local-6989586621679240551"><span class="hs-identifier hs-var">schema</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-308"></span><span>        </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span class="annot"><span class="annottext">SchemaType
+</span><a href="Haskemathesis.Schema.html#SString"><span class="hs-identifier hs-var">SString</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>
+</span><span id="line-309"></span><span>        </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span class="annot"><span class="annottext">SchemaType
+</span><a href="Haskemathesis.Schema.html#SInteger"><span class="hs-identifier hs-var">SInteger</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>
+</span><span id="line-310"></span><span>        </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span class="annot"><span class="annottext">SchemaType
+</span><a href="Haskemathesis.Schema.html#SNumber"><span class="hs-identifier hs-var">SNumber</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>
+</span><span id="line-311"></span><span>        </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span class="annot"><span class="annottext">SchemaType
+</span><a href="Haskemathesis.Schema.html#SBoolean"><span class="hs-identifier hs-var">SBoolean</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>
+</span><span id="line-312"></span><span>        </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span class="annot"><span class="annottext">SchemaType
+</span><a href="Haskemathesis.Schema.html#SArray"><span class="hs-identifier hs-var">SArray</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>
+</span><span id="line-313"></span><span>        </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span class="annot"><span class="annottext">SchemaType
+</span><a href="Haskemathesis.Schema.html#SNull"><span class="hs-identifier hs-var">SNull</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>
+</span><span id="line-314"></span><span>        </span><span class="annot"><span class="annottext">Maybe SchemaType
+</span><span class="hs-identifier hs-var">Nothing</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>
+</span><span id="line-315"></span><span>
+</span><span id="line-316"></span><span class="annot"><span class="hs-comment">-- | Find operations that can be linked from sourceOp based on field matches.</span></span><span>
+</span><span id="line-317"></span><span class="annot"><a href="Haskemathesis.Stateful.Heuristics.html#findMatchingTargets"><span class="hs-identifier hs-type">findMatchingTargets</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-318"></span><span>    </span><span class="annot"><a href="Haskemathesis.OpenApi.Types.html#ResolvedOperation"><span class="hs-identifier hs-type">ResolvedOperation</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Haskemathesis.OpenApi.Types.html#ResolvedOperation"><span class="hs-identifier hs-type">ResolvedOperation</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="Haskemathesis.Stateful.Types.html#OperationLink"><span class="hs-identifier hs-type">OperationLink</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-319"></span><span id="findMatchingTargets"><span class="annot"><span class="annottext">findMatchingTargets :: ResolvedOperation -&gt; [Text] -&gt; ResolvedOperation -&gt; [OperationLink]
+</span><a href="Haskemathesis.Stateful.Heuristics.html#findMatchingTargets"><span class="hs-identifier hs-var hs-var">findMatchingTargets</span></a></span></span><span> </span><span id="local-6989586621679240562"><span class="annot"><span class="annottext">ResolvedOperation
+</span><a href="#local-6989586621679240562"><span class="hs-identifier hs-var">sourceOp</span></a></span></span><span> </span><span id="local-6989586621679240563"><span class="annot"><span class="annottext">[Text]
+</span><a href="#local-6989586621679240563"><span class="hs-identifier hs-var">responseFields</span></a></span></span><span> </span><span id="local-6989586621679240564"><span class="annot"><span class="annottext">ResolvedOperation
+</span><a href="#local-6989586621679240564"><span class="hs-identifier hs-var">targetOp</span></a></span></span><span>
+</span><span id="line-320"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">ResolvedOperation -&gt; Text
+</span><a href="Haskemathesis.Stateful.Heuristics.html#operationLabel"><span class="hs-identifier hs-var">operationLabel</span></a></span><span> </span><span class="annot"><span class="annottext">ResolvedOperation
+</span><a href="#local-6989586621679240562"><span class="hs-identifier hs-var">sourceOp</span></a></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Bool
+forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">ResolvedOperation -&gt; Text
+</span><a href="Haskemathesis.Stateful.Heuristics.html#operationLabel"><span class="hs-identifier hs-var">operationLabel</span></a></span><span> </span><span class="annot"><span class="annottext">ResolvedOperation
+</span><a href="#local-6989586621679240564"><span class="hs-identifier hs-var">targetOp</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>
+</span><span id="line-321"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">otherwise</span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-322"></span><span>        </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621679240565"><span class="annot"><span class="annottext">targetPathParams :: [Text]
+</span><a href="#local-6989586621679240565"><span class="hs-identifier hs-var hs-var">targetPathParams</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">ResolvedOperation -&gt; [Text]
+</span><a href="Haskemathesis.Stateful.Heuristics.html#getPathParams"><span class="hs-identifier hs-var">getPathParams</span></a></span><span> </span><span class="annot"><span class="annottext">ResolvedOperation
+</span><a href="#local-6989586621679240564"><span class="hs-identifier hs-var">targetOp</span></a></span><span>
+</span><span id="line-323"></span><span>            </span><span id="local-6989586621679240567"><span class="annot"><span class="annottext">matches :: [(Text, Text)]
+</span><a href="#local-6989586621679240567"><span class="hs-identifier hs-var hs-var">matches</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[Text] -&gt; [Text] -&gt; [(Text, Text)]
+</span><a href="Haskemathesis.Stateful.Heuristics.html#matchResponseFieldsToParams"><span class="hs-identifier hs-var">matchResponseFieldsToParams</span></a></span><span> </span><span class="annot"><span class="annottext">[Text]
+</span><a href="#local-6989586621679240563"><span class="hs-identifier hs-var">responseFields</span></a></span><span> </span><span class="annot"><span class="annottext">[Text]
+</span><a href="#local-6989586621679240565"><span class="hs-identifier hs-var">targetPathParams</span></a></span><span>
+</span><span id="line-324"></span><span>         </span><span class="hs-keyword">in</span><span> </span><span class="hs-special">[</span><span> </span><span class="annot"><a href="Haskemathesis.Stateful.Types.html#OperationLink"><span class="hs-identifier hs-type">OperationLink</span></a></span><span>
+</span><span id="line-325"></span><span>                </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">olSourceOperation :: Text
+</span><a href="Haskemathesis.Stateful.Types.html#olSourceOperation"><span class="hs-identifier hs-var">olSourceOperation</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">ResolvedOperation -&gt; Text
+</span><a href="Haskemathesis.Stateful.Heuristics.html#operationLabel"><span class="hs-identifier hs-var">operationLabel</span></a></span><span> </span><span class="annot"><span class="annottext">ResolvedOperation
+</span><a href="#local-6989586621679240562"><span class="hs-identifier hs-var">sourceOp</span></a></span><span>
+</span><span id="line-326"></span><span>                </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">olTargetOperation :: Text
+</span><a href="Haskemathesis.Stateful.Types.html#olTargetOperation"><span class="hs-identifier hs-var">olTargetOperation</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">ResolvedOperation -&gt; Text
+</span><a href="Haskemathesis.Stateful.Heuristics.html#operationLabel"><span class="hs-identifier hs-var">operationLabel</span></a></span><span> </span><span class="annot"><span class="annottext">ResolvedOperation
+</span><a href="#local-6989586621679240564"><span class="hs-identifier hs-var">targetOp</span></a></span><span>
+</span><span id="line-327"></span><span>                </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">olParameterBindings :: [ParameterBinding]
+</span><a href="Haskemathesis.Stateful.Types.html#olParameterBindings"><span class="hs-identifier hs-var">olParameterBindings</span></a></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-328"></span><span>                    </span><span class="hs-special">[</span><span> </span><span class="annot"><a href="Haskemathesis.Stateful.Types.html#ParameterBinding"><span class="hs-identifier hs-type">ParameterBinding</span></a></span><span>
+</span><span id="line-329"></span><span>                        </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">pbTargetParam :: Text
+</span><a href="Haskemathesis.Stateful.Types.html#pbTargetParam"><span class="hs-identifier hs-var">pbTargetParam</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679240568"><span class="hs-identifier hs-var">paramName</span></a></span><span>
+</span><span id="line-330"></span><span>                        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">pbSource :: ValueSource
+</span><a href="Haskemathesis.Stateful.Types.html#pbSource"><span class="hs-identifier hs-var">pbSource</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Text -&gt; ValueSource
+</span><a href="Haskemathesis.Stateful.Types.html#FromResponseBody"><span class="hs-identifier hs-var">FromResponseBody</span></a></span><span> </span><span class="annot"><span class="annottext">(Text -&gt; ValueSource) -&gt; Text -&gt; ValueSource
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;$response.body#/&quot;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679240569"><span class="hs-identifier hs-var">fieldName</span></a></span><span>
+</span><span id="line-331"></span><span>                        </span><span class="hs-special">}</span><span>
+</span><span id="line-332"></span><span>                    </span><span class="hs-glyph">|</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679240569"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679240569"><span class="hs-identifier hs-var">fieldName</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679240568"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679240568"><span class="hs-identifier hs-var">paramName</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">[(Text, Text)]
+</span><a href="#local-6989586621679240567"><span class="hs-identifier hs-var">matches</span></a></span><span>
+</span><span id="line-333"></span><span>                    </span><span class="hs-special">]</span><span>
+</span><span id="line-334"></span><span>                </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">olDescription :: Maybe Text
+</span><a href="Haskemathesis.Stateful.Types.html#olDescription"><span class="hs-identifier hs-var">olDescription</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Text -&gt; Maybe Text
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;Inferred: schema field matches path param&quot;</span></span><span>
+</span><span id="line-335"></span><span>                </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">olLinkName :: Maybe Text
+</span><a href="Haskemathesis.Stateful.Types.html#olLinkName"><span class="hs-identifier hs-var">olLinkName</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe Text
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-336"></span><span>                </span><span class="hs-special">}</span><span>
+</span><span id="line-337"></span><span>            </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Bool -&gt; Bool
+</span><span class="hs-identifier hs-var">not</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">[(Text, Text)] -&gt; Bool
+forall a. [a] -&gt; Bool
+forall (t :: * -&gt; *) a. Foldable t =&gt; t a -&gt; Bool
+</span><span class="hs-identifier hs-var">null</span></span><span> </span><span class="annot"><span class="annottext">[(Text, Text)]
+</span><a href="#local-6989586621679240567"><span class="hs-identifier hs-var">matches</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-338"></span><span>            </span><span class="hs-special">]</span><span>
+</span><span id="line-339"></span><span>
+</span><span id="line-340"></span><span class="annot"><span class="hs-comment">-- | Get path parameters from an operation.</span></span><span>
+</span><span id="line-341"></span><span class="annot"><a href="Haskemathesis.Stateful.Heuristics.html#getPathParams"><span class="hs-identifier hs-type">getPathParams</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Haskemathesis.OpenApi.Types.html#ResolvedOperation"><span class="hs-identifier hs-type">ResolvedOperation</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span class="hs-special">]</span><span>
+</span><span id="line-342"></span><span id="getPathParams"><span class="annot"><span class="annottext">getPathParams :: ResolvedOperation -&gt; [Text]
+</span><a href="Haskemathesis.Stateful.Heuristics.html#getPathParams"><span class="hs-identifier hs-var hs-var">getPathParams</span></a></span></span><span> </span><span id="local-6989586621679240570"><span class="annot"><span class="annottext">ResolvedOperation
+</span><a href="#local-6989586621679240570"><span class="hs-identifier hs-var">op</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">ResolvedParam -&gt; Text
+</span><a href="Haskemathesis.OpenApi.Types.html#rpName"><span class="hs-identifier hs-var">rpName</span></a></span><span> </span><span class="annot"><span class="annottext">ResolvedParam
+</span><a href="#local-6989586621679240572"><span class="hs-identifier hs-var">p</span></a></span><span> </span><span class="hs-glyph">|</span><span> </span><span id="local-6989586621679240572"><span class="annot"><span class="annottext">ResolvedParam
+</span><a href="#local-6989586621679240572"><span class="hs-identifier hs-var">p</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">ResolvedOperation -&gt; [ResolvedParam]
+</span><a href="Haskemathesis.OpenApi.Types.html#roParameters"><span class="hs-identifier hs-var">roParameters</span></a></span><span> </span><span class="annot"><span class="annottext">ResolvedOperation
+</span><a href="#local-6989586621679240570"><span class="hs-identifier hs-var">op</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">ResolvedParam -&gt; ParamLocation
+</span><a href="Haskemathesis.OpenApi.Types.html#rpLocation"><span class="hs-identifier hs-var">rpLocation</span></a></span><span> </span><span class="annot"><span class="annottext">ResolvedParam
+</span><a href="#local-6989586621679240572"><span class="hs-identifier hs-var">p</span></a></span><span> </span><span class="annot"><span class="annottext">ParamLocation -&gt; ParamLocation -&gt; Bool
+forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">ParamLocation
+</span><a href="Haskemathesis.OpenApi.Types.html#ParamPath"><span class="hs-identifier hs-var">ParamPath</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-343"></span><span>
+</span><span id="line-344"></span><span class="annot"><span class="hs-comment">{- | Match response field names to path parameter names.
+
+Uses flexible matching to handle naming conventions:
+
+* Exact match: @id@ -&gt; @id@
+* Case normalization: @userId@ -&gt; @user_id@
+* Suffix matching: @resourceId@ -&gt; @id@ (when resource matches)
+
+&gt;&gt;&gt; matchResponseFieldsToParams [&quot;id&quot;, &quot;name&quot;] [&quot;id&quot;]
+[(&quot;id&quot;, &quot;id&quot;)]
+
+&gt;&gt;&gt; matchResponseFieldsToParams [&quot;userId&quot;] [&quot;user_id&quot;]
+[(&quot;userId&quot;, &quot;user_id&quot;)]
+-}</span></span><span>
+</span><span id="line-358"></span><span class="annot"><a href="Haskemathesis.Stateful.Heuristics.html#matchResponseFieldsToParams"><span class="hs-identifier hs-type">matchResponseFieldsToParams</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span class="hs-special">)</span><span class="hs-special">]</span><span>
+</span><span id="line-359"></span><span id="matchResponseFieldsToParams"><span class="annot"><span class="annottext">matchResponseFieldsToParams :: [Text] -&gt; [Text] -&gt; [(Text, Text)]
+</span><a href="Haskemathesis.Stateful.Heuristics.html#matchResponseFieldsToParams"><span class="hs-identifier hs-var hs-var">matchResponseFieldsToParams</span></a></span></span><span> </span><span id="local-6989586621679240576"><span class="annot"><span class="annottext">[Text]
+</span><a href="#local-6989586621679240576"><span class="hs-identifier hs-var">fields</span></a></span></span><span> </span><span id="local-6989586621679240577"><span class="annot"><span class="annottext">[Text]
+</span><a href="#local-6989586621679240577"><span class="hs-identifier hs-var">params</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-360"></span><span>    </span><span class="hs-special">[</span><span class="hs-special">(</span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679240578"><span class="hs-identifier hs-var">f</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679240579"><span class="hs-identifier hs-var">p</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">|</span><span> </span><span id="local-6989586621679240578"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679240578"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">[Text]
+</span><a href="#local-6989586621679240576"><span class="hs-identifier hs-var">fields</span></a></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679240579"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679240579"><span class="hs-identifier hs-var">p</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">[Text]
+</span><a href="#local-6989586621679240577"><span class="hs-identifier hs-var">params</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Bool
+</span><a href="Haskemathesis.Stateful.Heuristics.html#namesMatch"><span class="hs-identifier hs-var">namesMatch</span></a></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679240578"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679240579"><span class="hs-identifier hs-var">p</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-361"></span><span>
+</span><span id="line-362"></span><span class="annot"><span class="hs-comment">{- | Check if a response field name matches a parameter name.
+
+Handles common naming convention differences:
+
+* Exact match
+* camelCase to snake_case: @userId@ -&gt; @user_id@
+* Different suffixes: @userId@ -&gt; @id@ (prefix stripped)
+* Case-insensitive: @ID@ -&gt; @id@
+
+&gt;&gt;&gt; namesMatch &quot;id&quot; &quot;id&quot;
+True
+
+&gt;&gt;&gt; namesMatch &quot;userId&quot; &quot;user_id&quot;
+True
+
+&gt;&gt;&gt; namesMatch &quot;userId&quot; &quot;userId&quot;
+True
+
+&gt;&gt;&gt; namesMatch &quot;id&quot; &quot;name&quot;
+False
+-}</span></span><span>
+</span><span id="line-383"></span><span class="annot"><a href="Haskemathesis.Stateful.Heuristics.html#namesMatch"><span class="hs-identifier hs-type">namesMatch</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span>
+</span><span id="line-384"></span><span id="namesMatch"><span class="annot"><span class="annottext">namesMatch :: Text -&gt; Text -&gt; Bool
+</span><a href="Haskemathesis.Stateful.Heuristics.html#namesMatch"><span class="hs-identifier hs-var hs-var">namesMatch</span></a></span></span><span> </span><span id="local-6989586621679240580"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679240580"><span class="hs-identifier hs-var">field</span></a></span></span><span> </span><span id="local-6989586621679240581"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679240581"><span class="hs-identifier hs-var">param</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-385"></span><span>    </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621679240582"><span class="annot"><span class="annottext">normalField :: Text
+</span><a href="#local-6989586621679240582"><span class="hs-identifier hs-var hs-var">normalField</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text
+</span><a href="Haskemathesis.Stateful.Heuristics.html#normalizeParamName"><span class="hs-identifier hs-var">normalizeParamName</span></a></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679240580"><span class="hs-identifier hs-var">field</span></a></span><span>
+</span><span id="line-386"></span><span>        </span><span id="local-6989586621679240583"><span class="annot"><span class="annottext">normalParam :: Text
+</span><a href="#local-6989586621679240583"><span class="hs-identifier hs-var hs-var">normalParam</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text
+</span><a href="Haskemathesis.Stateful.Heuristics.html#normalizeParamName"><span class="hs-identifier hs-var">normalizeParamName</span></a></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679240581"><span class="hs-identifier hs-var">param</span></a></span><span>
+</span><span id="line-387"></span><span>     </span><span class="hs-keyword">in</span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679240582"><span class="hs-identifier hs-var">normalField</span></a></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Bool
+forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679240583"><span class="hs-identifier hs-var">normalParam</span></a></span><span>
+</span><span id="line-388"></span><span>            </span><span class="annot"><span class="annottext">Bool -&gt; Bool -&gt; Bool
+</span><span class="hs-operator hs-var">||</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679240580"><span class="hs-identifier hs-var">field</span></a></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Bool
+forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679240581"><span class="hs-identifier hs-var">param</span></a></span><span>
+</span><span id="line-389"></span><span>            </span><span class="annot"><span class="annottext">Bool -&gt; Bool -&gt; Bool
+</span><span class="hs-operator hs-var">||</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Text -&gt; Text
+</span><span class="hs-identifier hs-var">T.toLower</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679240581"><span class="hs-identifier hs-var">param</span></a></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Bool
+forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;id&quot;</span></span><span> </span><span class="annot"><span class="annottext">Bool -&gt; Bool -&gt; Bool
+</span><span class="hs-operator hs-var">&amp;&amp;</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;id&quot;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Bool
+</span><span class="hs-operator hs-var">`T.isSuffixOf`</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text
+</span><span class="hs-identifier hs-var">T.toLower</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679240580"><span class="hs-identifier hs-var">field</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-comment">-- Also match if field ends with param (e.g., userId matches id)</span><span>
+</span><span id="line-390"></span><span>
+</span><span id="line-391"></span><span class="annot"><span class="hs-comment">{- | Normalize a parameter name for comparison.
+
+Converts to a canonical form:
+
+* Lowercase
+* camelCase -&gt; snake_case
+* Remove underscores for comparison
+
+&gt;&gt;&gt; normalizeParamName &quot;userId&quot;
+&quot;userid&quot;
+
+&gt;&gt;&gt; normalizeParamName &quot;user_id&quot;
+&quot;userid&quot;
+
+&gt;&gt;&gt; normalizeParamName &quot;UserID&quot;
+&quot;userid&quot;
+-}</span></span><span>
+</span><span id="line-408"></span><span class="annot"><a href="Haskemathesis.Stateful.Heuristics.html#normalizeParamName"><span class="hs-identifier hs-type">normalizeParamName</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
+</span><span id="line-409"></span><span id="normalizeParamName"><span class="annot"><span class="annottext">normalizeParamName :: Text -&gt; Text
+</span><a href="Haskemathesis.Stateful.Heuristics.html#normalizeParamName"><span class="hs-identifier hs-var hs-var">normalizeParamName</span></a></span></span><span> </span><span id="local-6989586621679240586"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679240586"><span class="hs-identifier hs-var">name</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-410"></span><span>    </span><span class="annot"><span class="annottext">Text -&gt; Text
+</span><span class="hs-identifier hs-var">T.toLower</span></span><span> </span><span class="annot"><span class="annottext">(Text -&gt; Text) -&gt; Text -&gt; Text
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">(Char -&gt; Bool) -&gt; Text -&gt; Text
+</span><span class="hs-identifier hs-var">T.filter</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Char -&gt; Char -&gt; Bool
+forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">/=</span></span><span> </span><span class="annot"><span class="annottext">Char
+</span><span class="hs-char">'_'</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">(Text -&gt; Text) -&gt; Text -&gt; Text
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text
+</span><a href="#local-6989586621679240588"><span class="hs-identifier hs-var">camelToSnake</span></a></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679240586"><span class="hs-identifier hs-var">name</span></a></span><span>
+</span><span id="line-411"></span><span>  </span><span class="hs-keyword">where</span><span>
+</span><span id="line-412"></span><span>    </span><span class="annot"><a href="#local-6989586621679240588"><span class="hs-identifier hs-type">camelToSnake</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
+</span><span id="line-413"></span><span>    </span><span id="local-6989586621679240588"><span class="annot"><span class="annottext">camelToSnake :: Text -&gt; Text
+</span><a href="#local-6989586621679240588"><span class="hs-identifier hs-var hs-var">camelToSnake</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">String -&gt; Text
+</span><span class="hs-identifier hs-var">T.pack</span></span><span> </span><span class="annot"><span class="annottext">(String -&gt; Text) -&gt; (Text -&gt; String) -&gt; Text -&gt; Text
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; String
+</span><a href="#local-6989586621679240590"><span class="hs-identifier hs-var">go</span></a></span><span> </span><span class="annot"><span class="annottext">(String -&gt; String) -&gt; (Text -&gt; String) -&gt; Text -&gt; String
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; String
+</span><span class="hs-identifier hs-var">T.unpack</span></span><span>
+</span><span id="line-414"></span><span>      </span><span class="hs-keyword">where</span><span>
+</span><span id="line-415"></span><span>        </span><span id="local-6989586621679240590"><span class="annot"><span class="annottext">go :: String -&gt; String
+</span><a href="#local-6989586621679240590"><span class="hs-identifier hs-var hs-var">go</span></a></span></span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>
+</span><span id="line-416"></span><span>        </span><span class="annot"><a href="#local-6989586621679240590"><span class="hs-identifier hs-var">go</span></a></span><span> </span><span class="hs-special">(</span><span id="local-6989586621679240592"><span class="annot"><span class="annottext">Char
+</span><a href="#local-6989586621679240592"><span class="hs-identifier hs-var">c</span></a></span></span><span> </span><span class="annot"><span class="hs-glyph hs-type">:</span></span><span> </span><span id="local-6989586621679240593"><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679240593"><span class="hs-identifier hs-var">cs</span></a></span></span><span class="hs-special">)</span><span>
+</span><span id="line-417"></span><span>            </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Char -&gt; Bool
+</span><span class="hs-identifier hs-var">isUpper</span></span><span> </span><span class="annot"><span class="annottext">Char
+</span><a href="#local-6989586621679240592"><span class="hs-identifier hs-var">c</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Char
+</span><span class="hs-char">'_'</span></span><span> </span><span class="annot"><span class="annottext">Char -&gt; String -&gt; String
+forall a. a -&gt; [a] -&gt; [a]
+</span><span class="hs-glyph hs-var">:</span></span><span> </span><span class="annot"><span class="annottext">Char -&gt; Char
+</span><span class="hs-identifier hs-var">toLower</span></span><span> </span><span class="annot"><span class="annottext">Char
+</span><a href="#local-6989586621679240592"><span class="hs-identifier hs-var">c</span></a></span><span> </span><span class="annot"><span class="annottext">Char -&gt; String -&gt; String
+forall a. a -&gt; [a] -&gt; [a]
+</span><span class="hs-glyph hs-var">:</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; String
+</span><a href="#local-6989586621679240590"><span class="hs-identifier hs-var">go</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679240593"><span class="hs-identifier hs-var">cs</span></a></span><span>
+</span><span id="line-418"></span><span>            </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">otherwise</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Char
+</span><a href="#local-6989586621679240592"><span class="hs-identifier hs-var">c</span></a></span><span> </span><span class="annot"><span class="annottext">Char -&gt; String -&gt; String
+forall a. a -&gt; [a] -&gt; [a]
+</span><span class="hs-glyph hs-var">:</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; String
+</span><a href="#local-6989586621679240590"><span class="hs-identifier hs-var">go</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679240593"><span class="hs-identifier hs-var">cs</span></a></span><span>
+</span><span id="line-419"></span><span>
+</span><span id="line-420"></span><span class="annot"><span class="hs-comment">-- | Get a label for an operation (operationId or &quot;METHOD path&quot;).</span></span><span>
+</span><span id="line-421"></span><span class="annot"><a href="Haskemathesis.Stateful.Heuristics.html#operationLabel"><span class="hs-identifier hs-type">operationLabel</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Haskemathesis.OpenApi.Types.html#ResolvedOperation"><span class="hs-identifier hs-type">ResolvedOperation</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
+</span><span id="line-422"></span><span id="operationLabel"><span class="annot"><span class="annottext">operationLabel :: ResolvedOperation -&gt; Text
+</span><a href="Haskemathesis.Stateful.Heuristics.html#operationLabel"><span class="hs-identifier hs-var hs-var">operationLabel</span></a></span></span><span> </span><span id="local-6989586621679240594"><span class="annot"><span class="annottext">ResolvedOperation
+</span><a href="#local-6989586621679240594"><span class="hs-identifier hs-var">op</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-423"></span><span>    </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">ResolvedOperation -&gt; Maybe Text
+</span><a href="Haskemathesis.OpenApi.Types.html#roOperationId"><span class="hs-identifier hs-var">roOperationId</span></a></span><span> </span><span class="annot"><span class="annottext">ResolvedOperation
+</span><a href="#local-6989586621679240594"><span class="hs-identifier hs-var">op</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-424"></span><span>        </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span id="local-6989586621679240596"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679240596"><span class="hs-identifier hs-var">opId</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679240596"><span class="hs-identifier hs-var">opId</span></a></span><span>
+</span><span id="line-425"></span><span>        </span><span class="annot"><span class="annottext">Maybe Text
+</span><span class="hs-identifier hs-var">Nothing</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">ResolvedOperation -&gt; Text
+</span><a href="Haskemathesis.OpenApi.Types.html#roMethod"><span class="hs-identifier hs-var">roMethod</span></a></span><span> </span><span class="annot"><span class="annottext">ResolvedOperation
+</span><a href="#local-6989586621679240594"><span class="hs-identifier hs-var">op</span></a></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot; &quot;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">ResolvedOperation -&gt; Text
+</span><a href="Haskemathesis.OpenApi.Types.html#roPath"><span class="hs-identifier hs-var">roPath</span></a></span><span> </span><span class="annot"><span class="annottext">ResolvedOperation
+</span><a href="#local-6989586621679240594"><span class="hs-identifier hs-var">op</span></a></span><span>
+</span><span id="line-426"></span></pre></body></html>

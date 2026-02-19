@@ -1,0 +1,488 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE StrictData #-}</span><span>
+</span><span id="line-2"></span><span>
+</span><span id="line-3"></span><span class="annot"><span class="hs-comment">{- | Core types for stateful API testing.
+
+Stateful testing chains API operations together, using responses from earlier
+operations to inform requests of later operations. This module defines the
+fundamental types used to track state, represent operation links, and
+manage resource lifecycles.
+
+=== Overview
+
+Stateful testing enables scenarios like:
+
+@
+POST /users          -- Create user, returns {id: 123}
+GET /users/123       -- Fetch using id from POST response
+PUT /users/123       -- Update using same id
+DELETE /users/123    -- Remove the resource
+GET /users/123       -- Should return 404 (use-after-free check)
+@
+
+=== Key Types
+
+* 'TestState' - Accumulated state during a stateful test run
+* 'ResourceRef' - Reference to a created resource for cleanup/verification
+* 'OperationLink' - Connection between operations (source -&gt; target)
+* 'ValueSource' - Where to get a parameter value (response body, header, etc.)
+
+=== Example
+
+@
+import Haskemathesis.Stateful.Types
+
+-- After POST /users returns {&quot;id&quot;: 42, &quot;name&quot;: &quot;Alice&quot;}
+let state = emptyState
+      { tsExtractedValues = Map.singleton &quot;id&quot; (Number 42)
+      , tsCreatedResources = [ResourceRef &quot;createUser&quot; &quot;/users/{id}&quot; (Map.singleton &quot;id&quot; (Number 42))]
+      }
+@
+-}</span></span><span>
+</span><span id="line-41"></span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="Haskemathesis.Stateful.Types.html"><span class="hs-identifier">Haskemathesis.Stateful.Types</span></a></span><span> </span><span class="hs-special">(</span><span>
+</span><span id="line-42"></span><span>    </span><span class="annot"><span class="hs-comment">-- * Test State</span></span><span>
+</span><span id="line-43"></span><span>    </span><span class="annot"><a href="Haskemathesis.Stateful.Types.html#TestState"><span class="hs-identifier">TestState</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-44"></span><span>    </span><span class="annot"><a href="Haskemathesis.Stateful.Types.html#emptyState"><span class="hs-identifier">emptyState</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-45"></span><span>
+</span><span id="line-46"></span><span>    </span><span class="annot"><span class="hs-comment">-- * Resource References</span></span><span>
+</span><span id="line-47"></span><span>    </span><span class="annot"><a href="Haskemathesis.Stateful.Types.html#ResourceRef"><span class="hs-identifier">ResourceRef</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-48"></span><span>
+</span><span id="line-49"></span><span>    </span><span class="annot"><span class="hs-comment">-- * Operation Links</span></span><span>
+</span><span id="line-50"></span><span>    </span><span class="annot"><a href="Haskemathesis.Stateful.Types.html#OperationLink"><span class="hs-identifier">OperationLink</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-51"></span><span>    </span><span class="annot"><a href="Haskemathesis.Stateful.Types.html#ParameterBinding"><span class="hs-identifier">ParameterBinding</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-52"></span><span>    </span><span class="annot"><a href="Haskemathesis.Stateful.Types.html#ValueSource"><span class="hs-identifier">ValueSource</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-53"></span><span>    </span><span class="annot"><a href="Haskemathesis.Stateful.Types.html#JsonPath"><span class="hs-identifier">JsonPath</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-54"></span><span>
+</span><span id="line-55"></span><span>    </span><span class="annot"><span class="hs-comment">-- * Sequence Types</span></span><span>
+</span><span id="line-56"></span><span>    </span><span class="annot"><a href="Haskemathesis.Stateful.Types.html#OperationSequence"><span class="hs-identifier">OperationSequence</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-57"></span><span>    </span><span class="annot"><a href="Haskemathesis.Stateful.Types.html#SequenceStep"><span class="hs-identifier">SequenceStep</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-58"></span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-59"></span><span>
+</span><span id="line-60"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="file:///nix/store/bjx03k98335ijsml9dq303bj5ddk8a5f-aeson-2.2.3.0-doc/share/doc/aeson-2.2.3.0/html/src/Data.Aeson.html"><span class="hs-identifier">Data.Aeson</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="file:///nix/store/bjx03k98335ijsml9dq303bj5ddk8a5f-aeson-2.2.3.0-doc/share/doc/aeson-2.2.3.0/html/src/Data.Aeson.Types.Internal.html#Value"><span class="hs-identifier">Value</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-61"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Map.Strict</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Map</span></span><span class="hs-special">)</span><span>
+</span><span id="line-62"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.Map.Strict</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Map</span></span><span>
+</span><span id="line-63"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Text</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Text</span></span><span class="hs-special">)</span><span>
+</span><span id="line-64"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Haskemathesis.Execute.Types.html"><span class="hs-identifier">Haskemathesis.Execute.Types</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Haskemathesis.Execute.Types.html#ApiRequest"><span class="hs-identifier">ApiRequest</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Haskemathesis.Execute.Types.html#ApiResponse"><span class="hs-identifier">ApiResponse</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-65"></span><span>
+</span><span id="line-66"></span><span class="annot"><span class="hs-comment">{- | JSON path expression for extracting values from response bodies.
+
+Supports OpenAPI runtime expression syntax:
+
+* @$response.body#/id@ - JSON pointer into response body
+* @$response.body#/data/0/id@ - Nested path with array index
+* @$.id@ - JSONPath-style (simplified)
+
+Currently we support a subset focused on simple field extraction.
+-}</span></span><span>
+</span><span id="line-76"></span><span class="hs-keyword">type</span><span> </span><span id="JsonPath"><span class="annot"><a href="Haskemathesis.Stateful.Types.html#JsonPath"><span class="hs-identifier hs-var">JsonPath</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
+</span><span id="line-77"></span><span>
+</span><span id="line-78"></span><span class="annot"><span class="hs-comment">{- | State accumulated during a stateful test run.
+
+This record tracks everything needed to generate subsequent requests
+based on prior responses, and to perform stateful checks like
+use-after-free detection.
+
+=== Fields
+
+* 'tsExtractedValues' - Named values extracted from responses, keyed by
+  parameter name (e.g., &quot;id&quot;, &quot;userId&quot;). Used to fill path/query parameters
+  in subsequent requests.
+
+* 'tsCreatedResources' - Resources created during the test that may need
+  cleanup or verification. Used for use-after-free checks.
+
+* 'tsHistory' - Complete history of operations executed, for debugging
+  and advanced checks.
+-}</span></span><span>
+</span><span id="line-96"></span><span class="hs-keyword">data</span><span> </span><span id="TestState"><span class="annot"><a href="Haskemathesis.Stateful.Types.html#TestState"><span class="hs-identifier hs-var">TestState</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="TestState"><span class="annot"><a href="Haskemathesis.Stateful.Types.html#TestState"><span class="hs-identifier hs-var">TestState</span></a></span></span><span>
+</span><span id="line-97"></span><span>    </span><span class="hs-special">{</span><span> </span><span id="tsExtractedValues"><span class="annot"><span class="annottext">TestState -&gt; Map Text Value
+</span><a href="Haskemathesis.Stateful.Types.html#tsExtractedValues"><span class="hs-identifier hs-var hs-var">tsExtractedValues</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Map</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span> </span><span class="annot"><a href="file:///nix/store/bjx03k98335ijsml9dq303bj5ddk8a5f-aeson-2.2.3.0-doc/share/doc/aeson-2.2.3.0/html/src/Data.Aeson.Types.Internal.html#Value"><span class="hs-identifier hs-type">Value</span></a></span><span>
+</span><span id="line-98"></span><span>    </span><span class="annot"><span class="hs-comment">-- ^ Named values extracted from responses (e.g., &quot;id&quot; -&gt; Number 123)</span></span><span>
+</span><span id="line-99"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="tsCreatedResources"><span class="annot"><span class="annottext">TestState -&gt; [ResourceRef]
+</span><a href="Haskemathesis.Stateful.Types.html#tsCreatedResources"><span class="hs-identifier hs-var hs-var">tsCreatedResources</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="Haskemathesis.Stateful.Types.html#ResourceRef"><span class="hs-identifier hs-type">ResourceRef</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-100"></span><span>    </span><span class="annot"><span class="hs-comment">-- ^ Resources created that should be cleaned up / checked</span></span><span>
+</span><span id="line-101"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="tsHistory"><span class="annot"><span class="annottext">TestState -&gt; [(Text, ApiRequest, ApiResponse)]
+</span><a href="Haskemathesis.Stateful.Types.html#tsHistory"><span class="hs-identifier hs-var hs-var">tsHistory</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Haskemathesis.Execute.Types.html#ApiRequest"><span class="hs-identifier hs-type">ApiRequest</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Haskemathesis.Execute.Types.html#ApiResponse"><span class="hs-identifier hs-type">ApiResponse</span></a></span><span class="hs-special">)</span><span class="hs-special">]</span><span>
+</span><span id="line-102"></span><span>    </span><span class="annot"><span class="hs-comment">-- ^ History: (operationId or label, request, response)</span></span><span>
+</span><span id="line-103"></span><span>    </span><span class="hs-special">}</span><span>
+</span><span id="line-104"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679239454"><span id="local-6989586621679239465"><span class="annot"><span class="annottext">TestState -&gt; TestState -&gt; Bool
+(TestState -&gt; TestState -&gt; Bool)
+-&gt; (TestState -&gt; TestState -&gt; Bool) -&gt; Eq TestState
+forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
+$c== :: TestState -&gt; TestState -&gt; Bool
+== :: TestState -&gt; TestState -&gt; Bool
+$c/= :: TestState -&gt; TestState -&gt; Bool
+/= :: TestState -&gt; TestState -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679239478"><span id="local-6989586621679239491"><span id="local-6989586621679239495"><span class="annot"><span class="annottext">Int -&gt; TestState -&gt; ShowS
+[TestState] -&gt; ShowS
+TestState -&gt; String
+(Int -&gt; TestState -&gt; ShowS)
+-&gt; (TestState -&gt; String)
+-&gt; ([TestState] -&gt; ShowS)
+-&gt; Show TestState
+forall a.
+(Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
+$cshowsPrec :: Int -&gt; TestState -&gt; ShowS
+showsPrec :: Int -&gt; TestState -&gt; ShowS
+$cshow :: TestState -&gt; String
+show :: TestState -&gt; String
+$cshowList :: [TestState] -&gt; ShowS
+showList :: [TestState] -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-105"></span><span>
+</span><span id="line-106"></span><span class="annot"><span class="hs-comment">{- | Empty initial state for starting a stateful test.
+
+@
+runStatefulTest = do
+    finalState &lt;- foldM executeStep emptyState steps
+    checkUseAfterFree finalState
+@
+-}</span></span><span>
+</span><span id="line-114"></span><span class="annot"><a href="Haskemathesis.Stateful.Types.html#emptyState"><span class="hs-identifier hs-type">emptyState</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Haskemathesis.Stateful.Types.html#TestState"><span class="hs-identifier hs-type">TestState</span></a></span><span>
+</span><span id="line-115"></span><span id="emptyState"><span class="annot"><span class="annottext">emptyState :: TestState
+</span><a href="Haskemathesis.Stateful.Types.html#emptyState"><span class="hs-identifier hs-var hs-var">emptyState</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-116"></span><span>    </span><span class="annot"><a href="Haskemathesis.Stateful.Types.html#TestState"><span class="hs-identifier hs-type">TestState</span></a></span><span>
+</span><span id="line-117"></span><span>        </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">tsExtractedValues :: Map Text Value
+</span><a href="Haskemathesis.Stateful.Types.html#tsExtractedValues"><span class="hs-identifier hs-var">tsExtractedValues</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Map Text Value
+forall k a. Map k a
+</span><span class="hs-identifier hs-var">Map.empty</span></span><span>
+</span><span id="line-118"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">tsCreatedResources :: [ResourceRef]
+</span><a href="Haskemathesis.Stateful.Types.html#tsCreatedResources"><span class="hs-identifier hs-var">tsCreatedResources</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>
+</span><span id="line-119"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">tsHistory :: [(Text, ApiRequest, ApiResponse)]
+</span><a href="Haskemathesis.Stateful.Types.html#tsHistory"><span class="hs-identifier hs-var">tsHistory</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>
+</span><span id="line-120"></span><span>        </span><span class="hs-special">}</span><span>
+</span><span id="line-121"></span><span>
+</span><span id="line-122"></span><span class="annot"><span class="hs-comment">{- | Reference to a resource created during testing.
+
+When a POST or PUT operation creates a resource, we track it here so we can:
+
+1. Clean it up after the test (via DELETE)
+2. Verify it's accessible (ensure-resource-availability check)
+3. Verify it returns 404 after deletion (use-after-free check)
+
+=== Example
+
+@
+-- After POST /users returns {&quot;id&quot;: 42}
+ResourceRef
+    { rrOperationId = &quot;createUser&quot;
+    , rrResourcePath = &quot;/users/{id}&quot;
+    , rrIdentifiers = Map.singleton &quot;id&quot; (Number 42)
+    }
+@
+-}</span></span><span>
+</span><span id="line-141"></span><span class="hs-keyword">data</span><span> </span><span id="ResourceRef"><span class="annot"><a href="Haskemathesis.Stateful.Types.html#ResourceRef"><span class="hs-identifier hs-var">ResourceRef</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="ResourceRef"><span class="annot"><a href="Haskemathesis.Stateful.Types.html#ResourceRef"><span class="hs-identifier hs-var">ResourceRef</span></a></span></span><span>
+</span><span id="line-142"></span><span>    </span><span class="hs-special">{</span><span> </span><span id="rrOperationId"><span class="annot"><span class="annottext">ResourceRef -&gt; Text
+</span><a href="Haskemathesis.Stateful.Types.html#rrOperationId"><span class="hs-identifier hs-var hs-var">rrOperationId</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
+</span><span id="line-143"></span><span>    </span><span class="annot"><span class="hs-comment">-- ^ Operation ID that created this resource</span></span><span>
+</span><span id="line-144"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="rrResourcePath"><span class="annot"><span class="annottext">ResourceRef -&gt; Text
+</span><a href="Haskemathesis.Stateful.Types.html#rrResourcePath"><span class="hs-identifier hs-var hs-var">rrResourcePath</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
+</span><span id="line-145"></span><span>    </span><span class="annot"><span class="hs-comment">-- ^ Path template for accessing the resource (e.g., &quot;/users/{id}&quot;)</span></span><span>
+</span><span id="line-146"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="rrIdentifiers"><span class="annot"><span class="annottext">ResourceRef -&gt; Map Text Value
+</span><a href="Haskemathesis.Stateful.Types.html#rrIdentifiers"><span class="hs-identifier hs-var hs-var">rrIdentifiers</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Map</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span> </span><span class="annot"><a href="file:///nix/store/bjx03k98335ijsml9dq303bj5ddk8a5f-aeson-2.2.3.0-doc/share/doc/aeson-2.2.3.0/html/src/Data.Aeson.Types.Internal.html#Value"><span class="hs-identifier hs-type">Value</span></a></span><span>
+</span><span id="line-147"></span><span>    </span><span class="annot"><span class="hs-comment">-- ^ Extracted identifiers needed to access the resource</span></span><span>
+</span><span id="line-148"></span><span>    </span><span class="hs-special">}</span><span>
+</span><span id="line-149"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679239512"><span id="local-6989586621679239518"><span class="annot"><span class="annottext">ResourceRef -&gt; ResourceRef -&gt; Bool
+(ResourceRef -&gt; ResourceRef -&gt; Bool)
+-&gt; (ResourceRef -&gt; ResourceRef -&gt; Bool) -&gt; Eq ResourceRef
+forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
+$c== :: ResourceRef -&gt; ResourceRef -&gt; Bool
+== :: ResourceRef -&gt; ResourceRef -&gt; Bool
+$c/= :: ResourceRef -&gt; ResourceRef -&gt; Bool
+/= :: ResourceRef -&gt; ResourceRef -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679239521"><span id="local-6989586621679239528"><span id="local-6989586621679239531"><span class="annot"><span class="annottext">Int -&gt; ResourceRef -&gt; ShowS
+[ResourceRef] -&gt; ShowS
+ResourceRef -&gt; String
+(Int -&gt; ResourceRef -&gt; ShowS)
+-&gt; (ResourceRef -&gt; String)
+-&gt; ([ResourceRef] -&gt; ShowS)
+-&gt; Show ResourceRef
+forall a.
+(Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
+$cshowsPrec :: Int -&gt; ResourceRef -&gt; ShowS
+showsPrec :: Int -&gt; ResourceRef -&gt; ShowS
+$cshow :: ResourceRef -&gt; String
+show :: ResourceRef -&gt; String
+$cshowList :: [ResourceRef] -&gt; ShowS
+showList :: [ResourceRef] -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-150"></span><span>
+</span><span id="line-151"></span><span class="annot"><span class="hs-comment">{- | A link between two operations.
+
+Links define how to call one operation using data from another operation's
+response. They can come from:
+
+1. Explicit OpenAPI Links in the spec
+2. Heuristic inference from path patterns
+3. Response schema to parameter matching
+
+=== Example
+
+@
+-- Link from createUser to getUser
+OperationLink
+    { olSourceOperation = &quot;createUser&quot;
+    , olTargetOperation = &quot;getUser&quot;
+    , olParameterBindings = [ParameterBinding &quot;id&quot; (FromResponseBody &quot;$response.body#/id&quot;)]
+    , olDescription = Just &quot;Get the created user&quot;
+    , olLinkName = Just &quot;GetUser&quot;
+    }
+@
+-}</span></span><span>
+</span><span id="line-173"></span><span class="hs-keyword">data</span><span> </span><span id="OperationLink"><span class="annot"><a href="Haskemathesis.Stateful.Types.html#OperationLink"><span class="hs-identifier hs-var">OperationLink</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="OperationLink"><span class="annot"><a href="Haskemathesis.Stateful.Types.html#OperationLink"><span class="hs-identifier hs-var">OperationLink</span></a></span></span><span>
+</span><span id="line-174"></span><span>    </span><span class="hs-special">{</span><span> </span><span id="olSourceOperation"><span class="annot"><span class="annottext">OperationLink -&gt; Text
+</span><a href="Haskemathesis.Stateful.Types.html#olSourceOperation"><span class="hs-identifier hs-var hs-var">olSourceOperation</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
+</span><span id="line-175"></span><span>    </span><span class="annot"><span class="hs-comment">-- ^ Source operation ID or label (the operation whose response provides data)</span></span><span>
+</span><span id="line-176"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="olTargetOperation"><span class="annot"><span class="annottext">OperationLink -&gt; Text
+</span><a href="Haskemathesis.Stateful.Types.html#olTargetOperation"><span class="hs-identifier hs-var hs-var">olTargetOperation</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
+</span><span id="line-177"></span><span>    </span><span class="annot"><span class="hs-comment">-- ^ Target operation ID (the operation that consumes the data)</span></span><span>
+</span><span id="line-178"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="olParameterBindings"><span class="annot"><span class="annottext">OperationLink -&gt; [ParameterBinding]
+</span><a href="Haskemathesis.Stateful.Types.html#olParameterBindings"><span class="hs-identifier hs-var hs-var">olParameterBindings</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="Haskemathesis.Stateful.Types.html#ParameterBinding"><span class="hs-identifier hs-type">ParameterBinding</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-179"></span><span>    </span><span class="annot"><span class="hs-comment">-- ^ How to fill each parameter in the target operation</span></span><span>
+</span><span id="line-180"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="olDescription"><span class="annot"><span class="annottext">OperationLink -&gt; Maybe Text
+</span><a href="Haskemathesis.Stateful.Types.html#olDescription"><span class="hs-identifier hs-var hs-var">olDescription</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
+</span><span id="line-181"></span><span>    </span><span class="annot"><span class="hs-comment">-- ^ Optional description of the link</span></span><span>
+</span><span id="line-182"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="olLinkName"><span class="annot"><span class="annottext">OperationLink -&gt; Maybe Text
+</span><a href="Haskemathesis.Stateful.Types.html#olLinkName"><span class="hs-identifier hs-var hs-var">olLinkName</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
+</span><span id="line-183"></span><span>    </span><span class="annot"><span class="hs-comment">-- ^ Optional name of the link (from OpenAPI spec)</span></span><span>
+</span><span id="line-184"></span><span>    </span><span class="hs-special">}</span><span>
+</span><span id="line-185"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679239539"><span id="local-6989586621679239548"><span class="annot"><span class="annottext">OperationLink -&gt; OperationLink -&gt; Bool
+(OperationLink -&gt; OperationLink -&gt; Bool)
+-&gt; (OperationLink -&gt; OperationLink -&gt; Bool) -&gt; Eq OperationLink
+forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
+$c== :: OperationLink -&gt; OperationLink -&gt; Bool
+== :: OperationLink -&gt; OperationLink -&gt; Bool
+$c/= :: OperationLink -&gt; OperationLink -&gt; Bool
+/= :: OperationLink -&gt; OperationLink -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679239553"><span id="local-6989586621679239563"><span id="local-6989586621679239567"><span class="annot"><span class="annottext">Int -&gt; OperationLink -&gt; ShowS
+[OperationLink] -&gt; ShowS
+OperationLink -&gt; String
+(Int -&gt; OperationLink -&gt; ShowS)
+-&gt; (OperationLink -&gt; String)
+-&gt; ([OperationLink] -&gt; ShowS)
+-&gt; Show OperationLink
+forall a.
+(Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
+$cshowsPrec :: Int -&gt; OperationLink -&gt; ShowS
+showsPrec :: Int -&gt; OperationLink -&gt; ShowS
+$cshow :: OperationLink -&gt; String
+show :: OperationLink -&gt; String
+$cshowList :: [OperationLink] -&gt; ShowS
+showList :: [OperationLink] -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-186"></span><span>
+</span><span id="line-187"></span><span class="annot"><span class="hs-comment">{- | A binding from a target parameter to its value source.
+
+Represents how to fill a single parameter in a target operation
+using data from a source operation's response.
+
+=== Example
+
+@
+ParameterBinding
+    { pbTargetParam = &quot;userId&quot;
+    , pbSource = FromResponseBody &quot;$response.body#/id&quot;
+    }
+@
+-}</span></span><span>
+</span><span id="line-201"></span><span class="hs-keyword">data</span><span> </span><span id="ParameterBinding"><span class="annot"><a href="Haskemathesis.Stateful.Types.html#ParameterBinding"><span class="hs-identifier hs-var">ParameterBinding</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="ParameterBinding"><span class="annot"><a href="Haskemathesis.Stateful.Types.html#ParameterBinding"><span class="hs-identifier hs-var">ParameterBinding</span></a></span></span><span>
+</span><span id="line-202"></span><span>    </span><span class="hs-special">{</span><span> </span><span id="pbTargetParam"><span class="annot"><span class="annottext">ParameterBinding -&gt; Text
+</span><a href="Haskemathesis.Stateful.Types.html#pbTargetParam"><span class="hs-identifier hs-var hs-var">pbTargetParam</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
+</span><span id="line-203"></span><span>    </span><span class="annot"><span class="hs-comment">-- ^ Name of the parameter in the target operation</span></span><span>
+</span><span id="line-204"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="pbSource"><span class="annot"><span class="annottext">ParameterBinding -&gt; ValueSource
+</span><a href="Haskemathesis.Stateful.Types.html#pbSource"><span class="hs-identifier hs-var hs-var">pbSource</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Haskemathesis.Stateful.Types.html#ValueSource"><span class="hs-identifier hs-type">ValueSource</span></a></span><span>
+</span><span id="line-205"></span><span>    </span><span class="annot"><span class="hs-comment">-- ^ Where to get the value for this parameter</span></span><span>
+</span><span id="line-206"></span><span>    </span><span class="hs-special">}</span><span>
+</span><span id="line-207"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679239574"><span id="local-6989586621679239579"><span class="annot"><span class="annottext">ParameterBinding -&gt; ParameterBinding -&gt; Bool
+(ParameterBinding -&gt; ParameterBinding -&gt; Bool)
+-&gt; (ParameterBinding -&gt; ParameterBinding -&gt; Bool)
+-&gt; Eq ParameterBinding
+forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
+$c== :: ParameterBinding -&gt; ParameterBinding -&gt; Bool
+== :: ParameterBinding -&gt; ParameterBinding -&gt; Bool
+$c/= :: ParameterBinding -&gt; ParameterBinding -&gt; Bool
+/= :: ParameterBinding -&gt; ParameterBinding -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679239582"><span id="local-6989586621679239588"><span id="local-6989586621679239591"><span class="annot"><span class="annottext">Int -&gt; ParameterBinding -&gt; ShowS
+[ParameterBinding] -&gt; ShowS
+ParameterBinding -&gt; String
+(Int -&gt; ParameterBinding -&gt; ShowS)
+-&gt; (ParameterBinding -&gt; String)
+-&gt; ([ParameterBinding] -&gt; ShowS)
+-&gt; Show ParameterBinding
+forall a.
+(Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
+$cshowsPrec :: Int -&gt; ParameterBinding -&gt; ShowS
+showsPrec :: Int -&gt; ParameterBinding -&gt; ShowS
+$cshow :: ParameterBinding -&gt; String
+show :: ParameterBinding -&gt; String
+$cshowList :: [ParameterBinding] -&gt; ShowS
+showList :: [ParameterBinding] -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-208"></span><span>
+</span><span id="line-209"></span><span class="annot"><span class="hs-comment">{- | Source for a parameter value in a stateful request.
+
+When generating a request in a stateful sequence, parameters can come from
+various sources rather than being randomly generated.
+
+=== Variants
+
+* 'FromResponseBody' - Extract from the previous response's JSON body
+* 'FromResponseHeader' - Extract from a response header (e.g., Location)
+* 'FromState' - Use a named value from the accumulated test state
+* 'Literal' - Use a fixed value
+
+=== Example
+
+@
+-- Extract id from response body
+FromResponseBody &quot;$response.body#/id&quot;
+
+-- Extract URL from Location header
+FromResponseHeader &quot;Location&quot;
+
+-- Use previously extracted value
+FromState &quot;userId&quot;
+
+-- Fixed value
+Literal (String &quot;admin&quot;)
+@
+-}</span></span><span>
+</span><span id="line-237"></span><span class="hs-keyword">data</span><span> </span><span id="ValueSource"><span class="annot"><a href="Haskemathesis.Stateful.Types.html#ValueSource"><span class="hs-identifier hs-var">ValueSource</span></a></span></span><span>
+</span><span id="line-238"></span><span>    </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="hs-comment">-- | Extract from response body using JSON path</span></span><span>
+</span><span id="line-239"></span><span>      </span><span id="FromResponseBody"><span class="annot"><a href="Haskemathesis.Stateful.Types.html#FromResponseBody"><span class="hs-identifier hs-var">FromResponseBody</span></a></span></span><span> </span><span class="annot"><a href="Haskemathesis.Stateful.Types.html#JsonPath"><span class="hs-identifier hs-type">JsonPath</span></a></span><span>
+</span><span id="line-240"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="hs-comment">-- | Extract from response header by name</span></span><span>
+</span><span id="line-241"></span><span>      </span><span id="FromResponseHeader"><span class="annot"><a href="Haskemathesis.Stateful.Types.html#FromResponseHeader"><span class="hs-identifier hs-var">FromResponseHeader</span></a></span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
+</span><span id="line-242"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="hs-comment">-- | Use a named value from TestState.tsExtractedValues</span></span><span>
+</span><span id="line-243"></span><span>      </span><span id="FromState"><span class="annot"><a href="Haskemathesis.Stateful.Types.html#FromState"><span class="hs-identifier hs-var">FromState</span></a></span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
+</span><span id="line-244"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="hs-comment">-- | Use a literal value</span></span><span>
+</span><span id="line-245"></span><span>      </span><span id="Literal"><span class="annot"><a href="Haskemathesis.Stateful.Types.html#Literal"><span class="hs-identifier hs-var">Literal</span></a></span></span><span> </span><span class="annot"><a href="file:///nix/store/bjx03k98335ijsml9dq303bj5ddk8a5f-aeson-2.2.3.0-doc/share/doc/aeson-2.2.3.0/html/src/Data.Aeson.Types.Internal.html#Value"><span class="hs-identifier hs-type">Value</span></a></span><span>
+</span><span id="line-246"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679239598"><span id="local-6989586621679239607"><span class="annot"><span class="annottext">ValueSource -&gt; ValueSource -&gt; Bool
+(ValueSource -&gt; ValueSource -&gt; Bool)
+-&gt; (ValueSource -&gt; ValueSource -&gt; Bool) -&gt; Eq ValueSource
+forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
+$c== :: ValueSource -&gt; ValueSource -&gt; Bool
+== :: ValueSource -&gt; ValueSource -&gt; Bool
+$c/= :: ValueSource -&gt; ValueSource -&gt; Bool
+/= :: ValueSource -&gt; ValueSource -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679239610"><span id="local-6989586621679239620"><span id="local-6989586621679239623"><span class="annot"><span class="annottext">Int -&gt; ValueSource -&gt; ShowS
+[ValueSource] -&gt; ShowS
+ValueSource -&gt; String
+(Int -&gt; ValueSource -&gt; ShowS)
+-&gt; (ValueSource -&gt; String)
+-&gt; ([ValueSource] -&gt; ShowS)
+-&gt; Show ValueSource
+forall a.
+(Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
+$cshowsPrec :: Int -&gt; ValueSource -&gt; ShowS
+showsPrec :: Int -&gt; ValueSource -&gt; ShowS
+$cshow :: ValueSource -&gt; String
+show :: ValueSource -&gt; String
+$cshowList :: [ValueSource] -&gt; ShowS
+showList :: [ValueSource] -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-247"></span><span>
+</span><span id="line-248"></span><span class="annot"><span class="hs-comment">{- | A sequence of operations to execute in a stateful test.
+
+Represents a complete test scenario, including the main steps and
+any cleanup operations (typically DELETEs) to run afterward.
+
+=== Example
+
+@
+OperationSequence
+    { osSteps =
+        [ SequenceStep createUserOp (Map.empty)  -- No bindings, generate randomly
+        , SequenceStep getUserOp (Map.singleton &quot;id&quot; (FromState &quot;id&quot;))
+        , SequenceStep deleteUserOp (Map.singleton &quot;id&quot; (FromState &quot;id&quot;))
+        ]
+    , osCleanup = []  -- DELETE already in steps
+    }
+@
+-}</span></span><span>
+</span><span id="line-266"></span><span class="hs-keyword">data</span><span> </span><span id="OperationSequence"><span class="annot"><a href="Haskemathesis.Stateful.Types.html#OperationSequence"><span class="hs-identifier hs-var">OperationSequence</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="OperationSequence"><span class="annot"><a href="Haskemathesis.Stateful.Types.html#OperationSequence"><span class="hs-identifier hs-var">OperationSequence</span></a></span></span><span>
+</span><span id="line-267"></span><span>    </span><span class="hs-special">{</span><span> </span><span id="osSteps"><span class="annot"><span class="annottext">OperationSequence -&gt; [SequenceStep]
+</span><a href="Haskemathesis.Stateful.Types.html#osSteps"><span class="hs-identifier hs-var hs-var">osSteps</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="Haskemathesis.Stateful.Types.html#SequenceStep"><span class="hs-identifier hs-type">SequenceStep</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-268"></span><span>    </span><span class="annot"><span class="hs-comment">-- ^ Steps to execute in order</span></span><span>
+</span><span id="line-269"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="osCleanup"><span class="annot"><span class="annottext">OperationSequence -&gt; [SequenceStep]
+</span><a href="Haskemathesis.Stateful.Types.html#osCleanup"><span class="hs-identifier hs-var hs-var">osCleanup</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="Haskemathesis.Stateful.Types.html#SequenceStep"><span class="hs-identifier hs-type">SequenceStep</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-270"></span><span>    </span><span class="annot"><span class="hs-comment">-- ^ Cleanup steps to run after main steps (even on failure)</span></span><span>
+</span><span id="line-271"></span><span>    </span><span class="hs-special">}</span><span>
+</span><span id="line-272"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679239629"><span id="local-6989586621679239634"><span class="annot"><span class="annottext">OperationSequence -&gt; OperationSequence -&gt; Bool
+(OperationSequence -&gt; OperationSequence -&gt; Bool)
+-&gt; (OperationSequence -&gt; OperationSequence -&gt; Bool)
+-&gt; Eq OperationSequence
+forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
+$c== :: OperationSequence -&gt; OperationSequence -&gt; Bool
+== :: OperationSequence -&gt; OperationSequence -&gt; Bool
+$c/= :: OperationSequence -&gt; OperationSequence -&gt; Bool
+/= :: OperationSequence -&gt; OperationSequence -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679239639"><span id="local-6989586621679239645"><span id="local-6989586621679239649"><span class="annot"><span class="annottext">Int -&gt; OperationSequence -&gt; ShowS
+[OperationSequence] -&gt; ShowS
+OperationSequence -&gt; String
+(Int -&gt; OperationSequence -&gt; ShowS)
+-&gt; (OperationSequence -&gt; String)
+-&gt; ([OperationSequence] -&gt; ShowS)
+-&gt; Show OperationSequence
+forall a.
+(Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
+$cshowsPrec :: Int -&gt; OperationSequence -&gt; ShowS
+showsPrec :: Int -&gt; OperationSequence -&gt; ShowS
+$cshow :: OperationSequence -&gt; String
+show :: OperationSequence -&gt; String
+$cshowList :: [OperationSequence] -&gt; ShowS
+showList :: [OperationSequence] -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-273"></span><span>
+</span><span id="line-274"></span><span class="annot"><span class="hs-comment">{- | A single step in an operation sequence.
+
+Each step pairs an operation with instructions for how to fill its
+parameters. Parameters not listed in 'ssParamBindings' will be
+generated randomly from their schemas.
+
+=== Fields
+
+* 'ssOperationId' - Which operation to execute
+* 'ssParamBindings' - Map from parameter name to value source
+
+=== Example
+
+@
+-- Step that uses id from state for the path parameter
+SequenceStep
+    { ssOperationId = &quot;getUser&quot;
+    , ssParamBindings = Map.singleton &quot;id&quot; (FromState &quot;id&quot;)
+    }
+@
+-}</span></span><span>
+</span><span id="line-295"></span><span class="hs-keyword">data</span><span> </span><span id="SequenceStep"><span class="annot"><a href="Haskemathesis.Stateful.Types.html#SequenceStep"><span class="hs-identifier hs-var">SequenceStep</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="SequenceStep"><span class="annot"><a href="Haskemathesis.Stateful.Types.html#SequenceStep"><span class="hs-identifier hs-var">SequenceStep</span></a></span></span><span>
+</span><span id="line-296"></span><span>    </span><span class="hs-special">{</span><span> </span><span id="ssOperationId"><span class="annot"><span class="annottext">SequenceStep -&gt; Text
+</span><a href="Haskemathesis.Stateful.Types.html#ssOperationId"><span class="hs-identifier hs-var hs-var">ssOperationId</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
+</span><span id="line-297"></span><span>    </span><span class="annot"><span class="hs-comment">-- ^ Operation ID to execute</span></span><span>
+</span><span id="line-298"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="ssParamBindings"><span class="annot"><span class="annottext">SequenceStep -&gt; Map Text ValueSource
+</span><a href="Haskemathesis.Stateful.Types.html#ssParamBindings"><span class="hs-identifier hs-var hs-var">ssParamBindings</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Map</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span> </span><span class="annot"><a href="Haskemathesis.Stateful.Types.html#ValueSource"><span class="hs-identifier hs-type">ValueSource</span></a></span><span>
+</span><span id="line-299"></span><span>    </span><span class="annot"><span class="hs-comment">-- ^ How to fill each parameter (missing = generate from schema)</span></span><span>
+</span><span id="line-300"></span><span>    </span><span class="hs-special">}</span><span>
+</span><span id="line-301"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679239656"><span id="local-6989586621679239661"><span class="annot"><span class="annottext">SequenceStep -&gt; SequenceStep -&gt; Bool
+(SequenceStep -&gt; SequenceStep -&gt; Bool)
+-&gt; (SequenceStep -&gt; SequenceStep -&gt; Bool) -&gt; Eq SequenceStep
+forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
+$c== :: SequenceStep -&gt; SequenceStep -&gt; Bool
+== :: SequenceStep -&gt; SequenceStep -&gt; Bool
+$c/= :: SequenceStep -&gt; SequenceStep -&gt; Bool
+/= :: SequenceStep -&gt; SequenceStep -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679239664"><span id="local-6989586621679239670"><span id="local-6989586621679239673"><span class="annot"><span class="annottext">Int -&gt; SequenceStep -&gt; ShowS
+[SequenceStep] -&gt; ShowS
+SequenceStep -&gt; String
+(Int -&gt; SequenceStep -&gt; ShowS)
+-&gt; (SequenceStep -&gt; String)
+-&gt; ([SequenceStep] -&gt; ShowS)
+-&gt; Show SequenceStep
+forall a.
+(Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
+$cshowsPrec :: Int -&gt; SequenceStep -&gt; ShowS
+showsPrec :: Int -&gt; SequenceStep -&gt; ShowS
+$cshow :: SequenceStep -&gt; String
+show :: SequenceStep -&gt; String
+$cshowList :: [SequenceStep] -&gt; ShowS
+showList :: [SequenceStep] -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-302"></span></pre></body></html>

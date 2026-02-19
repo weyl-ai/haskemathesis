@@ -1,0 +1,668 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE OverloadedStrings #-}</span><span>
+</span><span id="line-2"></span><span>
+</span><span id="line-3"></span><span class="annot"><span class="hs-comment">{- | Value extraction from API responses.
+
+This module provides functions for extracting values from API responses
+based on 'ValueSource' specifications. Extracted values can be used to
+fill parameters in subsequent requests during stateful testing.
+
+=== Supported Extraction Methods
+
+* __JSON Path__ - Extract from response body using path expressions
+* __Header__ - Extract from response headers (e.g., Location)
+* __Field Name__ - Simple field lookup in JSON objects
+
+=== JSON Path Syntax
+
+We support a subset of OpenAPI runtime expressions:
+
+* @$response.body#\/id@ - JSON pointer into response body
+* @$response.body#\/data\/0\/id@ - Nested path with array index
+* @$.id@ - Simplified JSONPath-style syntax
+
+=== Example
+
+@
+import Haskemathesis.Stateful.Extract
+import Haskemathesis.Stateful.Types
+
+-- Extract &quot;id&quot; field from response body
+let source = FromResponseBody &quot;$response.body#/id&quot;
+    response = ApiResponse 201 [...] &quot;{\&quot;id\&quot;: 42, \&quot;name\&quot;: \&quot;Alice\&quot;}&quot; 0.1
+in extractValue source response
+-- Just (Number 42)
+
+-- Extract from Location header
+let source = FromResponseHeader &quot;Location&quot;
+    response = ApiResponse 201 [(&quot;Location&quot;, &quot;/users/42&quot;)] &quot;&quot; 0.1
+in extractValue source response
+-- Just (String &quot;/users/42&quot;)
+@
+-}</span></span><span>
+</span><span id="line-42"></span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="Haskemathesis.Stateful.Extract.html"><span class="hs-identifier">Haskemathesis.Stateful.Extract</span></a></span><span> </span><span class="hs-special">(</span><span>
+</span><span id="line-43"></span><span>    </span><span class="annot"><span class="hs-comment">-- * Core Extraction</span></span><span>
+</span><span id="line-44"></span><span>    </span><span class="annot"><a href="Haskemathesis.Stateful.Extract.html#extractValue"><span class="hs-identifier">extractValue</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-45"></span><span>    </span><span class="annot"><a href="Haskemathesis.Stateful.Extract.html#extractFromState"><span class="hs-identifier">extractFromState</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-46"></span><span>
+</span><span id="line-47"></span><span>    </span><span class="annot"><span class="hs-comment">-- * Response Body Extraction</span></span><span>
+</span><span id="line-48"></span><span>    </span><span class="annot"><a href="Haskemathesis.Stateful.Extract.html#extractByJsonPath"><span class="hs-identifier">extractByJsonPath</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-49"></span><span>    </span><span class="annot"><a href="Haskemathesis.Stateful.Extract.html#extractByFieldName"><span class="hs-identifier">extractByFieldName</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-50"></span><span>    </span><span class="annot"><a href="Haskemathesis.Stateful.Extract.html#extractByPointer"><span class="hs-identifier">extractByPointer</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-51"></span><span>
+</span><span id="line-52"></span><span>    </span><span class="annot"><span class="hs-comment">-- * Header Extraction</span></span><span>
+</span><span id="line-53"></span><span>    </span><span class="annot"><a href="Haskemathesis.Stateful.Extract.html#extractFromHeader"><span class="hs-identifier">extractFromHeader</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-54"></span><span>    </span><span class="annot"><a href="Haskemathesis.Stateful.Extract.html#extractFromLocation"><span class="hs-identifier">extractFromLocation</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-55"></span><span>
+</span><span id="line-56"></span><span>    </span><span class="annot"><span class="hs-comment">-- * Path Parsing</span></span><span>
+</span><span id="line-57"></span><span>    </span><span class="annot"><a href="Haskemathesis.Stateful.Extract.html#parseJsonPointer"><span class="hs-identifier">parseJsonPointer</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-58"></span><span>    </span><span class="annot"><a href="Haskemathesis.Stateful.Extract.html#parseOpenApiExpression"><span class="hs-identifier">parseOpenApiExpression</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-59"></span><span>
+</span><span id="line-60"></span><span>    </span><span class="annot"><span class="hs-comment">-- * State Updates</span></span><span>
+</span><span id="line-61"></span><span>    </span><span class="annot"><a href="Haskemathesis.Stateful.Extract.html#updateStateFromResponse"><span class="hs-identifier">updateStateFromResponse</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-62"></span><span>    </span><span class="annot"><a href="Haskemathesis.Stateful.Extract.html#extractIdFields"><span class="hs-identifier">extractIdFields</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-63"></span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-64"></span><span>
+</span><span id="line-65"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="file:///nix/store/bjx03k98335ijsml9dq303bj5ddk8a5f-aeson-2.2.3.0-doc/share/doc/aeson-2.2.3.0/html/src/Data.Aeson.html"><span class="hs-identifier">Data.Aeson</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="file:///nix/store/bjx03k98335ijsml9dq303bj5ddk8a5f-aeson-2.2.3.0-doc/share/doc/aeson-2.2.3.0/html/src/Data.Aeson.Types.Internal.html#Value"><span class="hs-identifier">Value</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-66"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><a href="file:///nix/store/bjx03k98335ijsml9dq303bj5ddk8a5f-aeson-2.2.3.0-doc/share/doc/aeson-2.2.3.0/html/src/Data.Aeson.html"><span class="hs-identifier">Data.Aeson</span></a></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Aeson</span></span><span>
+</span><span id="line-67"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><a href="file:///nix/store/bjx03k98335ijsml9dq303bj5ddk8a5f-aeson-2.2.3.0-doc/share/doc/aeson-2.2.3.0/html/src/Data.Aeson.Key.html"><span class="hs-identifier">Data.Aeson.Key</span></a></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Key</span></span><span>
+</span><span id="line-68"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><a href="file:///nix/store/bjx03k98335ijsml9dq303bj5ddk8a5f-aeson-2.2.3.0-doc/share/doc/aeson-2.2.3.0/html/src/Data.Aeson.KeyMap.html"><span class="hs-identifier">Data.Aeson.KeyMap</span></a></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">KeyMap</span></span><span>
+</span><span id="line-69"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.ByteString</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">ByteString</span></span><span class="hs-special">)</span><span>
+</span><span id="line-70"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><a href="file:///nix/store/j3bcnc7r5q4sz7xij5naq8pf2zh1xr44-case-insensitive-1.2.1.0-doc/share/doc/case-insensitive-1.2.1.0/html/src/Data.CaseInsensitive.html"><span class="hs-identifier">Data.CaseInsensitive</span></a></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">CI</span></span><span>
+</span><span id="line-71"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Map.Strict</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Map</span></span><span class="hs-special">)</span><span>
+</span><span id="line-72"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.Map.Strict</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Map</span></span><span>
+</span><span id="line-73"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Text</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Text</span></span><span class="hs-special">)</span><span>
+</span><span id="line-74"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.Text</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">T</span></span><span>
+</span><span id="line-75"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Text.Encoding</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">decodeUtf8'</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">encodeUtf8</span></span><span class="hs-special">)</span><span>
+</span><span id="line-76"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.Vector</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">V</span></span><span>
+</span><span id="line-77"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Haskemathesis.Execute.Types.html"><span class="hs-identifier">Haskemathesis.Execute.Types</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Haskemathesis.Execute.Types.html#ApiResponse"><span class="hs-identifier">ApiResponse</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-78"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Haskemathesis.Stateful.Types.html"><span class="hs-identifier">Haskemathesis.Stateful.Types</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Haskemathesis.Stateful.Types.html#TestState"><span class="hs-identifier">TestState</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Haskemathesis.Stateful.Types.html#ValueSource"><span class="hs-identifier">ValueSource</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-79"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Text.Read</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">readMaybe</span></span><span class="hs-special">)</span><span>
+</span><span id="line-80"></span><span>
+</span><span id="line-81"></span><span class="annot"><span class="hs-comment">{- | Extract a value based on a 'ValueSource' specification.
+
+This is the main entry point for value extraction. It dispatches to
+the appropriate extraction method based on the 'ValueSource' variant.
+
+=== Parameters
+
+* @source@ - Where to extract the value from
+* @state@ - Current test state (for 'FromState' lookups)
+* @response@ - The API response to extract from
+
+=== Return Value
+
+Returns 'Just' the extracted value, or 'Nothing' if extraction fails
+(e.g., missing field, invalid path, parse error).
+
+=== Example
+
+@
+let source = FromResponseBody &quot;$response.body#/id&quot;
+extractValue source state response
+-- Just (Number 42)
+@
+-}</span></span><span>
+</span><span id="line-105"></span><span class="annot"><a href="Haskemathesis.Stateful.Extract.html#extractValue"><span class="hs-identifier hs-type">extractValue</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Haskemathesis.Stateful.Types.html#ValueSource"><span class="hs-identifier hs-type">ValueSource</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Haskemathesis.Stateful.Types.html#TestState"><span class="hs-identifier hs-type">TestState</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Haskemathesis.Execute.Types.html#ApiResponse"><span class="hs-identifier hs-type">ApiResponse</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="file:///nix/store/bjx03k98335ijsml9dq303bj5ddk8a5f-aeson-2.2.3.0-doc/share/doc/aeson-2.2.3.0/html/src/Data.Aeson.Types.Internal.html#Value"><span class="hs-identifier hs-type">Value</span></a></span><span>
+</span><span id="line-106"></span><span id="extractValue"><span class="annot"><span class="annottext">extractValue :: ValueSource -&gt; TestState -&gt; ApiResponse -&gt; Maybe Value
+</span><a href="Haskemathesis.Stateful.Extract.html#extractValue"><span class="hs-identifier hs-var hs-var">extractValue</span></a></span></span><span> </span><span id="local-6989586621679240701"><span class="annot"><span class="annottext">ValueSource
+</span><a href="#local-6989586621679240701"><span class="hs-identifier hs-var">source</span></a></span></span><span> </span><span id="local-6989586621679240702"><span class="annot"><span class="annottext">TestState
+</span><a href="#local-6989586621679240702"><span class="hs-identifier hs-var">state</span></a></span></span><span> </span><span id="local-6989586621679240703"><span class="annot"><span class="annottext">ApiResponse
+</span><a href="#local-6989586621679240703"><span class="hs-identifier hs-var">response</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-107"></span><span>    </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">ValueSource
+</span><a href="#local-6989586621679240701"><span class="hs-identifier hs-var">source</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-108"></span><span>        </span><span class="annot"><a href="Haskemathesis.Stateful.Types.html#FromResponseBody"><span class="hs-identifier hs-type">FromResponseBody</span></a></span><span> </span><span id="local-6989586621679240705"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679240705"><span class="hs-identifier hs-var">path</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-109"></span><span>            </span><span class="annot"><span class="annottext">Text -&gt; ByteString -&gt; Maybe Value
+</span><a href="Haskemathesis.Stateful.Extract.html#extractByJsonPath"><span class="hs-identifier hs-var">extractByJsonPath</span></a></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679240705"><span class="hs-identifier hs-var">path</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">ApiResponse -&gt; ByteString
+</span><a href="Haskemathesis.Execute.Types.html#resBody"><span class="hs-identifier hs-var">resBody</span></a></span><span> </span><span class="annot"><span class="annottext">ApiResponse
+</span><a href="#local-6989586621679240703"><span class="hs-identifier hs-var">response</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-110"></span><span>        </span><span class="annot"><a href="Haskemathesis.Stateful.Types.html#FromResponseHeader"><span class="hs-identifier hs-type">FromResponseHeader</span></a></span><span> </span><span id="local-6989586621679240708"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679240708"><span class="hs-identifier hs-var">headerName</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-111"></span><span>            </span><span class="annot"><span class="annottext">Text -&gt; ApiResponse -&gt; Maybe Value
+</span><a href="Haskemathesis.Stateful.Extract.html#extractFromHeader"><span class="hs-identifier hs-var">extractFromHeader</span></a></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679240708"><span class="hs-identifier hs-var">headerName</span></a></span><span> </span><span class="annot"><span class="annottext">ApiResponse
+</span><a href="#local-6989586621679240703"><span class="hs-identifier hs-var">response</span></a></span><span>
+</span><span id="line-112"></span><span>        </span><span class="annot"><a href="Haskemathesis.Stateful.Types.html#FromState"><span class="hs-identifier hs-type">FromState</span></a></span><span> </span><span id="local-6989586621679240709"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679240709"><span class="hs-identifier hs-var">name</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-113"></span><span>            </span><span class="annot"><span class="annottext">Text -&gt; TestState -&gt; Maybe Value
+</span><a href="Haskemathesis.Stateful.Extract.html#extractFromState"><span class="hs-identifier hs-var">extractFromState</span></a></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679240709"><span class="hs-identifier hs-var">name</span></a></span><span> </span><span class="annot"><span class="annottext">TestState
+</span><a href="#local-6989586621679240702"><span class="hs-identifier hs-var">state</span></a></span><span>
+</span><span id="line-114"></span><span>        </span><span class="annot"><a href="Haskemathesis.Stateful.Types.html#Literal"><span class="hs-identifier hs-type">Literal</span></a></span><span> </span><span id="local-6989586621679240711"><span class="annot"><span class="annottext">Value
+</span><a href="#local-6989586621679240711"><span class="hs-identifier hs-var">value</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-115"></span><span>            </span><span class="annot"><span class="annottext">Value -&gt; Maybe Value
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">Value
+</span><a href="#local-6989586621679240711"><span class="hs-identifier hs-var">value</span></a></span><span>
+</span><span id="line-116"></span><span>
+</span><span id="line-117"></span><span class="annot"><span class="hs-comment">{- | Extract a named value from the test state.
+
+Looks up a value by name in the 'tsExtractedValues' map.
+
+=== Example
+
+@
+let state = emptyState { tsExtractedValues = Map.singleton &quot;userId&quot; (Number 42) }
+extractFromState &quot;userId&quot; state
+-- Just (Number 42)
+@
+-}</span></span><span>
+</span><span id="line-129"></span><span class="annot"><a href="Haskemathesis.Stateful.Extract.html#extractFromState"><span class="hs-identifier hs-type">extractFromState</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Haskemathesis.Stateful.Types.html#TestState"><span class="hs-identifier hs-type">TestState</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="file:///nix/store/bjx03k98335ijsml9dq303bj5ddk8a5f-aeson-2.2.3.0-doc/share/doc/aeson-2.2.3.0/html/src/Data.Aeson.Types.Internal.html#Value"><span class="hs-identifier hs-type">Value</span></a></span><span>
+</span><span id="line-130"></span><span id="extractFromState"><span class="annot"><span class="annottext">extractFromState :: Text -&gt; TestState -&gt; Maybe Value
+</span><a href="Haskemathesis.Stateful.Extract.html#extractFromState"><span class="hs-identifier hs-var hs-var">extractFromState</span></a></span></span><span> </span><span id="local-6989586621679240713"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679240713"><span class="hs-identifier hs-var">name</span></a></span></span><span> </span><span id="local-6989586621679240714"><span class="annot"><span class="annottext">TestState
+</span><a href="#local-6989586621679240714"><span class="hs-identifier hs-var">state</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-131"></span><span>    </span><span class="annot"><span class="annottext">Text -&gt; Map Text Value -&gt; Maybe Value
+forall k a. Ord k =&gt; k -&gt; Map k a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Map.lookup</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679240713"><span class="hs-identifier hs-var">name</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">TestState -&gt; Map Text Value
+</span><a href="Haskemathesis.Stateful.Types.html#tsExtractedValues"><span class="hs-identifier hs-var">tsExtractedValues</span></a></span><span> </span><span class="annot"><span class="annottext">TestState
+</span><a href="#local-6989586621679240714"><span class="hs-identifier hs-var">state</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-132"></span><span>
+</span><span id="line-133"></span><span class="annot"><span class="hs-comment">{- | Extract a value from response body using a JSON path expression.
+
+Supports two syntaxes:
+
+* OpenAPI runtime expression: @$response.body#\/field\/path@
+* Simplified JSONPath: @$.field.path@ or just @field@
+
+=== Example
+
+@
+extractByJsonPath &quot;$response.body#/id&quot; &quot;{\&quot;id\&quot;: 42}&quot;
+-- Just (Number 42)
+
+extractByJsonPath &quot;$.data.name&quot; &quot;{\&quot;data\&quot;: {\&quot;name\&quot;: \&quot;Alice\&quot;}}&quot;
+-- Just (String &quot;Alice&quot;)
+
+extractByJsonPath &quot;id&quot; &quot;{\&quot;id\&quot;: 42}&quot;
+-- Just (Number 42)
+@
+-}</span></span><span>
+</span><span id="line-153"></span><span class="annot"><a href="Haskemathesis.Stateful.Extract.html#extractByJsonPath"><span class="hs-identifier hs-type">extractByJsonPath</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">ByteString</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="file:///nix/store/bjx03k98335ijsml9dq303bj5ddk8a5f-aeson-2.2.3.0-doc/share/doc/aeson-2.2.3.0/html/src/Data.Aeson.Types.Internal.html#Value"><span class="hs-identifier hs-type">Value</span></a></span><span>
+</span><span id="line-154"></span><span id="extractByJsonPath"><span class="annot"><span class="annottext">extractByJsonPath :: Text -&gt; ByteString -&gt; Maybe Value
+</span><a href="Haskemathesis.Stateful.Extract.html#extractByJsonPath"><span class="hs-identifier hs-var hs-var">extractByJsonPath</span></a></span></span><span> </span><span id="local-6989586621679240716"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679240716"><span class="hs-identifier hs-var">path</span></a></span></span><span> </span><span id="local-6989586621679240717"><span class="annot"><span class="annottext">ByteString
+</span><a href="#local-6989586621679240717"><span class="hs-identifier hs-var">body</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-155"></span><span>    </span><span id="local-6989586621679240718"><span class="annot"><a href="#local-6989586621679240718"><span class="hs-identifier hs-var">value</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">ByteString -&gt; Maybe Value
+</span><a href="Haskemathesis.Stateful.Extract.html#decodeBody"><span class="hs-identifier hs-var">decodeBody</span></a></span><span> </span><span class="annot"><span class="annottext">ByteString
+</span><a href="#local-6989586621679240717"><span class="hs-identifier hs-var">body</span></a></span><span>
+</span><span id="line-156"></span><span>    </span><span id="local-6989586621679240720"><span class="annot"><a href="#local-6989586621679240720"><span class="hs-identifier hs-var">pointer</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><a href="Haskemathesis.Stateful.Extract.html#parseOpenApiExpression"><span class="hs-identifier hs-type">parseOpenApiExpression</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679240716"><span class="hs-identifier hs-type">path</span></a></span><span>
+</span><span id="line-157"></span><span>    </span><span class="annot"><a href="Haskemathesis.Stateful.Extract.html#extractByPointer"><span class="hs-identifier hs-type">extractByPointer</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679240720"><span class="hs-identifier hs-type">pointer</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679240718"><span class="hs-identifier hs-type">value</span></a></span><span>
+</span><span id="line-158"></span><span>
+</span><span id="line-159"></span><span class="annot"><span class="hs-comment">-- | Decode response body as JSON.</span></span><span>
+</span><span id="line-160"></span><span class="annot"><a href="Haskemathesis.Stateful.Extract.html#decodeBody"><span class="hs-identifier hs-type">decodeBody</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">ByteString</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="file:///nix/store/bjx03k98335ijsml9dq303bj5ddk8a5f-aeson-2.2.3.0-doc/share/doc/aeson-2.2.3.0/html/src/Data.Aeson.Types.Internal.html#Value"><span class="hs-identifier hs-type">Value</span></a></span><span>
+</span><span id="line-161"></span><span id="decodeBody"><span class="annot"><span class="annottext">decodeBody :: ByteString -&gt; Maybe Value
+</span><a href="Haskemathesis.Stateful.Extract.html#decodeBody"><span class="hs-identifier hs-var hs-var">decodeBody</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">ByteString -&gt; Maybe Value
+forall a. FromJSON a =&gt; ByteString -&gt; Maybe a
+</span><a href="file:///nix/store/bjx03k98335ijsml9dq303bj5ddk8a5f-aeson-2.2.3.0-doc/share/doc/aeson-2.2.3.0/html/src/Data.Aeson.Decoding.html#decodeStrict"><span class="hs-identifier hs-var">Aeson.decodeStrict</span></a></span><span>
+</span><span id="line-162"></span><span>
+</span><span id="line-163"></span><span class="annot"><span class="hs-comment">{- | Extract a value using a JSON pointer (list of path segments).
+
+Traverses nested objects and arrays according to the pointer segments.
+
+=== Example
+
+@
+let json = Object (KeyMap.singleton &quot;user&quot; (Object (KeyMap.singleton &quot;id&quot; (Number 42))))
+extractByPointer [&quot;user&quot;, &quot;id&quot;] json
+-- Just (Number 42)
+
+let arr = Array (V.fromList [Number 1, Number 2, Number 3])
+extractByPointer [&quot;1&quot;] arr
+-- Just (Number 2)
+@
+-}</span></span><span>
+</span><span id="line-179"></span><span class="annot"><a href="Haskemathesis.Stateful.Extract.html#extractByPointer"><span class="hs-identifier hs-type">extractByPointer</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="file:///nix/store/bjx03k98335ijsml9dq303bj5ddk8a5f-aeson-2.2.3.0-doc/share/doc/aeson-2.2.3.0/html/src/Data.Aeson.Types.Internal.html#Value"><span class="hs-identifier hs-type">Value</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="file:///nix/store/bjx03k98335ijsml9dq303bj5ddk8a5f-aeson-2.2.3.0-doc/share/doc/aeson-2.2.3.0/html/src/Data.Aeson.Types.Internal.html#Value"><span class="hs-identifier hs-type">Value</span></a></span><span>
+</span><span id="line-180"></span><span id="extractByPointer"><span class="annot"><span class="annottext">extractByPointer :: [Text] -&gt; Value -&gt; Maybe Value
+</span><a href="Haskemathesis.Stateful.Extract.html#extractByPointer"><span class="hs-identifier hs-var hs-var">extractByPointer</span></a></span></span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span> </span><span id="local-6989586621679240722"><span class="annot"><span class="annottext">Value
+</span><a href="#local-6989586621679240722"><span class="hs-identifier hs-var">value</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Value -&gt; Maybe Value
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">Value
+</span><a href="#local-6989586621679240722"><span class="hs-identifier hs-var">value</span></a></span><span>
+</span><span id="line-181"></span><span class="annot"><a href="Haskemathesis.Stateful.Extract.html#extractByPointer"><span class="hs-identifier hs-var">extractByPointer</span></a></span><span> </span><span class="hs-special">(</span><span id="local-6989586621679240723"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679240723"><span class="hs-identifier hs-var">segment</span></a></span></span><span> </span><span class="annot"><span class="hs-glyph hs-type">:</span></span><span> </span><span id="local-6989586621679240724"><span class="annot"><span class="annottext">[Text]
+</span><a href="#local-6989586621679240724"><span class="hs-identifier hs-var">rest</span></a></span></span><span class="hs-special">)</span><span> </span><span id="local-6989586621679240725"><span class="annot"><span class="annottext">Value
+</span><a href="#local-6989586621679240725"><span class="hs-identifier hs-var">value</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-182"></span><span>    </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">Value
+</span><a href="#local-6989586621679240725"><span class="hs-identifier hs-var">value</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-183"></span><span>        </span><span class="annot"><a href="file:///nix/store/bjx03k98335ijsml9dq303bj5ddk8a5f-aeson-2.2.3.0-doc/share/doc/aeson-2.2.3.0/html/src/Data.Aeson.Types.Internal.html#Object"><span class="hs-identifier hs-type">Object</span></a></span><span> </span><span id="local-6989586621679240727"><span class="annot"><span class="annottext">Object
+</span><a href="#local-6989586621679240727"><span class="hs-identifier hs-var">obj</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-184"></span><span>            </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">Key -&gt; Object -&gt; Maybe Value
+forall v. Key -&gt; KeyMap v -&gt; Maybe v
+</span><a href="file:///nix/store/bjx03k98335ijsml9dq303bj5ddk8a5f-aeson-2.2.3.0-doc/share/doc/aeson-2.2.3.0/html/src/Data.Aeson.KeyMap.html#lookup"><span class="hs-identifier hs-var">KeyMap.lookup</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Text -&gt; Key
+</span><a href="file:///nix/store/bjx03k98335ijsml9dq303bj5ddk8a5f-aeson-2.2.3.0-doc/share/doc/aeson-2.2.3.0/html/src/Data.Aeson.Key.html#fromText"><span class="hs-identifier hs-var">Key.fromText</span></a></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679240723"><span class="hs-identifier hs-var">segment</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Object
+</span><a href="#local-6989586621679240727"><span class="hs-identifier hs-var">obj</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-185"></span><span>                </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span id="local-6989586621679240730"><span class="annot"><span class="annottext">Value
+</span><a href="#local-6989586621679240730"><span class="hs-identifier hs-var">v</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">[Text] -&gt; Value -&gt; Maybe Value
+</span><a href="Haskemathesis.Stateful.Extract.html#extractByPointer"><span class="hs-identifier hs-var">extractByPointer</span></a></span><span> </span><span class="annot"><span class="annottext">[Text]
+</span><a href="#local-6989586621679240724"><span class="hs-identifier hs-var">rest</span></a></span><span> </span><span class="annot"><span class="annottext">Value
+</span><a href="#local-6989586621679240730"><span class="hs-identifier hs-var">v</span></a></span><span>
+</span><span id="line-186"></span><span>                </span><span class="annot"><span class="annottext">Maybe Value
+</span><span class="hs-identifier hs-var">Nothing</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Maybe Value
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-187"></span><span>        </span><span class="annot"><a href="file:///nix/store/bjx03k98335ijsml9dq303bj5ddk8a5f-aeson-2.2.3.0-doc/share/doc/aeson-2.2.3.0/html/src/Data.Aeson.Types.Internal.html#Array"><span class="hs-identifier hs-type">Array</span></a></span><span> </span><span id="local-6989586621679240732"><span class="annot"><span class="annottext">Array
+</span><a href="#local-6989586621679240732"><span class="hs-identifier hs-var">arr</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-188"></span><span>            </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">String -&gt; Maybe Int
+forall a. Read a =&gt; String -&gt; Maybe a
+</span><span class="hs-identifier hs-var">readMaybe</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Text -&gt; String
+</span><span class="hs-identifier hs-var">T.unpack</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679240723"><span class="hs-identifier hs-var">segment</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-189"></span><span>                </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span id="local-6989586621679240734"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679240734"><span class="hs-identifier hs-var">idx</span></a></span></span><span>
+</span><span id="line-190"></span><span>                    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679240734"><span class="hs-identifier hs-var">idx</span></a></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Bool
+forall a. Ord a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">&gt;=</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">0</span></span><span> </span><span class="annot"><span class="annottext">Bool -&gt; Bool -&gt; Bool
+</span><span class="hs-operator hs-var">&amp;&amp;</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679240734"><span class="hs-identifier hs-var">idx</span></a></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Bool
+forall a. Ord a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">&lt;</span></span><span> </span><span class="annot"><span class="annottext">Array -&gt; Int
+forall a. Vector a -&gt; Int
+</span><span class="hs-identifier hs-var">V.length</span></span><span> </span><span class="annot"><span class="annottext">Array
+</span><a href="#local-6989586621679240732"><span class="hs-identifier hs-var">arr</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-191"></span><span>                        </span><span class="annot"><span class="annottext">[Text] -&gt; Value -&gt; Maybe Value
+</span><a href="Haskemathesis.Stateful.Extract.html#extractByPointer"><span class="hs-identifier hs-var">extractByPointer</span></a></span><span> </span><span class="annot"><span class="annottext">[Text]
+</span><a href="#local-6989586621679240724"><span class="hs-identifier hs-var">rest</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Array
+</span><a href="#local-6989586621679240732"><span class="hs-identifier hs-var">arr</span></a></span><span> </span><span class="annot"><span class="annottext">Array -&gt; Int -&gt; Value
+forall a. Vector a -&gt; Int -&gt; a
+</span><span class="hs-operator hs-var">V.!</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679240734"><span class="hs-identifier hs-var">idx</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-192"></span><span>                </span><span id="local-6989586621679240739"><span class="annot"><span class="annottext">Maybe Int
+</span><a href="#local-6989586621679240739"><span class="hs-identifier hs-var">_notAnIndex</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Maybe Value
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-193"></span><span>        </span><span id="local-6989586621679240740"><span class="annot"><span class="annottext">Value
+</span><a href="#local-6989586621679240740"><span class="hs-identifier hs-var">_primitive</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Maybe Value
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-194"></span><span>
+</span><span id="line-195"></span><span class="annot"><span class="hs-comment">{- | Extract a value by simple field name lookup.
+
+Only works on JSON objects. For nested paths, use 'extractByJsonPath'.
+
+=== Example
+
+@
+let json = Object (KeyMap.singleton &quot;id&quot; (Number 42))
+extractByFieldName &quot;id&quot; json
+-- Just (Number 42)
+@
+-}</span></span><span>
+</span><span id="line-207"></span><span class="annot"><a href="Haskemathesis.Stateful.Extract.html#extractByFieldName"><span class="hs-identifier hs-type">extractByFieldName</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="file:///nix/store/bjx03k98335ijsml9dq303bj5ddk8a5f-aeson-2.2.3.0-doc/share/doc/aeson-2.2.3.0/html/src/Data.Aeson.Types.Internal.html#Value"><span class="hs-identifier hs-type">Value</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="file:///nix/store/bjx03k98335ijsml9dq303bj5ddk8a5f-aeson-2.2.3.0-doc/share/doc/aeson-2.2.3.0/html/src/Data.Aeson.Types.Internal.html#Value"><span class="hs-identifier hs-type">Value</span></a></span><span>
+</span><span id="line-208"></span><span id="extractByFieldName"><span class="annot"><span class="annottext">extractByFieldName :: Text -&gt; Value -&gt; Maybe Value
+</span><a href="Haskemathesis.Stateful.Extract.html#extractByFieldName"><span class="hs-identifier hs-var hs-var">extractByFieldName</span></a></span></span><span> </span><span id="local-6989586621679240741"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679240741"><span class="hs-identifier hs-var">fieldName</span></a></span></span><span> </span><span id="local-6989586621679240742"><span class="annot"><span class="annottext">Value
+</span><a href="#local-6989586621679240742"><span class="hs-identifier hs-var">value</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-209"></span><span>    </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">Value
+</span><a href="#local-6989586621679240742"><span class="hs-identifier hs-var">value</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-210"></span><span>        </span><span class="annot"><a href="file:///nix/store/bjx03k98335ijsml9dq303bj5ddk8a5f-aeson-2.2.3.0-doc/share/doc/aeson-2.2.3.0/html/src/Data.Aeson.Types.Internal.html#Object"><span class="hs-identifier hs-type">Object</span></a></span><span> </span><span id="local-6989586621679240743"><span class="annot"><span class="annottext">Object
+</span><a href="#local-6989586621679240743"><span class="hs-identifier hs-var">obj</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Key -&gt; Object -&gt; Maybe Value
+forall v. Key -&gt; KeyMap v -&gt; Maybe v
+</span><a href="file:///nix/store/bjx03k98335ijsml9dq303bj5ddk8a5f-aeson-2.2.3.0-doc/share/doc/aeson-2.2.3.0/html/src/Data.Aeson.KeyMap.html#lookup"><span class="hs-identifier hs-var">KeyMap.lookup</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Text -&gt; Key
+</span><a href="file:///nix/store/bjx03k98335ijsml9dq303bj5ddk8a5f-aeson-2.2.3.0-doc/share/doc/aeson-2.2.3.0/html/src/Data.Aeson.Key.html#fromText"><span class="hs-identifier hs-var">Key.fromText</span></a></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679240741"><span class="hs-identifier hs-var">fieldName</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Object
+</span><a href="#local-6989586621679240743"><span class="hs-identifier hs-var">obj</span></a></span><span>
+</span><span id="line-211"></span><span>        </span><span id="local-6989586621679240744"><span class="annot"><span class="annottext">Value
+</span><a href="#local-6989586621679240744"><span class="hs-identifier hs-var">_notObject</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Maybe Value
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-212"></span><span>
+</span><span id="line-213"></span><span class="annot"><span class="hs-comment">{- | Extract a value from a response header.
+
+Header names are matched case-insensitively.
+
+=== Example
+
+@
+let response = ApiResponse 201 [(&quot;X-Request-Id&quot;, &quot;abc123&quot;)] &quot;&quot; 0.1
+extractFromHeader &quot;x-request-id&quot; response
+-- Just (String &quot;abc123&quot;)
+@
+-}</span></span><span>
+</span><span id="line-225"></span><span class="annot"><a href="Haskemathesis.Stateful.Extract.html#extractFromHeader"><span class="hs-identifier hs-type">extractFromHeader</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Haskemathesis.Execute.Types.html#ApiResponse"><span class="hs-identifier hs-type">ApiResponse</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="file:///nix/store/bjx03k98335ijsml9dq303bj5ddk8a5f-aeson-2.2.3.0-doc/share/doc/aeson-2.2.3.0/html/src/Data.Aeson.Types.Internal.html#Value"><span class="hs-identifier hs-type">Value</span></a></span><span>
+</span><span id="line-226"></span><span id="extractFromHeader"><span class="annot"><span class="annottext">extractFromHeader :: Text -&gt; ApiResponse -&gt; Maybe Value
+</span><a href="Haskemathesis.Stateful.Extract.html#extractFromHeader"><span class="hs-identifier hs-var hs-var">extractFromHeader</span></a></span></span><span> </span><span id="local-6989586621679240745"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679240745"><span class="hs-identifier hs-var">headerName</span></a></span></span><span> </span><span id="local-6989586621679240746"><span class="annot"><span class="annottext">ApiResponse
+</span><a href="#local-6989586621679240746"><span class="hs-identifier hs-var">response</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-227"></span><span>    </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621679240749"><span class="annot"><span class="annottext">headerNameCI :: CI ByteString
+</span><a href="#local-6989586621679240749"><span class="hs-identifier hs-var hs-var">headerNameCI</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">ByteString -&gt; CI ByteString
+forall s. FoldCase s =&gt; s -&gt; CI s
+</span><a href="file:///nix/store/j3bcnc7r5q4sz7xij5naq8pf2zh1xr44-case-insensitive-1.2.1.0-doc/share/doc/case-insensitive-1.2.1.0/html/src/Data.CaseInsensitive.Internal.html#mk"><span class="hs-identifier hs-var">CI.mk</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Text -&gt; ByteString
+</span><span class="hs-identifier hs-var">encodeUtf8</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679240745"><span class="hs-identifier hs-var">headerName</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-228"></span><span>        </span><span id="local-6989586621679240751"><span class="annot"><span class="annottext">headers :: [(CI ByteString, ByteString)]
+</span><a href="#local-6989586621679240751"><span class="hs-identifier hs-var hs-var">headers</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">ApiResponse -&gt; [(CI ByteString, ByteString)]
+</span><a href="Haskemathesis.Execute.Types.html#resHeaders"><span class="hs-identifier hs-var">resHeaders</span></a></span><span> </span><span class="annot"><span class="annottext">ApiResponse
+</span><a href="#local-6989586621679240746"><span class="hs-identifier hs-var">response</span></a></span><span>
+</span><span id="line-229"></span><span>     </span><span class="hs-keyword">in</span><span> </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">CI ByteString -&gt; [(CI ByteString, ByteString)] -&gt; Maybe ByteString
+forall a b. Eq a =&gt; a -&gt; [(a, b)] -&gt; Maybe b
+</span><span class="hs-identifier hs-var">lookup</span></span><span> </span><span class="annot"><span class="annottext">CI ByteString
+</span><a href="#local-6989586621679240749"><span class="hs-identifier hs-var">headerNameCI</span></a></span><span> </span><span class="annot"><span class="annottext">[(CI ByteString, ByteString)]
+</span><a href="#local-6989586621679240751"><span class="hs-identifier hs-var">headers</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-230"></span><span>            </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span id="local-6989586621679240754"><span class="annot"><span class="annottext">ByteString
+</span><a href="#local-6989586621679240754"><span class="hs-identifier hs-var">headerValue</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-231"></span><span>                </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">ByteString -&gt; Either UnicodeException Text
+</span><span class="hs-identifier hs-var">decodeUtf8'</span></span><span> </span><span class="annot"><span class="annottext">ByteString
+</span><a href="#local-6989586621679240754"><span class="hs-identifier hs-var">headerValue</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-232"></span><span>                    </span><span class="annot"><span class="hs-identifier hs-type">Right</span></span><span> </span><span id="local-6989586621679240755"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679240755"><span class="hs-identifier hs-var">txt</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Value -&gt; Maybe Value
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Text -&gt; Value
+</span><a href="file:///nix/store/bjx03k98335ijsml9dq303bj5ddk8a5f-aeson-2.2.3.0-doc/share/doc/aeson-2.2.3.0/html/src/Data.Aeson.Types.Internal.html#String"><span class="hs-identifier hs-var">String</span></a></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679240755"><span class="hs-identifier hs-var">txt</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-233"></span><span>                    </span><span class="annot"><span class="hs-identifier hs-type">Left</span></span><span> </span><span id="local-6989586621679240757"><span class="annot"><span class="annottext">UnicodeException
+</span><a href="#local-6989586621679240757"><span class="hs-identifier hs-var">_err</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Maybe Value
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-234"></span><span>            </span><span class="annot"><span class="annottext">Maybe ByteString
+</span><span class="hs-identifier hs-var">Nothing</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Maybe Value
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-235"></span><span>
+</span><span id="line-236"></span><span class="annot"><span class="hs-comment">{- | Extract a resource URL from the Location header.
+
+Common pattern for REST APIs: POST returns 201 with Location header
+pointing to the created resource.
+
+=== Example
+
+@
+let response = ApiResponse 201 [(&quot;Location&quot;, &quot;/users/42&quot;)] &quot;&quot; 0.1
+extractFromLocation response
+-- Just &quot;/users/42&quot;
+@
+-}</span></span><span>
+</span><span id="line-249"></span><span class="annot"><a href="Haskemathesis.Stateful.Extract.html#extractFromLocation"><span class="hs-identifier hs-type">extractFromLocation</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Haskemathesis.Execute.Types.html#ApiResponse"><span class="hs-identifier hs-type">ApiResponse</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
+</span><span id="line-250"></span><span id="extractFromLocation"><span class="annot"><span class="annottext">extractFromLocation :: ApiResponse -&gt; Maybe Text
+</span><a href="Haskemathesis.Stateful.Extract.html#extractFromLocation"><span class="hs-identifier hs-var hs-var">extractFromLocation</span></a></span></span><span> </span><span id="local-6989586621679240758"><span class="annot"><span class="annottext">ApiResponse
+</span><a href="#local-6989586621679240758"><span class="hs-identifier hs-var">response</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-251"></span><span>    </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">Text -&gt; ApiResponse -&gt; Maybe Value
+</span><a href="Haskemathesis.Stateful.Extract.html#extractFromHeader"><span class="hs-identifier hs-var">extractFromHeader</span></a></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;Location&quot;</span></span><span> </span><span class="annot"><span class="annottext">ApiResponse
+</span><a href="#local-6989586621679240758"><span class="hs-identifier hs-var">response</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-252"></span><span>        </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="file:///nix/store/bjx03k98335ijsml9dq303bj5ddk8a5f-aeson-2.2.3.0-doc/share/doc/aeson-2.2.3.0/html/src/Data.Aeson.Types.Internal.html#String"><span class="hs-identifier hs-type">String</span></a></span><span> </span><span id="local-6989586621679240759"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679240759"><span class="hs-identifier hs-var">txt</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Text -&gt; Maybe Text
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679240759"><span class="hs-identifier hs-var">txt</span></a></span><span>
+</span><span id="line-253"></span><span>        </span><span id="local-6989586621679240760"><span class="annot"><span class="annottext">Maybe Value
+</span><a href="#local-6989586621679240760"><span class="hs-identifier hs-var">_other</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Maybe Text
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-254"></span><span>
+</span><span id="line-255"></span><span class="annot"><span class="hs-comment">{- | Parse an OpenAPI runtime expression or JSON path into pointer segments.
+
+Supports:
+
+* @$response.body#\/field\/nested@ - OpenAPI runtime expression
+* @$.field.nested@ - JSONPath-style
+* @field@ - Simple field name
+
+=== Example
+
+@
+parseOpenApiExpression &quot;$response.body#/user/id&quot;
+-- Just [&quot;user&quot;, &quot;id&quot;]
+
+parseOpenApiExpression &quot;$.data.items&quot;
+-- Just [&quot;data&quot;, &quot;items&quot;]
+
+parseOpenApiExpression &quot;id&quot;
+-- Just [&quot;id&quot;]
+@
+-}</span></span><span>
+</span><span id="line-276"></span><span class="annot"><a href="Haskemathesis.Stateful.Extract.html#parseOpenApiExpression"><span class="hs-identifier hs-type">parseOpenApiExpression</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span class="hs-special">]</span><span>
+</span><span id="line-277"></span><span id="parseOpenApiExpression"><span class="annot"><span class="annottext">parseOpenApiExpression :: Text -&gt; Maybe [Text]
+</span><a href="Haskemathesis.Stateful.Extract.html#parseOpenApiExpression"><span class="hs-identifier hs-var hs-var">parseOpenApiExpression</span></a></span></span><span> </span><span id="local-6989586621679240761"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679240761"><span class="hs-identifier hs-var">expr</span></a></span></span><span>
+</span><span id="line-278"></span><span>    </span><span class="hs-comment">-- OpenAPI runtime expression: $response.body#/path/to/field</span><span>
+</span><span id="line-279"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;$response.body#&quot;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Bool
+</span><span class="hs-operator hs-var">`T.isPrefixOf`</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679240761"><span class="hs-identifier hs-var">expr</span></a></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-280"></span><span>        </span><span class="hs-comment">-- Length of &quot;$response.body#&quot; is 16</span><span>
+</span><span id="line-281"></span><span>        </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621679240763"><span class="annot"><span class="annottext">pointer :: Text
+</span><a href="#local-6989586621679240763"><span class="hs-identifier hs-var hs-var">pointer</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Int -&gt; Text -&gt; Text
+</span><span class="hs-identifier hs-var">T.drop</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">16</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679240761"><span class="hs-identifier hs-var">expr</span></a></span><span>
+</span><span id="line-282"></span><span>         </span><span class="hs-keyword">in</span><span> </span><span class="annot"><span class="annottext">Text -&gt; Maybe [Text]
+</span><a href="Haskemathesis.Stateful.Extract.html#parseJsonPointer"><span class="hs-identifier hs-var">parseJsonPointer</span></a></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679240763"><span class="hs-identifier hs-var">pointer</span></a></span><span>
+</span><span id="line-283"></span><span>    </span><span class="hs-comment">-- JSONPath style: $.field.nested</span><span>
+</span><span id="line-284"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;$.&quot;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Bool
+</span><span class="hs-operator hs-var">`T.isPrefixOf`</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679240761"><span class="hs-identifier hs-var">expr</span></a></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-285"></span><span>        </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621679240765"><span class="annot"><span class="annottext">path :: Text
+</span><a href="#local-6989586621679240765"><span class="hs-identifier hs-var hs-var">path</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Int -&gt; Text -&gt; Text
+</span><span class="hs-identifier hs-var">T.drop</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">2</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679240761"><span class="hs-identifier hs-var">expr</span></a></span><span>
+</span><span id="line-286"></span><span>         </span><span class="hs-keyword">in</span><span> </span><span class="annot"><span class="annottext">[Text] -&gt; Maybe [Text]
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">HasCallStack =&gt; Text -&gt; Text -&gt; [Text]
+Text -&gt; Text -&gt; [Text]
+</span><span class="hs-identifier hs-var">T.splitOn</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;.&quot;</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679240765"><span class="hs-identifier hs-var">path</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-287"></span><span>    </span><span class="hs-comment">-- Simple field name</span><span>
+</span><span id="line-288"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Bool -&gt; Bool
+</span><span class="hs-identifier hs-var">not</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Text -&gt; Bool
+</span><span class="hs-identifier hs-var">T.null</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679240761"><span class="hs-identifier hs-var">expr</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-289"></span><span>        </span><span class="annot"><span class="annottext">[Text] -&gt; Maybe [Text]
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679240761"><span class="hs-identifier hs-var">expr</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-290"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">otherwise</span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-291"></span><span>        </span><span class="annot"><span class="annottext">Maybe [Text]
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-292"></span><span>
+</span><span id="line-293"></span><span class="annot"><span class="hs-comment">{- | Parse a JSON Pointer (RFC 6901) into path segments.
+
+JSON Pointers start with &quot;/&quot; and use &quot;/&quot; as separator.
+Handles escape sequences: ~0 = ~, ~1 = /
+
+=== Example
+
+@
+parseJsonPointer &quot;/user/id&quot;
+-- Just [&quot;user&quot;, &quot;id&quot;]
+
+parseJsonPointer &quot;/data/0/name&quot;
+-- Just [&quot;data&quot;, &quot;0&quot;, &quot;name&quot;]
+
+parseJsonPointer &quot;/field~1with~1slashes&quot;
+-- Just [&quot;field/with/slashes&quot;]
+@
+-}</span></span><span>
+</span><span id="line-311"></span><span class="annot"><a href="Haskemathesis.Stateful.Extract.html#parseJsonPointer"><span class="hs-identifier hs-type">parseJsonPointer</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span class="hs-special">]</span><span>
+</span><span id="line-312"></span><span id="parseJsonPointer"><span class="annot"><span class="annottext">parseJsonPointer :: Text -&gt; Maybe [Text]
+</span><a href="Haskemathesis.Stateful.Extract.html#parseJsonPointer"><span class="hs-identifier hs-var hs-var">parseJsonPointer</span></a></span></span><span> </span><span id="local-6989586621679240769"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679240769"><span class="hs-identifier hs-var">pointer</span></a></span></span><span>
+</span><span id="line-313"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Text -&gt; Bool
+</span><span class="hs-identifier hs-var">T.null</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679240769"><span class="hs-identifier hs-var">pointer</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[Text] -&gt; Maybe [Text]
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>
+</span><span id="line-314"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;/&quot;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Bool
+</span><span class="hs-operator hs-var">`T.isPrefixOf`</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679240769"><span class="hs-identifier hs-var">pointer</span></a></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-315"></span><span>        </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621679240773"><span class="annot"><span class="annottext">segments :: [Text]
+</span><a href="#local-6989586621679240773"><span class="hs-identifier hs-var hs-var">segments</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">HasCallStack =&gt; Text -&gt; Text -&gt; [Text]
+Text -&gt; Text -&gt; [Text]
+</span><span class="hs-identifier hs-var">T.splitOn</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;/&quot;</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Int -&gt; Text -&gt; Text
+</span><span class="hs-identifier hs-var">T.drop</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">1</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679240769"><span class="hs-identifier hs-var">pointer</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-316"></span><span>         </span><span class="hs-keyword">in</span><span> </span><span class="annot"><span class="annottext">[Text] -&gt; Maybe [Text]
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">(Text -&gt; Text) -&gt; [Text] -&gt; [Text]
+forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
+</span><span class="hs-identifier hs-var">map</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text
+</span><a href="Haskemathesis.Stateful.Extract.html#unescapePointer"><span class="hs-identifier hs-var">unescapePointer</span></a></span><span> </span><span class="annot"><span class="annottext">[Text]
+</span><a href="#local-6989586621679240773"><span class="hs-identifier hs-var">segments</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-317"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">otherwise</span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-318"></span><span>        </span><span class="hs-comment">-- Not a valid JSON pointer, treat as simple path</span><span>
+</span><span id="line-319"></span><span>        </span><span class="annot"><span class="annottext">[Text] -&gt; Maybe [Text]
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">HasCallStack =&gt; Text -&gt; Text -&gt; [Text]
+Text -&gt; Text -&gt; [Text]
+</span><span class="hs-identifier hs-var">T.splitOn</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;/&quot;</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679240769"><span class="hs-identifier hs-var">pointer</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-320"></span><span>
+</span><span id="line-321"></span><span class="annot"><span class="hs-comment">{- | Unescape JSON Pointer escape sequences.
+
+* ~0 -&gt; ~
+* ~1 -&gt; /
+-}</span></span><span>
+</span><span id="line-326"></span><span class="annot"><a href="Haskemathesis.Stateful.Extract.html#unescapePointer"><span class="hs-identifier hs-type">unescapePointer</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
+</span><span id="line-327"></span><span id="unescapePointer"><span class="annot"><span class="annottext">unescapePointer :: Text -&gt; Text
+</span><a href="Haskemathesis.Stateful.Extract.html#unescapePointer"><span class="hs-identifier hs-var hs-var">unescapePointer</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-328"></span><span>    </span><span class="annot"><span class="annottext">HasCallStack =&gt; Text -&gt; Text -&gt; Text -&gt; Text
+Text -&gt; Text -&gt; Text -&gt; Text
+</span><span class="hs-identifier hs-var">T.replace</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;~1&quot;</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;/&quot;</span></span><span> </span><span class="annot"><span class="annottext">(Text -&gt; Text) -&gt; (Text -&gt; Text) -&gt; Text -&gt; Text
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">HasCallStack =&gt; Text -&gt; Text -&gt; Text -&gt; Text
+Text -&gt; Text -&gt; Text -&gt; Text
+</span><span class="hs-identifier hs-var">T.replace</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;~0&quot;</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;~&quot;</span></span><span>
+</span><span id="line-329"></span><span>
+</span><span id="line-330"></span><span class="annot"><span class="hs-comment">{- | Update test state with values extracted from a response.
+
+This function extracts common ID fields from the response and adds them
+to the state's extracted values map.
+
+=== Auto-extracted Fields
+
+* @id@ - Common primary key field
+* @_id@ - MongoDB-style ID
+* Any field ending in @Id@ or @_id@
+
+=== Example
+
+@
+let response = ApiResponse 201 [] &quot;{\&quot;id\&quot;: 42, \&quot;userId\&quot;: 7}&quot; 0.1
+    state = emptyState
+    newState = updateStateFromResponse &quot;createUser&quot; state response
+-- newState.tsExtractedValues contains &quot;id&quot; -&gt; 42, &quot;userId&quot; -&gt; 7
+@
+-}</span></span><span>
+</span><span id="line-350"></span><span class="annot"><a href="Haskemathesis.Stateful.Extract.html#updateStateFromResponse"><span class="hs-identifier hs-type">updateStateFromResponse</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Haskemathesis.Stateful.Types.html#TestState"><span class="hs-identifier hs-type">TestState</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Haskemathesis.Execute.Types.html#ApiResponse"><span class="hs-identifier hs-type">ApiResponse</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Haskemathesis.Stateful.Types.html#TestState"><span class="hs-identifier hs-type">TestState</span></a></span><span>
+</span><span id="line-351"></span><span id="updateStateFromResponse"><span class="annot"><span class="annottext">updateStateFromResponse :: Text -&gt; TestState -&gt; ApiResponse -&gt; TestState
+</span><a href="Haskemathesis.Stateful.Extract.html#updateStateFromResponse"><span class="hs-identifier hs-var hs-var">updateStateFromResponse</span></a></span></span><span> </span><span id="local-6989586621679240777"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679240777"><span class="hs-identifier hs-var">_opId</span></a></span></span><span> </span><span id="local-6989586621679240778"><span class="annot"><span class="annottext">TestState
+</span><a href="#local-6989586621679240778"><span class="hs-identifier hs-var">state</span></a></span></span><span> </span><span id="local-6989586621679240779"><span class="annot"><span class="annottext">ApiResponse
+</span><a href="#local-6989586621679240779"><span class="hs-identifier hs-var">response</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-352"></span><span>    </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">ByteString -&gt; Maybe Value
+</span><a href="Haskemathesis.Stateful.Extract.html#decodeBody"><span class="hs-identifier hs-var">decodeBody</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">ApiResponse -&gt; ByteString
+</span><a href="Haskemathesis.Execute.Types.html#resBody"><span class="hs-identifier hs-var">resBody</span></a></span><span> </span><span class="annot"><span class="annottext">ApiResponse
+</span><a href="#local-6989586621679240779"><span class="hs-identifier hs-var">response</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-353"></span><span>        </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="file:///nix/store/bjx03k98335ijsml9dq303bj5ddk8a5f-aeson-2.2.3.0-doc/share/doc/aeson-2.2.3.0/html/src/Data.Aeson.Types.Internal.html#Object"><span class="hs-identifier hs-type">Object</span></a></span><span> </span><span id="local-6989586621679240780"><span class="annot"><span class="annottext">Object
+</span><a href="#local-6989586621679240780"><span class="hs-identifier hs-var">obj</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-354"></span><span>            </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621679240781"><span class="annot"><span class="annottext">extracted :: Map Text Value
+</span><a href="#local-6989586621679240781"><span class="hs-identifier hs-var hs-var">extracted</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Object -&gt; Map Text Value
+</span><a href="Haskemathesis.Stateful.Extract.html#extractIdFields"><span class="hs-identifier hs-var">extractIdFields</span></a></span><span> </span><span class="annot"><span class="annottext">Object
+</span><a href="#local-6989586621679240780"><span class="hs-identifier hs-var">obj</span></a></span><span>
+</span><span id="line-355"></span><span>                </span><span id="local-6989586621679240783"><span class="annot"><span class="annottext">newValues :: Map Text Value
+</span><a href="#local-6989586621679240783"><span class="hs-identifier hs-var hs-var">newValues</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Map Text Value -&gt; Map Text Value -&gt; Map Text Value
+forall k a. Ord k =&gt; Map k a -&gt; Map k a -&gt; Map k a
+</span><span class="hs-identifier hs-var">Map.union</span></span><span> </span><span class="annot"><span class="annottext">Map Text Value
+</span><a href="#local-6989586621679240781"><span class="hs-identifier hs-var">extracted</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">TestState -&gt; Map Text Value
+</span><a href="Haskemathesis.Stateful.Types.html#tsExtractedValues"><span class="hs-identifier hs-var">tsExtractedValues</span></a></span><span> </span><span class="annot"><span class="annottext">TestState
+</span><a href="#local-6989586621679240778"><span class="hs-identifier hs-var">state</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-356"></span><span>             </span><span class="hs-keyword">in</span><span> </span><span class="annot"><span class="annottext">TestState
+</span><a href="#local-6989586621679240778"><span class="hs-identifier hs-var">state</span></a></span><span class="hs-special">{</span><span class="annot"><a href="Haskemathesis.Stateful.Types.html#tsExtractedValues"><span class="hs-identifier hs-var">tsExtractedValues</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><a href="#local-6989586621679240783"><span class="hs-identifier hs-type">newValues</span></a></span><span class="hs-special">}</span><span>
+</span><span id="line-357"></span><span>        </span><span id="local-6989586621679240785"><span class="annot"><span class="annottext">Maybe Value
+</span><a href="#local-6989586621679240785"><span class="hs-identifier hs-var">_notObject</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-358"></span><span>            </span><span class="annot"><span class="annottext">TestState
+</span><a href="#local-6989586621679240778"><span class="hs-identifier hs-var">state</span></a></span><span>
+</span><span id="line-359"></span><span>
+</span><span id="line-360"></span><span class="annot"><span class="hs-comment">{- | Extract fields that look like identifiers from a JSON object.
+
+Identifies fields by name pattern:
+* Exactly &quot;id&quot; or &quot;_id&quot;
+* Ends with &quot;Id&quot; or &quot;_id&quot; (e.g., &quot;userId&quot;, &quot;user_id&quot;)
+-}</span></span><span>
+</span><span id="line-366"></span><span class="annot"><a href="Haskemathesis.Stateful.Extract.html#extractIdFields"><span class="hs-identifier hs-type">extractIdFields</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="file:///nix/store/bjx03k98335ijsml9dq303bj5ddk8a5f-aeson-2.2.3.0-doc/share/doc/aeson-2.2.3.0/html/src/Data.Aeson.Types.Internal.html#Object"><span class="hs-identifier hs-type">Aeson.Object</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Map</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span> </span><span class="annot"><a href="file:///nix/store/bjx03k98335ijsml9dq303bj5ddk8a5f-aeson-2.2.3.0-doc/share/doc/aeson-2.2.3.0/html/src/Data.Aeson.Types.Internal.html#Value"><span class="hs-identifier hs-type">Value</span></a></span><span>
+</span><span id="line-367"></span><span id="extractIdFields"><span class="annot"><span class="annottext">extractIdFields :: Object -&gt; Map Text Value
+</span><a href="Haskemathesis.Stateful.Extract.html#extractIdFields"><span class="hs-identifier hs-var hs-var">extractIdFields</span></a></span></span><span> </span><span id="local-6989586621679240786"><span class="annot"><span class="annottext">Object
+</span><a href="#local-6989586621679240786"><span class="hs-identifier hs-var">obj</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-368"></span><span>    </span><span class="annot"><span class="annottext">[(Text, Value)] -&gt; Map Text Value
+forall k a. Ord k =&gt; [(k, a)] -&gt; Map k a
+</span><span class="hs-identifier hs-var">Map.fromList</span></span><span>
+</span><span id="line-369"></span><span>        </span><span class="hs-special">[</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Key -&gt; Text
+</span><a href="file:///nix/store/bjx03k98335ijsml9dq303bj5ddk8a5f-aeson-2.2.3.0-doc/share/doc/aeson-2.2.3.0/html/src/Data.Aeson.Key.html#toText"><span class="hs-identifier hs-var">Key.toText</span></a></span><span> </span><span class="annot"><span class="annottext">Key
+</span><a href="#local-6989586621679240789"><span class="hs-identifier hs-var">k</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Value
+</span><a href="#local-6989586621679240790"><span class="hs-identifier hs-var">v</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-370"></span><span>        </span><span class="hs-glyph">|</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679240789"><span class="annot"><span class="annottext">Key
+</span><a href="#local-6989586621679240789"><span class="hs-identifier hs-var">k</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679240790"><span class="annot"><span class="annottext">Value
+</span><a href="#local-6989586621679240790"><span class="hs-identifier hs-var">v</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">Object -&gt; [(Key, Value)]
+forall v. KeyMap v -&gt; [(Key, v)]
+</span><a href="file:///nix/store/bjx03k98335ijsml9dq303bj5ddk8a5f-aeson-2.2.3.0-doc/share/doc/aeson-2.2.3.0/html/src/Data.Aeson.KeyMap.html#toList"><span class="hs-identifier hs-var">KeyMap.toList</span></a></span><span> </span><span class="annot"><span class="annottext">Object
+</span><a href="#local-6989586621679240786"><span class="hs-identifier hs-var">obj</span></a></span><span>
+</span><span id="line-371"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text -&gt; Bool
+</span><a href="#local-6989586621679240792"><span class="hs-identifier hs-var">isIdField</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Key -&gt; Text
+</span><a href="file:///nix/store/bjx03k98335ijsml9dq303bj5ddk8a5f-aeson-2.2.3.0-doc/share/doc/aeson-2.2.3.0/html/src/Data.Aeson.Key.html#toText"><span class="hs-identifier hs-var">Key.toText</span></a></span><span> </span><span class="annot"><span class="annottext">Key
+</span><a href="#local-6989586621679240789"><span class="hs-identifier hs-var">k</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-372"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Value -&gt; Bool
+</span><a href="#local-6989586621679240793"><span class="hs-identifier hs-var">isSimpleValue</span></a></span><span> </span><span class="annot"><span class="annottext">Value
+</span><a href="#local-6989586621679240790"><span class="hs-identifier hs-var">v</span></a></span><span>
+</span><span id="line-373"></span><span>        </span><span class="hs-special">]</span><span>
+</span><span id="line-374"></span><span>  </span><span class="hs-keyword">where</span><span>
+</span><span id="line-375"></span><span>    </span><span class="annot"><a href="#local-6989586621679240792"><span class="hs-identifier hs-type">isIdField</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span>
+</span><span id="line-376"></span><span>    </span><span id="local-6989586621679240792"><span class="annot"><span class="annottext">isIdField :: Text -&gt; Bool
+</span><a href="#local-6989586621679240792"><span class="hs-identifier hs-var hs-var">isIdField</span></a></span></span><span> </span><span id="local-6989586621679240794"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679240794"><span class="hs-identifier hs-var">name</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-377"></span><span>        </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679240794"><span class="hs-identifier hs-var">name</span></a></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Bool
+forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;id&quot;</span></span><span>
+</span><span id="line-378"></span><span>            </span><span class="annot"><span class="annottext">Bool -&gt; Bool -&gt; Bool
+</span><span class="hs-operator hs-var">||</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679240794"><span class="hs-identifier hs-var">name</span></a></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Bool
+forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;_id&quot;</span></span><span>
+</span><span id="line-379"></span><span>            </span><span class="annot"><span class="annottext">Bool -&gt; Bool -&gt; Bool
+</span><span class="hs-operator hs-var">||</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;Id&quot;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Bool
+</span><span class="hs-operator hs-var">`T.isSuffixOf`</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679240794"><span class="hs-identifier hs-var">name</span></a></span><span>
+</span><span id="line-380"></span><span>            </span><span class="annot"><span class="annottext">Bool -&gt; Bool -&gt; Bool
+</span><span class="hs-operator hs-var">||</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-string">&quot;_id&quot;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Bool
+</span><span class="hs-operator hs-var">`T.isSuffixOf`</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679240794"><span class="hs-identifier hs-var">name</span></a></span><span>
+</span><span id="line-381"></span><span>
+</span><span id="line-382"></span><span>    </span><span class="annot"><a href="#local-6989586621679240793"><span class="hs-identifier hs-type">isSimpleValue</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="file:///nix/store/bjx03k98335ijsml9dq303bj5ddk8a5f-aeson-2.2.3.0-doc/share/doc/aeson-2.2.3.0/html/src/Data.Aeson.Types.Internal.html#Value"><span class="hs-identifier hs-type">Value</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span>
+</span><span id="line-383"></span><span>    </span><span id="local-6989586621679240793"><span class="annot"><span class="annottext">isSimpleValue :: Value -&gt; Bool
+</span><a href="#local-6989586621679240793"><span class="hs-identifier hs-var hs-var">isSimpleValue</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="file:///nix/store/bjx03k98335ijsml9dq303bj5ddk8a5f-aeson-2.2.3.0-doc/share/doc/aeson-2.2.3.0/html/src/Data.Aeson.Types.Internal.html#String"><span class="hs-identifier hs-type">String</span></a></span><span> </span><span class="annot"><span class="annottext">Text
+</span><span class="hs-identifier">_</span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">True</span></span><span>
+</span><span id="line-384"></span><span>    </span><span class="annot"><a href="#local-6989586621679240793"><span class="hs-identifier hs-var">isSimpleValue</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="file:///nix/store/bjx03k98335ijsml9dq303bj5ddk8a5f-aeson-2.2.3.0-doc/share/doc/aeson-2.2.3.0/html/src/Data.Aeson.Types.Internal.html#Number"><span class="hs-identifier hs-type">Number</span></a></span><span> </span><span class="annot"><span class="annottext">Scientific
+</span><span class="hs-identifier">_</span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">True</span></span><span>
+</span><span id="line-385"></span><span>    </span><span class="annot"><a href="#local-6989586621679240793"><span class="hs-identifier hs-var">isSimpleValue</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="file:///nix/store/bjx03k98335ijsml9dq303bj5ddk8a5f-aeson-2.2.3.0-doc/share/doc/aeson-2.2.3.0/html/src/Data.Aeson.Types.Internal.html#Bool"><span class="hs-identifier hs-type">Bool</span></a></span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier">_</span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">True</span></span><span>
+</span><span id="line-386"></span><span>    </span><span class="annot"><a href="#local-6989586621679240793"><span class="hs-identifier hs-var">isSimpleValue</span></a></span><span> </span><span id="local-6989586621679240799"><span class="annot"><span class="annottext">Value
+</span><a href="#local-6989586621679240799"><span class="hs-identifier hs-var">_complex</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">False</span></span><span>
+</span><span id="line-387"></span></pre></body></html>
