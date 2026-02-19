@@ -84,11 +84,11 @@ spec = specForExecutor (Just &quot;http://localhost:8080&quot;) checks myExecuto
 </span><span id="line-84"></span><span>    </span><span class="annot"><a href="file:///nix/store/f98mchpydblqajbgb2szi2ff2a54j5f3-hspec-core-2.11.16-doc/share/doc/hspec-core-2.11.16/html/src/Test.Hspec.Core.Spec.Monad.html#Spec"><span class="hs-identifier hs-type">Spec</span></a></span><span>
 </span><span id="line-85"></span><span id="specForExecutor"><span class="annot"><span class="annottext">specForExecutor :: Maybe BaseUrl
 -&gt; [Check] -&gt; ExecutorWithTimeout -&gt; [ResolvedOperation] -&gt; Spec
-</span><a href="Haskemathesis.Integration.Hspec.html#specForExecutor"><span class="hs-identifier hs-var hs-var">specForExecutor</span></a></span></span><span> </span><span id="local-6989586621679224390"><span class="annot"><span class="annottext">Maybe BaseUrl
-</span><a href="#local-6989586621679224390"><span class="hs-identifier hs-var">mBase</span></a></span></span><span> </span><span id="local-6989586621679224391"><span class="annot"><span class="annottext">[Check]
-</span><a href="#local-6989586621679224391"><span class="hs-identifier hs-var">checks</span></a></span></span><span> </span><span id="local-6989586621679224392"><span class="annot"><span class="annottext">ExecutorWithTimeout
-</span><a href="#local-6989586621679224392"><span class="hs-identifier hs-var">execute</span></a></span></span><span> </span><span id="local-6989586621679224393"><span class="annot"><span class="annottext">[ResolvedOperation]
-</span><a href="#local-6989586621679224393"><span class="hs-identifier hs-var">ops</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><a href="Haskemathesis.Integration.Hspec.html#specForExecutor"><span class="hs-identifier hs-var hs-var">specForExecutor</span></a></span></span><span> </span><span id="local-6989586621679224381"><span class="annot"><span class="annottext">Maybe BaseUrl
+</span><a href="#local-6989586621679224381"><span class="hs-identifier hs-var">mBase</span></a></span></span><span> </span><span id="local-6989586621679224382"><span class="annot"><span class="annottext">[Check]
+</span><a href="#local-6989586621679224382"><span class="hs-identifier hs-var">checks</span></a></span></span><span> </span><span id="local-6989586621679224383"><span class="annot"><span class="annottext">ExecutorWithTimeout
+</span><a href="#local-6989586621679224383"><span class="hs-identifier hs-var">execute</span></a></span></span><span> </span><span id="local-6989586621679224384"><span class="annot"><span class="annottext">[ResolvedOperation]
+</span><a href="#local-6989586621679224384"><span class="hs-identifier hs-var">ops</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
 </span><span id="line-86"></span><span>    </span><span class="annot"><span class="annottext">String -&gt; Spec -&gt; Spec
 forall a. HasCallStack =&gt; String -&gt; SpecWith a -&gt; SpecWith a
 </span><a href="file:///nix/store/f98mchpydblqajbgb2szi2ff2a54j5f3-hspec-core-2.11.16-doc/share/doc/hspec-core-2.11.16/html/src/Test.Hspec.Core.Spec.html#describe"><span class="hs-identifier hs-var">describe</span></a></span><span> </span><span class="annot"><span class="annottext">String
@@ -102,10 +102,10 @@ forall (t :: * -&gt; *) (m :: * -&gt; *) a b.
 </span><span class="hs-identifier hs-var">mapM_</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Maybe BaseUrl
 -&gt; [Check] -&gt; ExecutorWithTimeout -&gt; ResolvedOperation -&gt; Spec
 </span><a href="Haskemathesis.Integration.Hspec.html#specForOperation"><span class="hs-identifier hs-var">specForOperation</span></a></span><span> </span><span class="annot"><span class="annottext">Maybe BaseUrl
-</span><a href="#local-6989586621679224390"><span class="hs-identifier hs-var">mBase</span></a></span><span> </span><span class="annot"><span class="annottext">[Check]
-</span><a href="#local-6989586621679224391"><span class="hs-identifier hs-var">checks</span></a></span><span> </span><span class="annot"><span class="annottext">ExecutorWithTimeout
-</span><a href="#local-6989586621679224392"><span class="hs-identifier hs-var">execute</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[ResolvedOperation]
-</span><a href="#local-6989586621679224393"><span class="hs-identifier hs-var">ops</span></a></span><span>
+</span><a href="#local-6989586621679224381"><span class="hs-identifier hs-var">mBase</span></a></span><span> </span><span class="annot"><span class="annottext">[Check]
+</span><a href="#local-6989586621679224382"><span class="hs-identifier hs-var">checks</span></a></span><span> </span><span class="annot"><span class="annottext">ExecutorWithTimeout
+</span><a href="#local-6989586621679224383"><span class="hs-identifier hs-var">execute</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[ResolvedOperation]
+</span><a href="#local-6989586621679224384"><span class="hs-identifier hs-var">ops</span></a></span><span>
 </span><span id="line-88"></span><span>
 </span><span id="line-89"></span><span class="annot"><span class="hs-comment">{- | Create an Hspec 'Spec' for a WAI 'Application'.
 
@@ -135,20 +135,20 @@ spec = specForApp Nothing standardChecks openApiSpec myApp
 </span><span id="line-114"></span><span>    </span><span class="annot"><a href="file:///nix/store/lwc9snjq2izyxa0840h8rp6r9f5za4cc-wai-3.2.4-doc/share/doc/wai-3.2.4/html/src/Network.Wai.html#Application"><span class="hs-identifier hs-type">Application</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
 </span><span id="line-115"></span><span>    </span><span class="annot"><a href="file:///nix/store/f98mchpydblqajbgb2szi2ff2a54j5f3-hspec-core-2.11.16-doc/share/doc/hspec-core-2.11.16/html/src/Test.Hspec.Core.Spec.Monad.html#Spec"><span class="hs-identifier hs-type">Spec</span></a></span><span>
 </span><span id="line-116"></span><span id="specForApp"><span class="annot"><span class="annottext">specForApp :: Maybe BaseUrl -&gt; [Check] -&gt; OpenApi -&gt; Application -&gt; Spec
-</span><a href="Haskemathesis.Integration.Hspec.html#specForApp"><span class="hs-identifier hs-var hs-var">specForApp</span></a></span></span><span> </span><span id="local-6989586621679224396"><span class="annot"><span class="annottext">Maybe BaseUrl
-</span><a href="#local-6989586621679224396"><span class="hs-identifier hs-var">mBase</span></a></span></span><span> </span><span id="local-6989586621679224397"><span class="annot"><span class="annottext">[Check]
-</span><a href="#local-6989586621679224397"><span class="hs-identifier hs-var">checks</span></a></span></span><span> </span><span id="local-6989586621679224398"><span class="annot"><span class="annottext">OpenApi
-</span><a href="#local-6989586621679224398"><span class="hs-identifier hs-var">openApi</span></a></span></span><span> </span><span id="local-6989586621679224399"><span class="annot"><span class="annottext">Application
-</span><a href="#local-6989586621679224399"><span class="hs-identifier hs-var">app</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><a href="Haskemathesis.Integration.Hspec.html#specForApp"><span class="hs-identifier hs-var hs-var">specForApp</span></a></span></span><span> </span><span id="local-6989586621679224387"><span class="annot"><span class="annottext">Maybe BaseUrl
+</span><a href="#local-6989586621679224387"><span class="hs-identifier hs-var">mBase</span></a></span></span><span> </span><span id="local-6989586621679224388"><span class="annot"><span class="annottext">[Check]
+</span><a href="#local-6989586621679224388"><span class="hs-identifier hs-var">checks</span></a></span></span><span> </span><span id="local-6989586621679224389"><span class="annot"><span class="annottext">OpenApi
+</span><a href="#local-6989586621679224389"><span class="hs-identifier hs-var">openApi</span></a></span></span><span> </span><span id="local-6989586621679224390"><span class="annot"><span class="annottext">Application
+</span><a href="#local-6989586621679224390"><span class="hs-identifier hs-var">app</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
 </span><span id="line-117"></span><span>    </span><span class="annot"><span class="annottext">Maybe BaseUrl
 -&gt; [Check] -&gt; ExecutorWithTimeout -&gt; [ResolvedOperation] -&gt; Spec
 </span><a href="Haskemathesis.Integration.Hspec.html#specForExecutor"><span class="hs-identifier hs-var">specForExecutor</span></a></span><span> </span><span class="annot"><span class="annottext">Maybe BaseUrl
-</span><a href="#local-6989586621679224396"><span class="hs-identifier hs-var">mBase</span></a></span><span> </span><span class="annot"><span class="annottext">[Check]
-</span><a href="#local-6989586621679224397"><span class="hs-identifier hs-var">checks</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Application -&gt; ExecutorWithTimeout
+</span><a href="#local-6989586621679224387"><span class="hs-identifier hs-var">mBase</span></a></span><span> </span><span class="annot"><span class="annottext">[Check]
+</span><a href="#local-6989586621679224388"><span class="hs-identifier hs-var">checks</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Application -&gt; ExecutorWithTimeout
 </span><a href="Haskemathesis.Execute.Wai.html#executeWaiWithTimeout"><span class="hs-identifier hs-var">executeWaiWithTimeout</span></a></span><span> </span><span class="annot"><span class="annottext">Application
-</span><a href="#local-6989586621679224399"><span class="hs-identifier hs-var">app</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">OpenApi -&gt; [ResolvedOperation]
+</span><a href="#local-6989586621679224390"><span class="hs-identifier hs-var">app</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">OpenApi -&gt; [ResolvedOperation]
 </span><a href="Haskemathesis.OpenApi.Resolve.html#resolveOperations"><span class="hs-identifier hs-var">resolveOperations</span></a></span><span> </span><span class="annot"><span class="annottext">OpenApi
-</span><a href="#local-6989586621679224398"><span class="hs-identifier hs-var">openApi</span></a></span><span class="hs-special">)</span><span>
+</span><a href="#local-6989586621679224389"><span class="hs-identifier hs-var">openApi</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-118"></span><span>
 </span><span id="line-119"></span><span class="annot"><span class="hs-comment">{- | Create an Hspec 'Spec' with full configuration and custom executor.
 
@@ -178,11 +178,11 @@ spec = specForExecutorWithConfig openApiSpec config myExecutor ops
 </span><span id="line-144"></span><span>    </span><span class="annot"><a href="file:///nix/store/f98mchpydblqajbgb2szi2ff2a54j5f3-hspec-core-2.11.16-doc/share/doc/hspec-core-2.11.16/html/src/Test.Hspec.Core.Spec.Monad.html#Spec"><span class="hs-identifier hs-type">Spec</span></a></span><span>
 </span><span id="line-145"></span><span id="specForExecutorWithConfig"><span class="annot"><span class="annottext">specForExecutorWithConfig :: OpenApi
 -&gt; TestConfig -&gt; ExecutorWithTimeout -&gt; [ResolvedOperation] -&gt; Spec
-</span><a href="Haskemathesis.Integration.Hspec.html#specForExecutorWithConfig"><span class="hs-identifier hs-var hs-var">specForExecutorWithConfig</span></a></span></span><span> </span><span id="local-6989586621679224401"><span class="annot"><span class="annottext">OpenApi
-</span><a href="#local-6989586621679224401"><span class="hs-identifier hs-var">openApi</span></a></span></span><span> </span><span id="local-6989586621679224402"><span class="annot"><span class="annottext">TestConfig
-</span><a href="#local-6989586621679224402"><span class="hs-identifier hs-var">config</span></a></span></span><span> </span><span id="local-6989586621679224403"><span class="annot"><span class="annottext">ExecutorWithTimeout
-</span><a href="#local-6989586621679224403"><span class="hs-identifier hs-var">execute</span></a></span></span><span> </span><span id="local-6989586621679224404"><span class="annot"><span class="annottext">[ResolvedOperation]
-</span><a href="#local-6989586621679224404"><span class="hs-identifier hs-var">ops</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><a href="Haskemathesis.Integration.Hspec.html#specForExecutorWithConfig"><span class="hs-identifier hs-var hs-var">specForExecutorWithConfig</span></a></span></span><span> </span><span id="local-6989586621679224392"><span class="annot"><span class="annottext">OpenApi
+</span><a href="#local-6989586621679224392"><span class="hs-identifier hs-var">openApi</span></a></span></span><span> </span><span id="local-6989586621679224393"><span class="annot"><span class="annottext">TestConfig
+</span><a href="#local-6989586621679224393"><span class="hs-identifier hs-var">config</span></a></span></span><span> </span><span id="local-6989586621679224394"><span class="annot"><span class="annottext">ExecutorWithTimeout
+</span><a href="#local-6989586621679224394"><span class="hs-identifier hs-var">execute</span></a></span></span><span> </span><span id="local-6989586621679224395"><span class="annot"><span class="annottext">[ResolvedOperation]
+</span><a href="#local-6989586621679224395"><span class="hs-identifier hs-var">ops</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
 </span><span id="line-146"></span><span>    </span><span class="annot"><span class="annottext">String -&gt; Spec -&gt; Spec
 forall a. HasCallStack =&gt; String -&gt; SpecWith a -&gt; SpecWith a
 </span><a href="file:///nix/store/f98mchpydblqajbgb2szi2ff2a54j5f3-hspec-core-2.11.16-doc/share/doc/hspec-core-2.11.16/html/src/Test.Hspec.Core.Spec.html#describe"><span class="hs-identifier hs-var">describe</span></a></span><span> </span><span class="annot"><span class="annottext">String
@@ -196,10 +196,10 @@ forall (t :: * -&gt; *) (m :: * -&gt; *) a b.
 </span><span class="hs-identifier hs-var">mapM_</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">OpenApi
 -&gt; TestConfig -&gt; ExecutorWithTimeout -&gt; ResolvedOperation -&gt; Spec
 </span><a href="Haskemathesis.Integration.Hspec.html#specForOperationWithConfig"><span class="hs-identifier hs-var">specForOperationWithConfig</span></a></span><span> </span><span class="annot"><span class="annottext">OpenApi
-</span><a href="#local-6989586621679224401"><span class="hs-identifier hs-var">openApi</span></a></span><span> </span><span class="annot"><span class="annottext">TestConfig
-</span><a href="#local-6989586621679224402"><span class="hs-identifier hs-var">config</span></a></span><span> </span><span class="annot"><span class="annottext">ExecutorWithTimeout
-</span><a href="#local-6989586621679224403"><span class="hs-identifier hs-var">execute</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[ResolvedOperation]
-</span><a href="#local-6989586621679224404"><span class="hs-identifier hs-var">ops</span></a></span><span>
+</span><a href="#local-6989586621679224392"><span class="hs-identifier hs-var">openApi</span></a></span><span> </span><span class="annot"><span class="annottext">TestConfig
+</span><a href="#local-6989586621679224393"><span class="hs-identifier hs-var">config</span></a></span><span> </span><span class="annot"><span class="annottext">ExecutorWithTimeout
+</span><a href="#local-6989586621679224394"><span class="hs-identifier hs-var">execute</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[ResolvedOperation]
+</span><a href="#local-6989586621679224395"><span class="hs-identifier hs-var">ops</span></a></span><span>
 </span><span id="line-148"></span><span>
 </span><span id="line-149"></span><span class="annot"><span class="hs-comment">{- | Create an Hspec 'Spec' for a WAI 'Application' with full configuration.
 
@@ -227,19 +227,19 @@ spec = specForAppWithConfig defaultConfig openApiSpec myApp
 </span><span id="line-172"></span><span>    </span><span class="annot"><a href="file:///nix/store/lwc9snjq2izyxa0840h8rp6r9f5za4cc-wai-3.2.4-doc/share/doc/wai-3.2.4/html/src/Network.Wai.html#Application"><span class="hs-identifier hs-type">Application</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
 </span><span id="line-173"></span><span>    </span><span class="annot"><a href="file:///nix/store/f98mchpydblqajbgb2szi2ff2a54j5f3-hspec-core-2.11.16-doc/share/doc/hspec-core-2.11.16/html/src/Test.Hspec.Core.Spec.Monad.html#Spec"><span class="hs-identifier hs-type">Spec</span></a></span><span>
 </span><span id="line-174"></span><span id="specForAppWithConfig"><span class="annot"><span class="annottext">specForAppWithConfig :: TestConfig -&gt; OpenApi -&gt; Application -&gt; Spec
-</span><a href="Haskemathesis.Integration.Hspec.html#specForAppWithConfig"><span class="hs-identifier hs-var hs-var">specForAppWithConfig</span></a></span></span><span> </span><span id="local-6989586621679224406"><span class="annot"><span class="annottext">TestConfig
-</span><a href="#local-6989586621679224406"><span class="hs-identifier hs-var">config</span></a></span></span><span> </span><span id="local-6989586621679224407"><span class="annot"><span class="annottext">OpenApi
-</span><a href="#local-6989586621679224407"><span class="hs-identifier hs-var">openApi</span></a></span></span><span> </span><span id="local-6989586621679224408"><span class="annot"><span class="annottext">Application
-</span><a href="#local-6989586621679224408"><span class="hs-identifier hs-var">app</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><a href="Haskemathesis.Integration.Hspec.html#specForAppWithConfig"><span class="hs-identifier hs-var hs-var">specForAppWithConfig</span></a></span></span><span> </span><span id="local-6989586621679224397"><span class="annot"><span class="annottext">TestConfig
+</span><a href="#local-6989586621679224397"><span class="hs-identifier hs-var">config</span></a></span></span><span> </span><span id="local-6989586621679224398"><span class="annot"><span class="annottext">OpenApi
+</span><a href="#local-6989586621679224398"><span class="hs-identifier hs-var">openApi</span></a></span></span><span> </span><span id="local-6989586621679224399"><span class="annot"><span class="annottext">Application
+</span><a href="#local-6989586621679224399"><span class="hs-identifier hs-var">app</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
 </span><span id="line-175"></span><span>    </span><span class="annot"><span class="annottext">OpenApi
 -&gt; TestConfig -&gt; ExecutorWithTimeout -&gt; [ResolvedOperation] -&gt; Spec
 </span><a href="Haskemathesis.Integration.Hspec.html#specForExecutorWithConfig"><span class="hs-identifier hs-var">specForExecutorWithConfig</span></a></span><span> </span><span class="annot"><span class="annottext">OpenApi
-</span><a href="#local-6989586621679224407"><span class="hs-identifier hs-var">openApi</span></a></span><span> </span><span class="annot"><span class="annottext">TestConfig
-</span><a href="#local-6989586621679224406"><span class="hs-identifier hs-var">config</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Application -&gt; ExecutorWithTimeout
+</span><a href="#local-6989586621679224398"><span class="hs-identifier hs-var">openApi</span></a></span><span> </span><span class="annot"><span class="annottext">TestConfig
+</span><a href="#local-6989586621679224397"><span class="hs-identifier hs-var">config</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Application -&gt; ExecutorWithTimeout
 </span><a href="Haskemathesis.Execute.Wai.html#executeWaiWithTimeout"><span class="hs-identifier hs-var">executeWaiWithTimeout</span></a></span><span> </span><span class="annot"><span class="annottext">Application
-</span><a href="#local-6989586621679224408"><span class="hs-identifier hs-var">app</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">OpenApi -&gt; [ResolvedOperation]
+</span><a href="#local-6989586621679224399"><span class="hs-identifier hs-var">app</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">OpenApi -&gt; [ResolvedOperation]
 </span><a href="Haskemathesis.OpenApi.Resolve.html#resolveOperations"><span class="hs-identifier hs-var">resolveOperations</span></a></span><span> </span><span class="annot"><span class="annottext">OpenApi
-</span><a href="#local-6989586621679224407"><span class="hs-identifier hs-var">openApi</span></a></span><span class="hs-special">)</span><span>
+</span><a href="#local-6989586621679224398"><span class="hs-identifier hs-var">openApi</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-176"></span><span>
 </span><span id="line-177"></span><span class="annot"><span class="hs-comment">{- | Create an Hspec 'Spec' for testing a remote HTTP server.
 
@@ -272,24 +272,24 @@ spec = do
 </span><span id="line-205"></span><span>    </span><span class="annot"><a href="Haskemathesis.Execute.Types.html#BaseUrl"><span class="hs-identifier hs-type">BaseUrl</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
 </span><span id="line-206"></span><span>    </span><span class="annot"><a href="file:///nix/store/f98mchpydblqajbgb2szi2ff2a54j5f3-hspec-core-2.11.16-doc/share/doc/hspec-core-2.11.16/html/src/Test.Hspec.Core.Spec.Monad.html#Spec"><span class="hs-identifier hs-type">Spec</span></a></span><span>
 </span><span id="line-207"></span><span id="specForUrl"><span class="annot"><span class="annottext">specForUrl :: TestConfig -&gt; OpenApi -&gt; Manager -&gt; BaseUrl -&gt; Spec
-</span><a href="Haskemathesis.Integration.Hspec.html#specForUrl"><span class="hs-identifier hs-var hs-var">specForUrl</span></a></span></span><span> </span><span id="local-6989586621679224409"><span class="annot"><span class="annottext">TestConfig
-</span><a href="#local-6989586621679224409"><span class="hs-identifier hs-var">config</span></a></span></span><span> </span><span id="local-6989586621679224410"><span class="annot"><span class="annottext">OpenApi
-</span><a href="#local-6989586621679224410"><span class="hs-identifier hs-var">openApi</span></a></span></span><span> </span><span id="local-6989586621679224411"><span class="annot"><span class="annottext">Manager
-</span><a href="#local-6989586621679224411"><span class="hs-identifier hs-var">manager</span></a></span></span><span> </span><span id="local-6989586621679224412"><span class="annot"><span class="annottext">BaseUrl
-</span><a href="#local-6989586621679224412"><span class="hs-identifier hs-var">baseUrl</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
-</span><span id="line-208"></span><span>    </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621679224413"><span class="annot"><span class="annottext">config' :: TestConfig
-</span><a href="#local-6989586621679224413"><span class="hs-identifier hs-var hs-var">config'</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">TestConfig
-</span><a href="#local-6989586621679224409"><span class="hs-identifier hs-var">config</span></a></span><span class="hs-special">{</span><span class="annot"><a href="Haskemathesis.Config.html#tcBaseUrl"><span class="hs-identifier hs-var">tcBaseUrl</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span class="annot"><a href="#local-6989586621679224412"><span class="hs-identifier hs-type">baseUrl</span></a></span><span class="hs-special">}</span><span>
+</span><a href="Haskemathesis.Integration.Hspec.html#specForUrl"><span class="hs-identifier hs-var hs-var">specForUrl</span></a></span></span><span> </span><span id="local-6989586621679224400"><span class="annot"><span class="annottext">TestConfig
+</span><a href="#local-6989586621679224400"><span class="hs-identifier hs-var">config</span></a></span></span><span> </span><span id="local-6989586621679224401"><span class="annot"><span class="annottext">OpenApi
+</span><a href="#local-6989586621679224401"><span class="hs-identifier hs-var">openApi</span></a></span></span><span> </span><span id="local-6989586621679224402"><span class="annot"><span class="annottext">Manager
+</span><a href="#local-6989586621679224402"><span class="hs-identifier hs-var">manager</span></a></span></span><span> </span><span id="local-6989586621679224403"><span class="annot"><span class="annottext">BaseUrl
+</span><a href="#local-6989586621679224403"><span class="hs-identifier hs-var">baseUrl</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-208"></span><span>    </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621679224404"><span class="annot"><span class="annottext">config' :: TestConfig
+</span><a href="#local-6989586621679224404"><span class="hs-identifier hs-var hs-var">config'</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">TestConfig
+</span><a href="#local-6989586621679224400"><span class="hs-identifier hs-var">config</span></a></span><span class="hs-special">{</span><span class="annot"><a href="Haskemathesis.Config.html#tcBaseUrl"><span class="hs-identifier hs-var">tcBaseUrl</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span class="annot"><a href="#local-6989586621679224403"><span class="hs-identifier hs-type">baseUrl</span></a></span><span class="hs-special">}</span><span>
 </span><span id="line-209"></span><span>     </span><span class="hs-keyword">in</span><span> </span><span class="annot"><span class="annottext">OpenApi
 -&gt; TestConfig -&gt; ExecutorWithTimeout -&gt; [ResolvedOperation] -&gt; Spec
 </span><a href="Haskemathesis.Integration.Hspec.html#specForExecutorWithConfig"><span class="hs-identifier hs-var">specForExecutorWithConfig</span></a></span><span> </span><span class="annot"><span class="annottext">OpenApi
-</span><a href="#local-6989586621679224410"><span class="hs-identifier hs-var">openApi</span></a></span><span> </span><span class="annot"><span class="annottext">TestConfig
-</span><a href="#local-6989586621679224413"><span class="hs-identifier hs-var">config'</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Manager -&gt; BaseUrl -&gt; ExecutorWithTimeout
+</span><a href="#local-6989586621679224401"><span class="hs-identifier hs-var">openApi</span></a></span><span> </span><span class="annot"><span class="annottext">TestConfig
+</span><a href="#local-6989586621679224404"><span class="hs-identifier hs-var">config'</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Manager -&gt; BaseUrl -&gt; ExecutorWithTimeout
 </span><a href="Haskemathesis.Execute.Http.html#executeHttpWithTimeout"><span class="hs-identifier hs-var">executeHttpWithTimeout</span></a></span><span> </span><span class="annot"><span class="annottext">Manager
-</span><a href="#local-6989586621679224411"><span class="hs-identifier hs-var">manager</span></a></span><span> </span><span class="annot"><span class="annottext">BaseUrl
-</span><a href="#local-6989586621679224412"><span class="hs-identifier hs-var">baseUrl</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">OpenApi -&gt; [ResolvedOperation]
+</span><a href="#local-6989586621679224402"><span class="hs-identifier hs-var">manager</span></a></span><span> </span><span class="annot"><span class="annottext">BaseUrl
+</span><a href="#local-6989586621679224403"><span class="hs-identifier hs-var">baseUrl</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">OpenApi -&gt; [ResolvedOperation]
 </span><a href="Haskemathesis.OpenApi.Resolve.html#resolveOperations"><span class="hs-identifier hs-var">resolveOperations</span></a></span><span> </span><span class="annot"><span class="annottext">OpenApi
-</span><a href="#local-6989586621679224410"><span class="hs-identifier hs-var">openApi</span></a></span><span class="hs-special">)</span><span>
+</span><a href="#local-6989586621679224401"><span class="hs-identifier hs-var">openApi</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-210"></span><span>
 </span><span id="line-211"></span><span class="annot"><span class="hs-comment">{- | Create an Hspec 'Spec' for negative testing with a custom executor.
 
@@ -319,21 +319,21 @@ validation and error handling.
 </span><span id="line-236"></span><span>    </span><span class="annot"><a href="file:///nix/store/f98mchpydblqajbgb2szi2ff2a54j5f3-hspec-core-2.11.16-doc/share/doc/hspec-core-2.11.16/html/src/Test.Hspec.Core.Spec.Monad.html#Spec"><span class="hs-identifier hs-type">Spec</span></a></span><span>
 </span><span id="line-237"></span><span id="specForExecutorNegative"><span class="annot"><span class="annottext">specForExecutorNegative :: OpenApi
 -&gt; TestConfig -&gt; ExecutorWithTimeout -&gt; [ResolvedOperation] -&gt; Spec
-</span><a href="Haskemathesis.Integration.Hspec.html#specForExecutorNegative"><span class="hs-identifier hs-var hs-var">specForExecutorNegative</span></a></span></span><span> </span><span id="local-6989586621679224415"><span class="annot"><span class="annottext">OpenApi
-</span><a href="#local-6989586621679224415"><span class="hs-identifier hs-var">openApi</span></a></span></span><span> </span><span id="local-6989586621679224416"><span class="annot"><span class="annottext">TestConfig
-</span><a href="#local-6989586621679224416"><span class="hs-identifier hs-var">config</span></a></span></span><span> </span><span id="local-6989586621679224417"><span class="annot"><span class="annottext">ExecutorWithTimeout
-</span><a href="#local-6989586621679224417"><span class="hs-identifier hs-var">execute</span></a></span></span><span> </span><span id="local-6989586621679224418"><span class="annot"><span class="annottext">[ResolvedOperation]
-</span><a href="#local-6989586621679224418"><span class="hs-identifier hs-var">ops</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
-</span><span id="line-238"></span><span>    </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621679224419"><span class="annot"><span class="annottext">config' :: TestConfig
-</span><a href="#local-6989586621679224419"><span class="hs-identifier hs-var hs-var">config'</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">TestConfig
-</span><a href="#local-6989586621679224416"><span class="hs-identifier hs-var">config</span></a></span><span class="hs-special">{</span><span class="annot"><a href="Haskemathesis.Config.html#tcNegativeTesting"><span class="hs-identifier hs-var">tcNegativeTesting</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="hs-identifier hs-type">True</span></span><span class="hs-special">}</span><span>
+</span><a href="Haskemathesis.Integration.Hspec.html#specForExecutorNegative"><span class="hs-identifier hs-var hs-var">specForExecutorNegative</span></a></span></span><span> </span><span id="local-6989586621679224406"><span class="annot"><span class="annottext">OpenApi
+</span><a href="#local-6989586621679224406"><span class="hs-identifier hs-var">openApi</span></a></span></span><span> </span><span id="local-6989586621679224407"><span class="annot"><span class="annottext">TestConfig
+</span><a href="#local-6989586621679224407"><span class="hs-identifier hs-var">config</span></a></span></span><span> </span><span id="local-6989586621679224408"><span class="annot"><span class="annottext">ExecutorWithTimeout
+</span><a href="#local-6989586621679224408"><span class="hs-identifier hs-var">execute</span></a></span></span><span> </span><span id="local-6989586621679224409"><span class="annot"><span class="annottext">[ResolvedOperation]
+</span><a href="#local-6989586621679224409"><span class="hs-identifier hs-var">ops</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-238"></span><span>    </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621679224410"><span class="annot"><span class="annottext">config' :: TestConfig
+</span><a href="#local-6989586621679224410"><span class="hs-identifier hs-var hs-var">config'</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">TestConfig
+</span><a href="#local-6989586621679224407"><span class="hs-identifier hs-var">config</span></a></span><span class="hs-special">{</span><span class="annot"><a href="Haskemathesis.Config.html#tcNegativeTesting"><span class="hs-identifier hs-var">tcNegativeTesting</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="hs-identifier hs-type">True</span></span><span class="hs-special">}</span><span>
 </span><span id="line-239"></span><span>     </span><span class="hs-keyword">in</span><span> </span><span class="annot"><span class="annottext">OpenApi
 -&gt; TestConfig -&gt; ExecutorWithTimeout -&gt; [ResolvedOperation] -&gt; Spec
 </span><a href="Haskemathesis.Integration.Hspec.html#specForExecutorWithConfig"><span class="hs-identifier hs-var">specForExecutorWithConfig</span></a></span><span> </span><span class="annot"><span class="annottext">OpenApi
-</span><a href="#local-6989586621679224415"><span class="hs-identifier hs-var">openApi</span></a></span><span> </span><span class="annot"><span class="annottext">TestConfig
-</span><a href="#local-6989586621679224419"><span class="hs-identifier hs-var">config'</span></a></span><span> </span><span class="annot"><span class="annottext">ExecutorWithTimeout
-</span><a href="#local-6989586621679224417"><span class="hs-identifier hs-var">execute</span></a></span><span> </span><span class="annot"><span class="annottext">[ResolvedOperation]
-</span><a href="#local-6989586621679224418"><span class="hs-identifier hs-var">ops</span></a></span><span>
+</span><a href="#local-6989586621679224406"><span class="hs-identifier hs-var">openApi</span></a></span><span> </span><span class="annot"><span class="annottext">TestConfig
+</span><a href="#local-6989586621679224410"><span class="hs-identifier hs-var">config'</span></a></span><span> </span><span class="annot"><span class="annottext">ExecutorWithTimeout
+</span><a href="#local-6989586621679224408"><span class="hs-identifier hs-var">execute</span></a></span><span> </span><span class="annot"><span class="annottext">[ResolvedOperation]
+</span><a href="#local-6989586621679224409"><span class="hs-identifier hs-var">ops</span></a></span><span>
 </span><span id="line-240"></span><span>
 </span><span id="line-241"></span><span class="annot"><span class="hs-comment">{- | Create an Hspec 'Spec' for negative testing of a WAI 'Application'.
 
@@ -359,19 +359,19 @@ negativeSpec = specForAppNegative defaultConfig openApiSpec myApp
 </span><span id="line-262"></span><span>    </span><span class="annot"><a href="file:///nix/store/lwc9snjq2izyxa0840h8rp6r9f5za4cc-wai-3.2.4-doc/share/doc/wai-3.2.4/html/src/Network.Wai.html#Application"><span class="hs-identifier hs-type">Application</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
 </span><span id="line-263"></span><span>    </span><span class="annot"><a href="file:///nix/store/f98mchpydblqajbgb2szi2ff2a54j5f3-hspec-core-2.11.16-doc/share/doc/hspec-core-2.11.16/html/src/Test.Hspec.Core.Spec.Monad.html#Spec"><span class="hs-identifier hs-type">Spec</span></a></span><span>
 </span><span id="line-264"></span><span id="specForAppNegative"><span class="annot"><span class="annottext">specForAppNegative :: TestConfig -&gt; OpenApi -&gt; Application -&gt; Spec
-</span><a href="Haskemathesis.Integration.Hspec.html#specForAppNegative"><span class="hs-identifier hs-var hs-var">specForAppNegative</span></a></span></span><span> </span><span id="local-6989586621679224421"><span class="annot"><span class="annottext">TestConfig
-</span><a href="#local-6989586621679224421"><span class="hs-identifier hs-var">config</span></a></span></span><span> </span><span id="local-6989586621679224422"><span class="annot"><span class="annottext">OpenApi
-</span><a href="#local-6989586621679224422"><span class="hs-identifier hs-var">openApi</span></a></span></span><span> </span><span id="local-6989586621679224423"><span class="annot"><span class="annottext">Application
-</span><a href="#local-6989586621679224423"><span class="hs-identifier hs-var">app</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><a href="Haskemathesis.Integration.Hspec.html#specForAppNegative"><span class="hs-identifier hs-var hs-var">specForAppNegative</span></a></span></span><span> </span><span id="local-6989586621679224412"><span class="annot"><span class="annottext">TestConfig
+</span><a href="#local-6989586621679224412"><span class="hs-identifier hs-var">config</span></a></span></span><span> </span><span id="local-6989586621679224413"><span class="annot"><span class="annottext">OpenApi
+</span><a href="#local-6989586621679224413"><span class="hs-identifier hs-var">openApi</span></a></span></span><span> </span><span id="local-6989586621679224414"><span class="annot"><span class="annottext">Application
+</span><a href="#local-6989586621679224414"><span class="hs-identifier hs-var">app</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
 </span><span id="line-265"></span><span>    </span><span class="annot"><span class="annottext">OpenApi
 -&gt; TestConfig -&gt; ExecutorWithTimeout -&gt; [ResolvedOperation] -&gt; Spec
 </span><a href="Haskemathesis.Integration.Hspec.html#specForExecutorNegative"><span class="hs-identifier hs-var">specForExecutorNegative</span></a></span><span> </span><span class="annot"><span class="annottext">OpenApi
-</span><a href="#local-6989586621679224422"><span class="hs-identifier hs-var">openApi</span></a></span><span> </span><span class="annot"><span class="annottext">TestConfig
-</span><a href="#local-6989586621679224421"><span class="hs-identifier hs-var">config</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Application -&gt; ExecutorWithTimeout
+</span><a href="#local-6989586621679224413"><span class="hs-identifier hs-var">openApi</span></a></span><span> </span><span class="annot"><span class="annottext">TestConfig
+</span><a href="#local-6989586621679224412"><span class="hs-identifier hs-var">config</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Application -&gt; ExecutorWithTimeout
 </span><a href="Haskemathesis.Execute.Wai.html#executeWaiWithTimeout"><span class="hs-identifier hs-var">executeWaiWithTimeout</span></a></span><span> </span><span class="annot"><span class="annottext">Application
-</span><a href="#local-6989586621679224423"><span class="hs-identifier hs-var">app</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">OpenApi -&gt; [ResolvedOperation]
+</span><a href="#local-6989586621679224414"><span class="hs-identifier hs-var">app</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">OpenApi -&gt; [ResolvedOperation]
 </span><a href="Haskemathesis.OpenApi.Resolve.html#resolveOperations"><span class="hs-identifier hs-var">resolveOperations</span></a></span><span> </span><span class="annot"><span class="annottext">OpenApi
-</span><a href="#local-6989586621679224422"><span class="hs-identifier hs-var">openApi</span></a></span><span class="hs-special">)</span><span>
+</span><a href="#local-6989586621679224413"><span class="hs-identifier hs-var">openApi</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-266"></span><span>
 </span><span id="line-267"></span><span class="annot"><span class="hs-comment">{- | Create an Hspec 'Spec' for negative testing of a remote HTTP server.
 
@@ -401,21 +401,21 @@ negativeSpec = do
 </span><span id="line-292"></span><span>    </span><span class="annot"><a href="Haskemathesis.Execute.Types.html#BaseUrl"><span class="hs-identifier hs-type">BaseUrl</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
 </span><span id="line-293"></span><span>    </span><span class="annot"><a href="file:///nix/store/f98mchpydblqajbgb2szi2ff2a54j5f3-hspec-core-2.11.16-doc/share/doc/hspec-core-2.11.16/html/src/Test.Hspec.Core.Spec.Monad.html#Spec"><span class="hs-identifier hs-type">Spec</span></a></span><span>
 </span><span id="line-294"></span><span id="specForUrlNegative"><span class="annot"><span class="annottext">specForUrlNegative :: TestConfig -&gt; OpenApi -&gt; Manager -&gt; BaseUrl -&gt; Spec
-</span><a href="Haskemathesis.Integration.Hspec.html#specForUrlNegative"><span class="hs-identifier hs-var hs-var">specForUrlNegative</span></a></span></span><span> </span><span id="local-6989586621679224424"><span class="annot"><span class="annottext">TestConfig
-</span><a href="#local-6989586621679224424"><span class="hs-identifier hs-var">config</span></a></span></span><span> </span><span id="local-6989586621679224425"><span class="annot"><span class="annottext">OpenApi
-</span><a href="#local-6989586621679224425"><span class="hs-identifier hs-var">openApi</span></a></span></span><span> </span><span id="local-6989586621679224426"><span class="annot"><span class="annottext">Manager
-</span><a href="#local-6989586621679224426"><span class="hs-identifier hs-var">manager</span></a></span></span><span> </span><span id="local-6989586621679224427"><span class="annot"><span class="annottext">BaseUrl
-</span><a href="#local-6989586621679224427"><span class="hs-identifier hs-var">baseUrl</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><a href="Haskemathesis.Integration.Hspec.html#specForUrlNegative"><span class="hs-identifier hs-var hs-var">specForUrlNegative</span></a></span></span><span> </span><span id="local-6989586621679224415"><span class="annot"><span class="annottext">TestConfig
+</span><a href="#local-6989586621679224415"><span class="hs-identifier hs-var">config</span></a></span></span><span> </span><span id="local-6989586621679224416"><span class="annot"><span class="annottext">OpenApi
+</span><a href="#local-6989586621679224416"><span class="hs-identifier hs-var">openApi</span></a></span></span><span> </span><span id="local-6989586621679224417"><span class="annot"><span class="annottext">Manager
+</span><a href="#local-6989586621679224417"><span class="hs-identifier hs-var">manager</span></a></span></span><span> </span><span id="local-6989586621679224418"><span class="annot"><span class="annottext">BaseUrl
+</span><a href="#local-6989586621679224418"><span class="hs-identifier hs-var">baseUrl</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
 </span><span id="line-295"></span><span>    </span><span class="annot"><span class="annottext">OpenApi
 -&gt; TestConfig -&gt; ExecutorWithTimeout -&gt; [ResolvedOperation] -&gt; Spec
 </span><a href="Haskemathesis.Integration.Hspec.html#specForExecutorNegative"><span class="hs-identifier hs-var">specForExecutorNegative</span></a></span><span> </span><span class="annot"><span class="annottext">OpenApi
-</span><a href="#local-6989586621679224425"><span class="hs-identifier hs-var">openApi</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">TestConfig
-</span><a href="#local-6989586621679224424"><span class="hs-identifier hs-var">config</span></a></span><span class="hs-special">{</span><span class="annot"><a href="Haskemathesis.Config.html#tcBaseUrl"><span class="hs-identifier hs-var">tcBaseUrl</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span class="annot"><a href="#local-6989586621679224427"><span class="hs-identifier hs-type">baseUrl</span></a></span><span class="hs-special">}</span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Manager -&gt; BaseUrl -&gt; ExecutorWithTimeout
+</span><a href="#local-6989586621679224416"><span class="hs-identifier hs-var">openApi</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">TestConfig
+</span><a href="#local-6989586621679224415"><span class="hs-identifier hs-var">config</span></a></span><span class="hs-special">{</span><span class="annot"><a href="Haskemathesis.Config.html#tcBaseUrl"><span class="hs-identifier hs-var">tcBaseUrl</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span class="annot"><a href="#local-6989586621679224418"><span class="hs-identifier hs-type">baseUrl</span></a></span><span class="hs-special">}</span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Manager -&gt; BaseUrl -&gt; ExecutorWithTimeout
 </span><a href="Haskemathesis.Execute.Http.html#executeHttpWithTimeout"><span class="hs-identifier hs-var">executeHttpWithTimeout</span></a></span><span> </span><span class="annot"><span class="annottext">Manager
-</span><a href="#local-6989586621679224426"><span class="hs-identifier hs-var">manager</span></a></span><span> </span><span class="annot"><span class="annottext">BaseUrl
-</span><a href="#local-6989586621679224427"><span class="hs-identifier hs-var">baseUrl</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">OpenApi -&gt; [ResolvedOperation]
+</span><a href="#local-6989586621679224417"><span class="hs-identifier hs-var">manager</span></a></span><span> </span><span class="annot"><span class="annottext">BaseUrl
+</span><a href="#local-6989586621679224418"><span class="hs-identifier hs-var">baseUrl</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">OpenApi -&gt; [ResolvedOperation]
 </span><a href="Haskemathesis.OpenApi.Resolve.html#resolveOperations"><span class="hs-identifier hs-var">resolveOperations</span></a></span><span> </span><span class="annot"><span class="annottext">OpenApi
-</span><a href="#local-6989586621679224425"><span class="hs-identifier hs-var">openApi</span></a></span><span class="hs-special">)</span><span>
+</span><a href="#local-6989586621679224416"><span class="hs-identifier hs-var">openApi</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-296"></span><span>
 </span><span id="line-297"></span><span class="annot"><a href="Haskemathesis.Integration.Hspec.html#specForOperation"><span class="hs-identifier hs-type">specForOperation</span></a></span><span> </span><span class="hs-glyph">::</span><span>
 </span><span id="line-298"></span><span>    </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="Haskemathesis.Execute.Types.html#BaseUrl"><span class="hs-identifier hs-type">BaseUrl</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
@@ -425,11 +425,11 @@ negativeSpec = do
 </span><span id="line-302"></span><span>    </span><span class="annot"><a href="file:///nix/store/f98mchpydblqajbgb2szi2ff2a54j5f3-hspec-core-2.11.16-doc/share/doc/hspec-core-2.11.16/html/src/Test.Hspec.Core.Spec.Monad.html#Spec"><span class="hs-identifier hs-type">Spec</span></a></span><span>
 </span><span id="line-303"></span><span id="specForOperation"><span class="annot"><span class="annottext">specForOperation :: Maybe BaseUrl
 -&gt; [Check] -&gt; ExecutorWithTimeout -&gt; ResolvedOperation -&gt; Spec
-</span><a href="Haskemathesis.Integration.Hspec.html#specForOperation"><span class="hs-identifier hs-var hs-var">specForOperation</span></a></span></span><span> </span><span id="local-6989586621679224428"><span class="annot"><span class="annottext">Maybe BaseUrl
-</span><a href="#local-6989586621679224428"><span class="hs-identifier hs-var">mBase</span></a></span></span><span> </span><span id="local-6989586621679224429"><span class="annot"><span class="annottext">[Check]
-</span><a href="#local-6989586621679224429"><span class="hs-identifier hs-var">checks</span></a></span></span><span> </span><span id="local-6989586621679224430"><span class="annot"><span class="annottext">ExecutorWithTimeout
-</span><a href="#local-6989586621679224430"><span class="hs-identifier hs-var">execute</span></a></span></span><span> </span><span id="local-6989586621679224431"><span class="annot"><span class="annottext">ResolvedOperation
-</span><a href="#local-6989586621679224431"><span class="hs-identifier hs-var">op</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><a href="Haskemathesis.Integration.Hspec.html#specForOperation"><span class="hs-identifier hs-var hs-var">specForOperation</span></a></span></span><span> </span><span id="local-6989586621679224419"><span class="annot"><span class="annottext">Maybe BaseUrl
+</span><a href="#local-6989586621679224419"><span class="hs-identifier hs-var">mBase</span></a></span></span><span> </span><span id="local-6989586621679224420"><span class="annot"><span class="annottext">[Check]
+</span><a href="#local-6989586621679224420"><span class="hs-identifier hs-var">checks</span></a></span></span><span> </span><span id="local-6989586621679224421"><span class="annot"><span class="annottext">ExecutorWithTimeout
+</span><a href="#local-6989586621679224421"><span class="hs-identifier hs-var">execute</span></a></span></span><span> </span><span id="local-6989586621679224422"><span class="annot"><span class="annottext">ResolvedOperation
+</span><a href="#local-6989586621679224422"><span class="hs-identifier hs-var">op</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
 </span><span id="line-304"></span><span>    </span><span class="annot"><span class="annottext">String -&gt; IO () -&gt; SpecWith (Arg (IO ()))
 forall a.
 (HasCallStack, Example a) =&gt;
@@ -437,7 +437,7 @@ String -&gt; a -&gt; SpecWith (Arg a)
 </span><a href="file:///nix/store/f98mchpydblqajbgb2szi2ff2a54j5f3-hspec-core-2.11.16-doc/share/doc/hspec-core-2.11.16/html/src/Test.Hspec.Core.Spec.html#it"><span class="hs-identifier hs-var">it</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">BaseUrl -&gt; String
 </span><span class="hs-identifier hs-var">T.unpack</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">ResolvedOperation -&gt; BaseUrl
 </span><a href="Haskemathesis.Check.Standard.Helpers.html#operationLabel"><span class="hs-identifier hs-var">operationLabel</span></a></span><span> </span><span class="annot"><span class="annottext">ResolvedOperation
-</span><a href="#local-6989586621679224431"><span class="hs-identifier hs-var">op</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">(IO () -&gt; SpecWith (Arg (IO ())))
+</span><a href="#local-6989586621679224422"><span class="hs-identifier hs-var">op</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">(IO () -&gt; SpecWith (Arg (IO ())))
 -&gt; IO () -&gt; SpecWith (Arg (IO ()))
 forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span>
@@ -446,10 +446,10 @@ forall (m :: * -&gt; *). MonadIO m =&gt; Property -&gt; m Bool
 </span><a href="file:///nix/store/4n4z2liv1a3rcrl66a6rrlxnr1azv1dp-hedgehog-1.5-doc/share/doc/hedgehog-1.5/html/src/Hedgehog.Internal.Runner.html#check"><span class="hs-identifier hs-var">check</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Maybe BaseUrl
 -&gt; [Check] -&gt; ExecutorWithTimeout -&gt; ResolvedOperation -&gt; Property
 </span><a href="Haskemathesis.Property.html#propertyForOperation"><span class="hs-identifier hs-var">propertyForOperation</span></a></span><span> </span><span class="annot"><span class="annottext">Maybe BaseUrl
-</span><a href="#local-6989586621679224428"><span class="hs-identifier hs-var">mBase</span></a></span><span> </span><span class="annot"><span class="annottext">[Check]
-</span><a href="#local-6989586621679224429"><span class="hs-identifier hs-var">checks</span></a></span><span> </span><span class="annot"><span class="annottext">ExecutorWithTimeout
-</span><a href="#local-6989586621679224430"><span class="hs-identifier hs-var">execute</span></a></span><span> </span><span class="annot"><span class="annottext">ResolvedOperation
-</span><a href="#local-6989586621679224431"><span class="hs-identifier hs-var">op</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">IO Bool -&gt; (Bool -&gt; IO ()) -&gt; IO ()
+</span><a href="#local-6989586621679224419"><span class="hs-identifier hs-var">mBase</span></a></span><span> </span><span class="annot"><span class="annottext">[Check]
+</span><a href="#local-6989586621679224420"><span class="hs-identifier hs-var">checks</span></a></span><span> </span><span class="annot"><span class="annottext">ExecutorWithTimeout
+</span><a href="#local-6989586621679224421"><span class="hs-identifier hs-var">execute</span></a></span><span> </span><span class="annot"><span class="annottext">ResolvedOperation
+</span><a href="#local-6989586621679224422"><span class="hs-identifier hs-var">op</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">IO Bool -&gt; (Bool -&gt; IO ()) -&gt; IO ()
 forall a b. IO a -&gt; (a -&gt; IO b) -&gt; IO b
 forall (m :: * -&gt; *) a b. Monad m =&gt; m a -&gt; (a -&gt; m b) -&gt; m b
 </span><span class="hs-operator hs-var">&gt;&gt;=</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Bool -&gt; Bool -&gt; IO ()
@@ -465,16 +465,16 @@ forall a. (HasCallStack, Show a, Eq a) =&gt; a -&gt; a -&gt; IO ()
 </span><span id="line-312"></span><span>    </span><span class="annot"><a href="file:///nix/store/f98mchpydblqajbgb2szi2ff2a54j5f3-hspec-core-2.11.16-doc/share/doc/hspec-core-2.11.16/html/src/Test.Hspec.Core.Spec.Monad.html#Spec"><span class="hs-identifier hs-type">Spec</span></a></span><span>
 </span><span id="line-313"></span><span id="specForOperationWithConfig"><span class="annot"><span class="annottext">specForOperationWithConfig :: OpenApi
 -&gt; TestConfig -&gt; ExecutorWithTimeout -&gt; ResolvedOperation -&gt; Spec
-</span><a href="Haskemathesis.Integration.Hspec.html#specForOperationWithConfig"><span class="hs-identifier hs-var hs-var">specForOperationWithConfig</span></a></span></span><span> </span><span id="local-6989586621679224433"><span class="annot"><span class="annottext">OpenApi
-</span><a href="#local-6989586621679224433"><span class="hs-identifier hs-var">openApi</span></a></span></span><span> </span><span id="local-6989586621679224434"><span class="annot"><span class="annottext">TestConfig
-</span><a href="#local-6989586621679224434"><span class="hs-identifier hs-var">config</span></a></span></span><span> </span><span id="local-6989586621679224435"><span class="annot"><span class="annottext">ExecutorWithTimeout
-</span><a href="#local-6989586621679224435"><span class="hs-identifier hs-var">execute</span></a></span></span><span> </span><span id="local-6989586621679224436"><span class="annot"><span class="annottext">ResolvedOperation
-</span><a href="#local-6989586621679224436"><span class="hs-identifier hs-var">op</span></a></span></span><span>
+</span><a href="Haskemathesis.Integration.Hspec.html#specForOperationWithConfig"><span class="hs-identifier hs-var hs-var">specForOperationWithConfig</span></a></span></span><span> </span><span id="local-6989586621679224424"><span class="annot"><span class="annottext">OpenApi
+</span><a href="#local-6989586621679224424"><span class="hs-identifier hs-var">openApi</span></a></span></span><span> </span><span id="local-6989586621679224425"><span class="annot"><span class="annottext">TestConfig
+</span><a href="#local-6989586621679224425"><span class="hs-identifier hs-var">config</span></a></span></span><span> </span><span id="local-6989586621679224426"><span class="annot"><span class="annottext">ExecutorWithTimeout
+</span><a href="#local-6989586621679224426"><span class="hs-identifier hs-var">execute</span></a></span></span><span> </span><span id="local-6989586621679224427"><span class="annot"><span class="annottext">ResolvedOperation
+</span><a href="#local-6989586621679224427"><span class="hs-identifier hs-var">op</span></a></span></span><span>
 </span><span id="line-314"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Bool -&gt; Bool
 </span><span class="hs-identifier hs-var">not</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">TestConfig -&gt; ResolvedOperation -&gt; Bool
 </span><a href="Haskemathesis.Config.html#tcOperationFilter"><span class="hs-identifier hs-var">tcOperationFilter</span></a></span><span> </span><span class="annot"><span class="annottext">TestConfig
-</span><a href="#local-6989586621679224434"><span class="hs-identifier hs-var">config</span></a></span><span> </span><span class="annot"><span class="annottext">ResolvedOperation
-</span><a href="#local-6989586621679224436"><span class="hs-identifier hs-var">op</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">() -&gt; Spec
+</span><a href="#local-6989586621679224425"><span class="hs-identifier hs-var">config</span></a></span><span> </span><span class="annot"><span class="annottext">ResolvedOperation
+</span><a href="#local-6989586621679224427"><span class="hs-identifier hs-var">op</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">() -&gt; Spec
 forall a. a -&gt; SpecM () a
 forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
 </span><span class="hs-identifier hs-var">pure</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
@@ -487,7 +487,7 @@ String -&gt; a -&gt; SpecWith (Arg a)
 </span><a href="file:///nix/store/f98mchpydblqajbgb2szi2ff2a54j5f3-hspec-core-2.11.16-doc/share/doc/hspec-core-2.11.16/html/src/Test.Hspec.Core.Spec.html#it"><span class="hs-identifier hs-var">it</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">BaseUrl -&gt; String
 </span><span class="hs-identifier hs-var">T.unpack</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">ResolvedOperation -&gt; BaseUrl
 </span><a href="Haskemathesis.Check.Standard.Helpers.html#operationLabel"><span class="hs-identifier hs-var">operationLabel</span></a></span><span> </span><span class="annot"><span class="annottext">ResolvedOperation
-</span><a href="#local-6989586621679224436"><span class="hs-identifier hs-var">op</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">(IO () -&gt; SpecWith (Arg (IO ())))
+</span><a href="#local-6989586621679224427"><span class="hs-identifier hs-var">op</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">(IO () -&gt; SpecWith (Arg (IO ())))
 -&gt; IO () -&gt; SpecWith (Arg (IO ()))
 forall a b. (a -&gt; b) -&gt; a -&gt; b
 </span><span class="hs-operator hs-var">$</span></span><span>
@@ -499,10 +499,10 @@ forall (m :: * -&gt; *). MonadIO m =&gt; Property -&gt; m Bool
 -&gt; ResolvedOperation
 -&gt; Property
 </span><a href="Haskemathesis.Property.html#propertyForOperationWithConfig"><span class="hs-identifier hs-var">propertyForOperationWithConfig</span></a></span><span> </span><span class="annot"><span class="annottext">OpenApi
-</span><a href="#local-6989586621679224433"><span class="hs-identifier hs-var">openApi</span></a></span><span> </span><span class="annot"><span class="annottext">TestConfig
-</span><a href="#local-6989586621679224434"><span class="hs-identifier hs-var">config</span></a></span><span> </span><span class="annot"><span class="annottext">ExecutorWithTimeout
-</span><a href="#local-6989586621679224435"><span class="hs-identifier hs-var">execute</span></a></span><span> </span><span class="annot"><span class="annottext">ResolvedOperation
-</span><a href="#local-6989586621679224436"><span class="hs-identifier hs-var">op</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">IO Bool -&gt; (Bool -&gt; IO ()) -&gt; IO ()
+</span><a href="#local-6989586621679224424"><span class="hs-identifier hs-var">openApi</span></a></span><span> </span><span class="annot"><span class="annottext">TestConfig
+</span><a href="#local-6989586621679224425"><span class="hs-identifier hs-var">config</span></a></span><span> </span><span class="annot"><span class="annottext">ExecutorWithTimeout
+</span><a href="#local-6989586621679224426"><span class="hs-identifier hs-var">execute</span></a></span><span> </span><span class="annot"><span class="annottext">ResolvedOperation
+</span><a href="#local-6989586621679224427"><span class="hs-identifier hs-var">op</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">IO Bool -&gt; (Bool -&gt; IO ()) -&gt; IO ()
 forall a b. IO a -&gt; (a -&gt; IO b) -&gt; IO b
 forall (m :: * -&gt; *) a b. Monad m =&gt; m a -&gt; (a -&gt; m b) -&gt; m b
 </span><span class="hs-operator hs-var">&gt;&gt;=</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Bool -&gt; Bool -&gt; IO ()

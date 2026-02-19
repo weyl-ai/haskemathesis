@@ -84,7 +84,7 @@ including the HTTP method, path, query parameters, headers, and body.
 </span><a href="Haskemathesis.Execute.Types.html#reqBody"><span class="hs-identifier hs-var hs-var">reqBody</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Haskemathesis.Execute.Types.html#MediaType"><span class="hs-identifier hs-type">MediaType</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">ByteString</span></span><span class="hs-special">)</span><span>
 </span><span id="line-80"></span><span>    </span><span class="annot"><span class="hs-comment">-- ^ Optional request body with its media type.</span></span><span>
 </span><span id="line-81"></span><span>    </span><span class="hs-special">}</span><span>
-</span><span id="line-82"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679219438"><span id="local-6989586621679219452"><span class="annot"><span class="annottext">ApiRequest -&gt; ApiRequest -&gt; Bool
+</span><span id="line-82"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679219392"><span id="local-6989586621679219406"><span class="annot"><span class="annottext">ApiRequest -&gt; ApiRequest -&gt; Bool
 (ApiRequest -&gt; ApiRequest -&gt; Bool)
 -&gt; (ApiRequest -&gt; ApiRequest -&gt; Bool) -&gt; Eq ApiRequest
 forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
@@ -92,7 +92,7 @@ $c== :: ApiRequest -&gt; ApiRequest -&gt; Bool
 == :: ApiRequest -&gt; ApiRequest -&gt; Bool
 $c/= :: ApiRequest -&gt; ApiRequest -&gt; Bool
 /= :: ApiRequest -&gt; ApiRequest -&gt; Bool
-</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679219460"><span id="local-6989586621679219476"><span id="local-6989586621679219480"><span class="annot"><span class="annottext">Int -&gt; ApiRequest -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679219414"><span id="local-6989586621679219430"><span id="local-6989586621679219434"><span class="annot"><span class="annottext">Int -&gt; ApiRequest -&gt; ShowS
 [ApiRequest] -&gt; ShowS
 ApiRequest -&gt; String
 (Int -&gt; ApiRequest -&gt; ShowS)
@@ -128,7 +128,7 @@ and timing information for analysis by checks.
 </span><a href="Haskemathesis.Execute.Types.html#resTime"><span class="hs-identifier hs-var hs-var">resTime</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">NominalDiffTime</span></span><span>
 </span><span id="line-97"></span><span>    </span><span class="annot"><span class="hs-comment">-- ^ Time taken for the request/response cycle.</span></span><span>
 </span><span id="line-98"></span><span>    </span><span class="hs-special">}</span><span>
-</span><span id="line-99"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679219493"><span id="local-6989586621679219503"><span class="annot"><span class="annottext">ApiResponse -&gt; ApiResponse -&gt; Bool
+</span><span id="line-99"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679219447"><span id="local-6989586621679219457"><span class="annot"><span class="annottext">ApiResponse -&gt; ApiResponse -&gt; Bool
 (ApiResponse -&gt; ApiResponse -&gt; Bool)
 -&gt; (ApiResponse -&gt; ApiResponse -&gt; Bool) -&gt; Eq ApiResponse
 forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
@@ -136,7 +136,7 @@ $c== :: ApiResponse -&gt; ApiResponse -&gt; Bool
 == :: ApiResponse -&gt; ApiResponse -&gt; Bool
 $c/= :: ApiResponse -&gt; ApiResponse -&gt; Bool
 /= :: ApiResponse -&gt; ApiResponse -&gt; Bool
-</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679219509"><span id="local-6989586621679219520"><span id="local-6989586621679219524"><span class="annot"><span class="annottext">Int -&gt; ApiResponse -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679219463"><span id="local-6989586621679219474"><span id="local-6989586621679219478"><span class="annot"><span class="annottext">Int -&gt; ApiResponse -&gt; ShowS
 [ApiResponse] -&gt; ShowS
 ApiResponse -&gt; String
 (Int -&gt; ApiResponse -&gt; ShowS)
@@ -156,30 +156,30 @@ showList :: [ApiResponse] -&gt; ShowS
 </span><span id="line-101"></span><span class="annot"><span class="hs-comment">-- | Extract Content-Type header from request body if present.</span></span><span>
 </span><span id="line-102"></span><span class="annot"><a href="Haskemathesis.Execute.Types.html#contentTypeHeaders"><span class="hs-identifier hs-type">contentTypeHeaders</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Haskemathesis.Execute.Types.html#ApiRequest"><span class="hs-identifier hs-type">ApiRequest</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="hs-special">(</span><span class="annot"><a href="file:///nix/store/fsi2cvnm3mdngjk22hkkpyl0q5h66sjj-http-types-0.12.4-doc/share/doc/http-types-0.12.4/html/src/Network.HTTP.Types.Header.html#HeaderName"><span class="hs-identifier hs-type">HeaderName</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">ByteString</span></span><span class="hs-special">)</span><span class="hs-special">]</span><span>
 </span><span id="line-103"></span><span id="contentTypeHeaders"><span class="annot"><span class="annottext">contentTypeHeaders :: ApiRequest -&gt; [(HeaderName, Method)]
-</span><a href="Haskemathesis.Execute.Types.html#contentTypeHeaders"><span class="hs-identifier hs-var hs-var">contentTypeHeaders</span></a></span></span><span> </span><span id="local-6989586621679219528"><span class="annot"><span class="annottext">ApiRequest
-</span><a href="#local-6989586621679219528"><span class="hs-identifier hs-var">req</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><a href="Haskemathesis.Execute.Types.html#contentTypeHeaders"><span class="hs-identifier hs-var hs-var">contentTypeHeaders</span></a></span></span><span> </span><span id="local-6989586621679219482"><span class="annot"><span class="annottext">ApiRequest
+</span><a href="#local-6989586621679219482"><span class="hs-identifier hs-var">req</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
 </span><span id="line-104"></span><span>    </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">ApiRequest -&gt; Maybe (Text, Method)
 </span><a href="Haskemathesis.Execute.Types.html#reqBody"><span class="hs-identifier hs-var">reqBody</span></a></span><span> </span><span class="annot"><span class="annottext">ApiRequest
-</span><a href="#local-6989586621679219528"><span class="hs-identifier hs-var">req</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><a href="#local-6989586621679219482"><span class="hs-identifier hs-var">req</span></a></span><span> </span><span class="hs-keyword">of</span><span>
 </span><span id="line-105"></span><span>        </span><span class="annot"><span class="annottext">Maybe (Text, Method)
 </span><span class="hs-identifier hs-var">Nothing</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>
-</span><span id="line-106"></span><span>        </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621679219529"><span class="annot"><span class="annottext">Text
-</span><a href="#local-6989586621679219529"><span class="hs-identifier hs-var">mediaType</span></a></span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Method
+</span><span id="line-106"></span><span>        </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621679219483"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679219483"><span class="hs-identifier hs-var">mediaType</span></a></span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Method
 </span><span class="hs-identifier">_</span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="hs-special">(</span><span class="annot"><span class="annottext">HeaderName
 </span><a href="file:///nix/store/fsi2cvnm3mdngjk22hkkpyl0q5h66sjj-http-types-0.12.4-doc/share/doc/http-types-0.12.4/html/src/Network.HTTP.Types.Header.html#hContentType"><span class="hs-identifier hs-var">hContentType</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text -&gt; Method
 </span><span class="hs-identifier hs-var">encodeUtf8</span></span><span> </span><span class="annot"><span class="annottext">Text
-</span><a href="#local-6989586621679219529"><span class="hs-identifier hs-var">mediaType</span></a></span><span class="hs-special">)</span><span class="hs-special">]</span><span>
+</span><a href="#local-6989586621679219483"><span class="hs-identifier hs-var">mediaType</span></a></span><span class="hs-special">)</span><span class="hs-special">]</span><span>
 </span><span id="line-107"></span><span>
 </span><span id="line-108"></span><span class="annot"><span class="hs-comment">-- | Convert a key-value pair to query format with Maybe value.</span></span><span>
 </span><span id="line-109"></span><span class="annot"><a href="Haskemathesis.Execute.Types.html#queryToMaybe"><span class="hs-identifier hs-type">queryToMaybe</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span class="hs-special">)</span><span>
 </span><span id="line-110"></span><span id="queryToMaybe"><span class="annot"><span class="annottext">queryToMaybe :: (Text, Text) -&gt; (Text, Maybe Text)
-</span><a href="Haskemathesis.Execute.Types.html#queryToMaybe"><span class="hs-identifier hs-var hs-var">queryToMaybe</span></a></span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621679219530"><span class="annot"><span class="annottext">Text
-</span><a href="#local-6989586621679219530"><span class="hs-identifier hs-var">k</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679219531"><span class="annot"><span class="annottext">Text
-</span><a href="#local-6989586621679219531"><span class="hs-identifier hs-var">v</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Text
-</span><a href="#local-6989586621679219530"><span class="hs-identifier hs-var">k</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text -&gt; Maybe Text
+</span><a href="Haskemathesis.Execute.Types.html#queryToMaybe"><span class="hs-identifier hs-var hs-var">queryToMaybe</span></a></span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621679219484"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679219484"><span class="hs-identifier hs-var">k</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679219485"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679219485"><span class="hs-identifier hs-var">v</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679219484"><span class="hs-identifier hs-var">k</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text -&gt; Maybe Text
 forall a. a -&gt; Maybe a
 </span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">Text
-</span><a href="#local-6989586621679219531"><span class="hs-identifier hs-var">v</span></a></span><span class="hs-special">)</span><span>
+</span><a href="#local-6989586621679219485"><span class="hs-identifier hs-var">v</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-111"></span><span>
 </span><span id="line-112"></span><span class="annot"><span class="hs-comment">-- | Simple executor type for backward compatibility.</span></span><span>
 </span><span id="line-113"></span><span class="hs-keyword">type</span><span> </span><span id="Executor"><span class="annot"><a href="Haskemathesis.Execute.Types.html#Executor"><span class="hs-identifier hs-var">Executor</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><a href="Haskemathesis.Execute.Types.html#ApiRequest"><span class="hs-identifier hs-type">ApiRequest</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="annot"><a href="Haskemathesis.Execute.Types.html#ApiResponse"><span class="hs-identifier hs-type">ApiResponse</span></a></span><span>
