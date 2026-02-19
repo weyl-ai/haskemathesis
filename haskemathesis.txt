@@ -12,6 +12,41 @@
 --   This module defines the data types used for command-line argument
 --   parsing and configuration. It is separate from the main CLI module to
 --   avoid cyclic dependencies.
+--   
+--   <h3>Output Formats</h3>
+--   
+--   The <a>OutputFormat</a> type supports three formats:
+--   
+--   <ul>
+--   <li><a>OutputText</a> - Human-readable text output (default)</li>
+--   <li><a>OutputJson</a> - JSON summary for programmatic consumption</li>
+--   <li><a>OutputJUnit</a> - JUnit XML for CI integration (Jenkins, GitLab
+--   CI, GitHub Actions)</li>
+--   </ul>
+--   
+--   <h3>Response Time Validation</h3>
+--   
+--   Use <a>testMaxResponseTime</a> to enforce response time limits:
+--   
+--   <pre>
+--   opts = defaultTestOptions
+--       { testSpecPath = "api.yaml"
+--       , testBaseUrl = "<a>http://localhost:8080"</a>
+--       , testMaxResponseTime = Just 500  -- Fail if &gt;500ms
+--       }
+--   </pre>
+--   
+--   <h3>URL-based Spec Loading</h3>
+--   
+--   <a>testSpecPath</a> can be a file path or an HTTP/HTTPS URL:
+--   
+--   <pre>
+--   -- File path
+--   opts1 = defaultTestOptions { testSpecPath = "openapi.yaml" }
+--   
+--   -- URL
+--   opts2 = defaultTestOptions { testSpecPath = "<a>https://api.example.com/openapi.json"</a> }
+--   </pre>
 module Haskemathesis.CLI.Options
 
 -- | Top-level CLI command.
@@ -22,7 +57,7 @@ Curl :: !CurlOptions -> Command
 
 -- | Options for the <tt>test</tt> command.
 data TestOptions
-TestOptions :: !FilePath -> !Text -> !Int -> ![Text] -> ![Text] -> ![Text] -> !Bool -> !Maybe Text -> !OutputFormat -> !Maybe Int -> !Maybe Int -> !Int -> !WorkdirOption -> !Maybe Int -> TestOptions
+TestOptions :: !FilePath -> !Text -> !Int -> ![Text] -> ![Text] -> ![Text] -> !Bool -> !Maybe Text -> !OutputFormat -> !Maybe Int -> !Maybe Int -> !Int -> !WorkdirOption -> !Maybe Int -> !Maybe Int -> TestOptions
 
 -- | Path to the OpenAPI specification file (YAML or JSON)
 [testSpecPath] :: TestOptions -> !FilePath
@@ -77,6 +112,17 @@ TestOptions :: !FilePath -> !Text -> !Int -> ![Text] -> ![Text] -> ![Text] -> !B
 --   streaming APIs).
 [testStreamingTimeout] :: TestOptions -> !Maybe Int
 
+-- | Maximum allowed response time in milliseconds.
+--   
+--   If set, tests will fail if any API response takes longer than this
+--   threshold. Useful for performance testing and SLA compliance.
+--   
+--   Default: <a>Nothing</a> (no response time limit)
+--   
+--   Example: <tt>--max-response-time 500</tt> fails if any response
+--   exceeds 500ms.
+[testMaxResponseTime] :: TestOptions -> !Maybe Int
+
 -- | Options for the <tt>validate</tt> command.
 data ValidateOptions
 ValidateOptions :: !FilePath -> !Bool -> ValidateOptions
@@ -113,6 +159,7 @@ CurlOptions :: !FilePath -> !Text -> !Int -> ![Text] -> ![Text] -> ![Text] -> Cu
 data OutputFormat
 OutputText :: OutputFormat
 OutputJson :: OutputFormat
+OutputJUnit :: OutputFormat
 
 -- | Working directory option for tests.
 data WorkdirOption
@@ -633,11 +680,12 @@ genIPv6 :: Gen Value
 genByte :: Gen Value
 
 
--- | Load OpenAPI specs from YAML or JSON files.
+-- | Load OpenAPI specs from YAML or JSON files or URLs.
 --   
 --   This module provides functions for loading OpenAPI specifications from
---   disk. It supports both YAML and JSON formats, automatically detecting
---   the format based on file extension and content.
+--   disk or remote URLs. It supports both YAML and JSON formats,
+--   automatically detecting the format based on file extension and
+--   content.
 --   
 --   <h3>Basic Usage</h3>
 --   
@@ -654,6 +702,21 @@ genByte :: Gen Value
 --           Right spec -&gt; putStrLn "Loaded successfully!"
 --   </pre>
 --   
+--   <h3>Loading from URLs</h3>
+--   
+--   You can also load specifications from URLs:
+--   
+--   <pre>
+--   import Haskemathesis.OpenApi.Loader (loadOpenApi)
+--   
+--   main :: IO ()
+--   main = do
+--       result &lt;- loadOpenApi "<a>https://api.example.com/openapi.yaml"</a>
+--       case result of
+--           Left err -&gt; putStrLn $ "Failed to load: " ++ show err
+--           Right spec -&gt; putStrLn "Loaded from URL!"
+--   </pre>
+--   
 --   <h3>Error Handling</h3>
 --   
 --   The loader returns 'Either Text OpenApi', where the Left case contains
@@ -661,6 +724,7 @@ genByte :: Gen Value
 --   
 --   <ul>
 --   <li>File not found or unreadable</li>
+--   <li>Network error when fetching from URL</li>
 --   <li>Invalid YAML/JSON syntax</li>
 --   <li>Invalid OpenAPI structure (validation errors)</li>
 --   </ul>
@@ -671,6 +735,7 @@ genByte :: Gen Value
 --   <li>YAML files (.yaml, .yml extension)</li>
 --   <li>JSON files (.json extension)</li>
 --   <li>Files without extension (auto-detected by content)</li>
+--   <li>HTTP/HTTPS URLs</li>
 --   </ul>
 --   
 --   <h3>OpenAPI 3.1 Support</h3>
@@ -720,7 +785,72 @@ module Haskemathesis.OpenApi.Loader
 --           Right spec -&gt; do
 --               putStrLn $ "Loaded API with " ++ show (length spec) ++ " paths"
 --   </pre>
+--   
+--   Load an OpenAPI specification from a file path or URL.
+--   
+--   This is the recommended entry point for loading specs. It
+--   automatically detects whether the input is a URL (starting with
+--   <tt>http://</tt> or <tt>https://</tt>) or a file path, and uses the
+--   appropriate loading method.
+--   
+--   <h3>Parameters</h3>
+--   
+--   <ul>
+--   <li><tt>pathOrUrl</tt> - Either a file path or a URL to the OpenAPI
+--   specification</li>
+--   </ul>
+--   
+--   <h3>Return Value</h3>
+--   
+--   Returns 'Right OpenApi' on success, or 'Left Text' with an error
+--   message on failure.
+--   
+--   <h3>Example</h3>
+--   
+--   <pre>
+--   -- Load from file
+--   spec1 &lt;- loadOpenApi "api.yaml"
+--   
+--   -- Load from URL
+--   spec2 &lt;- loadOpenApi "<a>https://petstore.swagger.io/v2/swagger.json"</a>
+--   </pre>
+loadOpenApi :: String -> IO (Either Text OpenApi)
 loadOpenApiFile :: FilePath -> IO (Either Text OpenApi)
+
+-- | Load an OpenAPI specification from a URL.
+--   
+--   This function fetches an OpenAPI specification from an HTTP or HTTPS
+--   URL. It supports both YAML and JSON formats.
+--   
+--   <h3>Parameters</h3>
+--   
+--   <ul>
+--   <li><tt>url</tt> - URL to the OpenAPI specification (must start with
+--   http:/<i> or https:</i>/)</li>
+--   </ul>
+--   
+--   <h3>Return Value</h3>
+--   
+--   Returns 'Right OpenApi' on success, or 'Left Text' with an error
+--   message on failure.
+--   
+--   <h3>Example</h3>
+--   
+--   <pre>
+--   result &lt;- loadOpenApiUrl "<a>https://petstore.swagger.io/v2/swagger.json"</a>
+--   case result of
+--       Left err -&gt; putStrLn $ "Failed to fetch: " ++ T.unpack err
+--       Right spec -&gt; putStrLn "Loaded from URL!"
+--   </pre>
+--   
+--   <h3>Notes</h3>
+--   
+--   <ul>
+--   <li>Uses TLS for HTTPS connections</li>
+--   <li>Follows redirects automatically</li>
+--   <li>Returns an error if the response status is not 2xx</li>
+--   </ul>
+loadOpenApiUrl :: String -> IO (Either Text OpenApi)
 
 -- | Load an OpenAPI spec along with vendor extensions.
 --   
@@ -779,6 +909,9 @@ OperationExtensions :: Maybe Int -> OperationExtensions
 
 -- | Key for looking up operation extensions: (path, method)
 type OperationKey = (Text, Text)
+
+-- | Check if a string is a URL (starts with http:/<i> or https:</i>/).
+isUrl :: String -> Bool
 
 -- | Transform OpenAPI 3.1 JSON Schema constructs to OpenAPI 3.0
 --   equivalents.
@@ -864,6 +997,114 @@ module Haskemathesis.Report.Curl
 --   -- Result: curl -X POST -H 'Authorization: Bearer token123' -d '{"name":<a>John</a>}' '<a>http://localhost:8080/api/users?page=1'</a>
 --   </pre>
 toCurl :: Maybe BaseUrl -> ApiRequest -> Text
+
+
+-- | This module provides functions for generating JUnit XML reports from
+--   test results. JUnit XML is a widely-supported format that CI systems
+--   (Jenkins, GitLab CI, GitHub Actions, CircleCI, etc.) can parse to
+--   display test results.
+--   
+--   <h3>Basic Usage</h3>
+--   
+--   <pre>
+--   import Haskemathesis.Report.JUnit (renderJUnitXml, TestSuiteResult(..))
+--   
+--   let results = [TestCaseResult "get_users" True 0.05 Nothing, ...]
+--       xml = renderJUnitXml "haskemathesis" results
+--   writeFile "test-results.xml" (T.unpack xml)
+--   </pre>
+--   
+--   <h3>CI Integration</h3>
+--   
+--   Most CI systems automatically detect JUnit XML files. For example:
+--   
+--   <ul>
+--   <li><b>GitHub Actions</b>: Use <tt>actions/upload-artifact</tt> and
+--   test reporters</li>
+--   <li><b>GitLab CI</b>: Set <tt>artifacts:reports:junit</tt> in
+--   <tt>.gitlab-ci.yml</tt></li>
+--   <li><b>Jenkins</b>: Use the JUnit plugin</li>
+--   <li><b>CircleCI</b>: Use the <tt>store_test_results</tt> step</li>
+--   </ul>
+module Haskemathesis.Report.JUnit
+
+-- | Result of a single test case (one operation).
+--   
+--   Each test case represents one API operation being tested.
+data TestCaseResult
+TestCaseResult :: !Text -> !Bool -> !NominalDiffTime -> !Maybe Text -> !Int -> TestCaseResult
+
+-- | Name of the test case (typically the operation ID or method+path)
+[tcrName] :: TestCaseResult -> !Text
+
+-- | Whether the test passed
+[tcrPassed] :: TestCaseResult -> !Bool
+
+-- | Time taken for the test in seconds
+[tcrTime] :: TestCaseResult -> !NominalDiffTime
+
+-- | Failure message if the test failed
+[tcrFailureMessage] :: TestCaseResult -> !Maybe Text
+
+-- | Number of individual property tests run
+[tcrTestCount] :: TestCaseResult -> !Int
+
+-- | Result of a test suite (all operations).
+--   
+--   A test suite contains multiple test cases.
+data TestSuiteResult
+TestSuiteResult :: !Text -> ![TestCaseResult] -> !NominalDiffTime -> TestSuiteResult
+
+-- | Name of the test suite (e.g., "haskemathesis" or the spec name)
+[tsrName] :: TestSuiteResult -> !Text
+
+-- | List of test case results
+[tsrTests] :: TestSuiteResult -> ![TestCaseResult]
+
+-- | Total time taken for all tests
+[tsrTime] :: TestSuiteResult -> !NominalDiffTime
+
+-- | Render test results as JUnit XML.
+--   
+--   This produces a valid JUnit XML document that can be parsed by CI
+--   systems.
+--   
+--   <h3>Parameters</h3>
+--   
+--   <ul>
+--   <li><tt>suiteName</tt> - Name for the test suite</li>
+--   <li><tt>results</tt> - List of test case results</li>
+--   </ul>
+--   
+--   <h3>Return Value</h3>
+--   
+--   Returns JUnit XML as <a>Text</a>.
+--   
+--   <h3>Example Output</h3>
+--   
+--   <pre>
+--   &lt;?xml version="1.0" encoding="UTF-8"?&gt;
+--   &lt;testsuites tests="3" failures="1" time="0.5"&gt;
+--     &lt;testsuite name="haskemathesis" tests="3" failures="1" time="0.5"&gt;
+--       &lt;testcase name="GET <i>users" time="0.1"&gt;&lt;</i>testcase&gt;
+--       &lt;testcase name="POST /users" time="0.2"&gt;
+--         &lt;failure message="Schema validation failed"&gt;Response body does not match schema&lt;/failure&gt;
+--       &lt;/testcase&gt;
+--       &lt;testcase name="GET <i>users</i>{id}" time="0.2"&gt;&lt;/testcase&gt;
+--     &lt;/testsuite&gt;
+--   &lt;/testsuites&gt;
+--   </pre>
+renderJUnitXml :: Text -> [TestCaseResult] -> Text
+
+-- | Render a single test suite as XML.
+--   
+--   This is useful if you need to generate multiple test suites in one
+--   document.
+renderTestSuite :: TestSuiteResult -> Text
+instance GHC.Classes.Eq Haskemathesis.Report.JUnit.TestCaseResult
+instance GHC.Classes.Eq Haskemathesis.Report.JUnit.TestSuiteResult
+instance GHC.Internal.Show.Show Haskemathesis.Report.JUnit.TestCaseResult
+instance GHC.Internal.Show.Show Haskemathesis.Report.JUnit.TestSuiteResult
 
 
 -- | Internal JSON Schema representation.
@@ -1964,6 +2205,78 @@ genBoolean :: Schema -> Gen Value
 --   generator.
 genConstOrEnum :: Schema -> Gen Value -> Gen Value
 
+module Haskemathesis.Check.Standard.Helpers
+failureDetail :: Text -> Text -> [Text] -> Maybe Text -> ApiRequest -> ApiResponse -> ResolvedOperation -> FailureDetail
+operationLabel :: ResolvedOperation -> Text
+responseSchemasForStatus :: Int -> ResolvedOperation -> Maybe ResponseSpec
+findResponseSchema :: ApiResponse -> ResolvedOperation -> Maybe Schema
+pickSchema :: Maybe Text -> Map Text Schema -> Maybe Schema
+
+-- | Normalize keys in a map using the given transformation function.
+normalizeMapKeys :: (Text -> Text) -> Map Text a -> Map Text a
+normalizeContent :: Map Text Schema -> Map Text Schema
+normalizeMediaType :: Text -> Text
+matchesContentType :: Text -> Map Text Schema -> Bool
+jsonSuffixMatch :: Text -> [Text] -> Bool
+lookupHeader :: HeaderName -> [(HeaderName, ByteString)] -> Maybe ByteString
+
+
+-- | This module provides a check for validating that API response times
+--   stay within acceptable limits. This is useful for performance testing
+--   and SLA compliance verification.
+module Haskemathesis.Check.Standard.ResponseTime
+
+-- | Create a check that fails if response time exceeds the given limit.
+--   
+--   This check validates that API responses are returned within an
+--   acceptable time frame. It's useful for:
+--   
+--   <ul>
+--   <li>Performance regression testing</li>
+--   <li>SLA compliance verification</li>
+--   <li>Identifying slow endpoints</li>
+--   </ul>
+--   
+--   <h4>Parameters</h4>
+--   
+--   <ul>
+--   <li><tt>maxMs</tt> - Maximum allowed response time in
+--   milliseconds</li>
+--   </ul>
+--   
+--   <h4>Behavior</h4>
+--   
+--   <ul>
+--   <li><b>Passes</b> when response time is less than or equal to
+--   <tt>maxMs</tt></li>
+--   <li><b>Fails</b> when response time exceeds <tt>maxMs</tt></li>
+--   </ul>
+--   
+--   <h4>Example</h4>
+--   
+--   <pre>
+--   import Haskemathesis.Check.Standard (defaultChecks)
+--   import Haskemathesis.Check.Standard.ResponseTime (maxResponseTime)
+--   
+--   -- Fail if any response takes longer than 500ms
+--   checks = defaultChecks ++ [maxResponseTime 500]
+--   
+--   -- Strict SLA: fail if response exceeds 100ms
+--   strictChecks = defaultChecks ++ [maxResponseTime 100]
+--   </pre>
+--   
+--   <h4>Notes</h4>
+--   
+--   <ul>
+--   <li>Response time is measured from request start to response
+--   completion</li>
+--   <li>For streaming endpoints, this measures time until the configured
+--   timeout or stream end, whichever comes first</li>
+--   <li>The check name includes the threshold for clarity in reports:
+--   e.g., "max_response_time_500ms"</li>
+--   </ul>
+maxResponseTime :: Int -> Check
+
 
 -- | Checks that assert negative (invalid) requests are rejected.
 --   
@@ -2573,7 +2886,7 @@ applyNegativeMutation :: ResolvedOperation -> ApiRequest -> NegativeMutation -> 
 --   This module provides a collection of standard checks for validating
 --   API responses against OpenAPI specifications. These checks cover
 --   common validation scenarios like status codes, response schemas,
---   content types, and headers.
+--   content types, headers, and response times.
 --   
 --   <h3>Using Default Check Sets</h3>
 --   
@@ -2606,6 +2919,17 @@ applyNegativeMutation :: ResolvedOperation -> ApiRequest -> NegativeMutation -> 
 --       , responseSchemaConformance
 --       , statusCodeConformance
 --       ]
+--   </pre>
+--   
+--   <h3>Performance Testing</h3>
+--   
+--   Add response time limits to your checks:
+--   
+--   <pre>
+--   import Haskemathesis.Check.Standard (defaultChecks, maxResponseTime)
+--   
+--   -- Fail if any response takes longer than 500ms
+--   performanceChecks = defaultChecks ++ [maxResponseTime 500]
 --   </pre>
 module Haskemathesis.Check.Standard
 
@@ -2822,6 +3146,57 @@ contentTypeConformance :: Check
 --   checks = [<a>responseHeadersConformance</a>, <tt>contentTypeConformance</tt>]
 --   </pre>
 responseHeadersConformance :: Check
+
+-- | Create a check that fails if response time exceeds the given limit.
+--   
+--   This check validates that API responses are returned within an
+--   acceptable time frame. It's useful for:
+--   
+--   <ul>
+--   <li>Performance regression testing</li>
+--   <li>SLA compliance verification</li>
+--   <li>Identifying slow endpoints</li>
+--   </ul>
+--   
+--   <h4>Parameters</h4>
+--   
+--   <ul>
+--   <li><tt>maxMs</tt> - Maximum allowed response time in
+--   milliseconds</li>
+--   </ul>
+--   
+--   <h4>Behavior</h4>
+--   
+--   <ul>
+--   <li><b>Passes</b> when response time is less than or equal to
+--   <tt>maxMs</tt></li>
+--   <li><b>Fails</b> when response time exceeds <tt>maxMs</tt></li>
+--   </ul>
+--   
+--   <h4>Example</h4>
+--   
+--   <pre>
+--   import Haskemathesis.Check.Standard (defaultChecks)
+--   import Haskemathesis.Check.Standard.ResponseTime (maxResponseTime)
+--   
+--   -- Fail if any response takes longer than 500ms
+--   checks = defaultChecks ++ [maxResponseTime 500]
+--   
+--   -- Strict SLA: fail if response exceeds 100ms
+--   strictChecks = defaultChecks ++ [maxResponseTime 100]
+--   </pre>
+--   
+--   <h4>Notes</h4>
+--   
+--   <ul>
+--   <li>Response time is measured from request start to response
+--   completion</li>
+--   <li>For streaming endpoints, this measures time until the configured
+--   timeout or stream end, whichever comes first</li>
+--   <li>The check name includes the threshold for clarity in reports:
+--   e.g., "max_response_time_500ms"</li>
+--   </ul>
+maxResponseTime :: Int -> Check
 
 
 -- | Top-level configuration for property generation and execution.
@@ -4075,10 +4450,59 @@ specForUrlNegative :: TestConfig -> OpenApi -> Manager -> BaseUrl -> Spec
 module Haskemathesis
 
 
+-- | Internal utilities for the Haskemathesis CLI.
+--   
+--   This module provides shared utilities used by both the CLI and Runner
+--   modules.
+module Haskemathesis.CLI.Internal
+
+-- | Check if an operation matches a pattern.
+matchesPattern :: ResolvedOperation -> Text -> Bool
+
+-- | Filter by any of the given tags.
+filterByAnyTag :: [Text] -> ResolvedOperation -> Bool
+
+-- | Build operation filter from CLI options.
+buildOperationFilter :: TestOptions -> ResolvedOperation -> Bool
+
+-- | Build test config from CLI options.
+buildTestConfig :: TestOptions -> TestConfig
+
+-- | Build global headers from CLI options.
+buildHeaders :: TestOptions -> [(HeaderName, ByteString)]
+
+-- | Build checks list from CLI options.
+buildChecks :: TestOptions -> [Check]
+
+
 -- | Test runner implementation for the Haskemathesis CLI.
 --   
 --   This module provides the actual test execution logic for the CLI,
 --   including HTTP testing, spec validation, and curl command generation.
+--   
+--   <h3>Features</h3>
+--   
+--   <ul>
+--   <li><b>Spec Loading</b>: Supports both file paths and HTTP/HTTPS
+--   URLs</li>
+--   <li><b>Test Execution</b>: Runs property-based tests against HTTP
+--   APIs</li>
+--   <li><b>Output Formats</b>: Text, JSON, and JUnit XML for CI
+--   integration</li>
+--   <li><b>Response Time</b>: Optional max response time enforcement</li>
+--   </ul>
+--   
+--   <h3>JUnit XML Output</h3>
+--   
+--   When using <a>OutputJUnit</a>, the runner generates JUnit XML that can
+--   be consumed by CI systems:
+--   
+--   <pre>
+--   haskemathesis-cli test --spec api.yaml --url <a>http://localhost:8080</a> --output junit &gt; results.xml
+--   </pre>
+--   
+--   The XML includes test case names, pass/fail status, and timing
+--   information.
 module Haskemathesis.CLI.Runner
 
 -- | Run the test command.
@@ -4147,7 +4571,7 @@ Curl :: !CurlOptions -> Command
 
 -- | Options for the <tt>test</tt> command.
 data TestOptions
-TestOptions :: !FilePath -> !Text -> !Int -> ![Text] -> ![Text] -> ![Text] -> !Bool -> !Maybe Text -> !OutputFormat -> !Maybe Int -> !Maybe Int -> !Int -> !WorkdirOption -> !Maybe Int -> TestOptions
+TestOptions :: !FilePath -> !Text -> !Int -> ![Text] -> ![Text] -> ![Text] -> !Bool -> !Maybe Text -> !OutputFormat -> !Maybe Int -> !Maybe Int -> !Int -> !WorkdirOption -> !Maybe Int -> !Maybe Int -> TestOptions
 
 -- | Path to the OpenAPI specification file (YAML or JSON)
 [testSpecPath] :: TestOptions -> !FilePath
@@ -4202,6 +4626,17 @@ TestOptions :: !FilePath -> !Text -> !Int -> ![Text] -> ![Text] -> ![Text] -> !B
 --   streaming APIs).
 [testStreamingTimeout] :: TestOptions -> !Maybe Int
 
+-- | Maximum allowed response time in milliseconds.
+--   
+--   If set, tests will fail if any API response takes longer than this
+--   threshold. Useful for performance testing and SLA compliance.
+--   
+--   Default: <a>Nothing</a> (no response time limit)
+--   
+--   Example: <tt>--max-response-time 500</tt> fails if any response
+--   exceeds 500ms.
+[testMaxResponseTime] :: TestOptions -> !Maybe Int
+
 -- | Options for the <tt>validate</tt> command.
 data ValidateOptions
 ValidateOptions :: !FilePath -> !Bool -> ValidateOptions
@@ -4238,6 +4673,7 @@ CurlOptions :: !FilePath -> !Text -> !Int -> ![Text] -> ![Text] -> ![Text] -> Cu
 data OutputFormat
 OutputText :: OutputFormat
 OutputJson :: OutputFormat
+OutputJUnit :: OutputFormat
 
 -- | Parse a command from command-line arguments.
 parseCommand :: IO Command

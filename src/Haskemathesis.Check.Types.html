@@ -67,7 +67,7 @@ that criterion) or fails with detailed information about what went wrong.
 </span><span id="line-64"></span><span class="hs-keyword">data</span><span> </span><span id="CheckResult"><span class="annot"><a href="Haskemathesis.Check.Types.html#CheckResult"><span class="hs-identifier hs-var">CheckResult</span></a></span></span><span>
 </span><span id="line-65"></span><span>    </span><span class="hs-glyph">=</span><span> </span><span id="CheckPassed"><span class="annot"><a href="Haskemathesis.Check.Types.html#CheckPassed"><span class="hs-identifier hs-var">CheckPassed</span></a></span></span><span>
 </span><span id="line-66"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span id="CheckFailed"><span class="annot"><a href="Haskemathesis.Check.Types.html#CheckFailed"><span class="hs-identifier hs-var">CheckFailed</span></a></span></span><span> </span><span class="annot"><a href="Haskemathesis.Check.Types.html#FailureDetail"><span class="hs-identifier hs-type">FailureDetail</span></a></span><span>
-</span><span id="line-67"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679221655"><span id="local-6989586621679221662"><span class="annot"><span class="annottext">CheckResult -&gt; CheckResult -&gt; Bool
+</span><span id="line-67"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679224207"><span id="local-6989586621679224214"><span class="annot"><span class="annottext">CheckResult -&gt; CheckResult -&gt; Bool
 (CheckResult -&gt; CheckResult -&gt; Bool)
 -&gt; (CheckResult -&gt; CheckResult -&gt; Bool) -&gt; Eq CheckResult
 forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
@@ -75,7 +75,7 @@ $c== :: CheckResult -&gt; CheckResult -&gt; Bool
 == :: CheckResult -&gt; CheckResult -&gt; Bool
 $c/= :: CheckResult -&gt; CheckResult -&gt; Bool
 /= :: CheckResult -&gt; CheckResult -&gt; Bool
-</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679221667"><span id="local-6989586621679221673"><span id="local-6989586621679221677"><span class="annot"><span class="annottext">Int -&gt; CheckResult -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679224219"><span id="local-6989586621679224225"><span id="local-6989586621679224229"><span class="annot"><span class="annottext">Int -&gt; CheckResult -&gt; ShowS
 [CheckResult] -&gt; ShowS
 CheckResult -&gt; String
 (Int -&gt; CheckResult -&gt; ShowS)
@@ -124,7 +124,7 @@ error messages.
 </span><a href="Haskemathesis.Check.Types.html#fdMutation"><span class="hs-identifier hs-var hs-var">fdMutation</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
 </span><span id="line-91"></span><span>    </span><span class="annot"><span class="hs-comment">-- ^ Description of the mutation applied (for negative testing).</span></span><span>
 </span><span id="line-92"></span><span>    </span><span class="hs-special">}</span><span>
-</span><span id="line-93"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679221691"><span id="local-6989586621679221706"><span class="annot"><span class="annottext">FailureDetail -&gt; FailureDetail -&gt; Bool
+</span><span id="line-93"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679224243"><span id="local-6989586621679224258"><span class="annot"><span class="annottext">FailureDetail -&gt; FailureDetail -&gt; Bool
 (FailureDetail -&gt; FailureDetail -&gt; Bool)
 -&gt; (FailureDetail -&gt; FailureDetail -&gt; Bool) -&gt; Eq FailureDetail
 forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
@@ -132,7 +132,7 @@ $c== :: FailureDetail -&gt; FailureDetail -&gt; Bool
 == :: FailureDetail -&gt; FailureDetail -&gt; Bool
 $c/= :: FailureDetail -&gt; FailureDetail -&gt; Bool
 /= :: FailureDetail -&gt; FailureDetail -&gt; Bool
-</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679221709"><span id="local-6989586621679221725"><span id="local-6989586621679221728"><span class="annot"><span class="annottext">Int -&gt; FailureDetail -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679224261"><span id="local-6989586621679224277"><span id="local-6989586621679224280"><span class="annot"><span class="annottext">Int -&gt; FailureDetail -&gt; ShowS
 [FailureDetail] -&gt; ShowS
 FailureDetail -&gt; String
 (Int -&gt; FailureDetail -&gt; ShowS)
