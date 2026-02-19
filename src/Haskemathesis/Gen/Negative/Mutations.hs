@@ -64,28 +64,18 @@ applyNegativeMutation op req mutation =
         RemoveRequiredPath name -> dropPathParam op req name
         RemoveRequiredHeader name -> dropHeader name req
         RemoveRequiredQuery name -> dropQuery name req
-        InvalidPathParam name ->
-            case lookupParam ParamPath name op of
-                Just schema -> setPathParam op req name (invalidFor schema)
-                Nothing -> req
-        InvalidHeader name ->
-            case lookupParam ParamHeader name op of
-                Just schema -> setHeaderValue name (invalidFor schema) req
-                Nothing -> req
-        InvalidQueryParam name ->
-            case lookupParam ParamQuery name op of
-                Just schema -> setQueryValue name (invalidFor schema) req
-                Nothing -> req
-        InvalidRequestBody ->
-            case roRequestBody op of
-                Just body -> setInvalidBody body req
-                Nothing -> req
-        InvalidContentType ->
-            case roRequestBody op of
-                Just body -> setContentType body "text/plain" req
-                Nothing -> req
+        InvalidPathParam name -> withParam ParamPath name (setPathParam op req name)
+        InvalidHeader name -> withParam ParamHeader name (\v -> setHeaderValue name v req)
+        InvalidQueryParam name -> withParam ParamQuery name (\v -> setQueryValue name v req)
+        InvalidRequestBody -> withBody (`setInvalidBody` req)
+        InvalidContentType -> withBody (\b -> setContentType b "text/plain" req)
   where
-    invalidFor schema = fromMaybe "not-a-value" (invalidValueText schema)
+    withParam loc name apply =
+        maybe req (apply . invalidFor) (lookupParam loc name op)
+    withBody apply =
+        maybe req apply (roRequestBody op)
+    invalidFor schema =
+        fromMaybe "not-a-value" (invalidValueText schema)
 
 mutationCandidates :: ResolvedOperation -> ApiRequest -> [(NegativeMutation, ApiRequest -> ApiRequest)]
 mutationCandidates op req =
@@ -177,34 +167,26 @@ setContentType body mediaType req =
         Nothing -> req{reqBody = Just (mediaType, LBS.toStrict (encode (invalidValueFor (rbSchema body))))}
         Just (_oldType, payload) -> req{reqBody = Just (mediaType, payload)}
 
+-- | Generate a JSON value that violates the schema type.
 invalidValueFor :: Schema -> Value
-invalidValueFor schema =
-    case schemaType schema of
-        Just SString -> Number 1
-        Just SInteger -> String "oops"
-        Just SNumber -> String "oops"
-        Just SBoolean -> String "oops"
-        Just SArray -> String "oops"
-        Just SObject -> String "oops"
-        Just SNull -> String "oops"
-        Nothing -> String "oops"
+invalidValueFor schema
+    | schemaType schema == Just SString = Number 1
+    | otherwise = String "oops"
 
+-- | Generate text that violates the schema type (for headers/params).
 invalidValueText :: Schema -> Maybe Text
-invalidValueText schema =
-    case schemaEnum schema of
-        Just enums ->
-            let values = [txt | String txt <- enums]
-             in Just (invalidEnumValue values)
-        Nothing ->
-            case schemaType schema of
-                Just SBoolean -> Just "not-a-boolean"
-                Just SInteger -> Just "not-a-number"
-                Just SNumber -> Just "not-a-number"
-                Just SString -> Nothing
-                Just SArray -> Just "not-a-array"
-                Just SObject -> Just "not-a-object"
-                Just SNull -> Just "not-null"
-                Nothing -> Just "not-a-value"
+invalidValueText schema
+    | Just enums <- schemaEnum schema =
+        Just (invalidEnumValue [txt | String txt <- enums])
+    | otherwise = case schemaType schema of
+        Just SString -> Nothing
+        Just SBoolean -> Just "not-a-boolean"
+        Just SInteger -> Just "not-a-number"
+        Just SNumber -> Just "not-a-number"
+        Just SArray -> Just "not-a-array"
+        Just SObject -> Just "not-a-object"
+        Just SNull -> Just "not-null"
+        Nothing -> Just "not-a-value"
 
 invalidEnumValue :: [Text] -> Text
 invalidEnumValue values =

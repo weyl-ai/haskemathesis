@@ -15,8 +15,8 @@ import qualified Data.Map.Strict as Map
 import Data.Text.Encoding (decodeUtf8)
 import Haskemathesis.Check.Standard.Helpers (failureDetail, lookupHeader, matchesContentType, responseSchemasForStatus)
 import Haskemathesis.Check.Types (Check (..), CheckResult (..))
-import Haskemathesis.Execute.Types (ApiResponse (..))
-import Haskemathesis.OpenApi.Types (ResponseSpec (..))
+import Haskemathesis.Execute.Types (ApiRequest, ApiResponse (..))
+import Haskemathesis.OpenApi.Types (ResolvedOperation, ResponseSpec (..))
 import Network.HTTP.Types (hContentType)
 
 {- | Check that the response Content-Type header matches documented media types.
@@ -52,33 +52,17 @@ contentTypeConformance =
     Check "content_type_conformance" $ \req res op ->
         case responseSchemasForStatus (resStatusCode res) op of
             Nothing -> CheckPassed
-            Just responseSpec
-                | Map.null (rsContent responseSpec) -> CheckPassed
-                | otherwise ->
-                    case lookupHeader hContentType (resHeaders res) of
-                        Nothing ->
-                            CheckFailed
-                                ( failureDetail
-                                    "content_type_conformance"
-                                    "response is missing Content-Type header"
-                                    []
-                                    Nothing
-                                    req
-                                    res
-                                    op
-                                )
-                        Just rawType ->
-                            let contentType = decodeUtf8 rawType
-                             in if matchesContentType contentType (rsContent responseSpec)
-                                    then CheckPassed
-                                    else
-                                        CheckFailed
-                                            ( failureDetail
-                                                "content_type_conformance"
-                                                ("response Content-Type not documented: " <> contentType)
-                                                []
-                                                Nothing
-                                                req
-                                                res
-                                                op
-                                            )
+            Just spec -> validateContentType req res op spec
+
+-- | Validate Content-Type header against the response spec.
+validateContentType :: ApiRequest -> ApiResponse -> ResolvedOperation -> ResponseSpec -> CheckResult
+validateContentType req res op spec
+    | Map.null (rsContent spec) = CheckPassed
+    | otherwise =
+        case decodeUtf8 <$> lookupHeader hContentType (resHeaders res) of
+            Nothing -> fail' "response is missing Content-Type header"
+            Just ct
+                | matchesContentType ct (rsContent spec) -> CheckPassed
+                | otherwise -> fail' ("response Content-Type not documented: " <> ct)
+  where
+    fail' msg = CheckFailed (failureDetail "content_type_conformance" msg [] Nothing req res op)

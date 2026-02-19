@@ -112,56 +112,37 @@ normalizeHeaderMap :: Map Text Schema -> Map Text Schema
 normalizeHeaderMap = normalizeMapKeys normalizeHeader
 
 headerValueToJson :: Schema -> NonEmpty ByteString -> Either Text Value
-headerValueToJson schema raws =
-    case schemaType schema of
-        Just SArray -> parseArray raws
-        Just SString -> parseScalar schema (NE.head raws)
-        Just SInteger -> parseScalar schema (NE.head raws)
-        Just SNumber -> parseScalar schema (NE.head raws)
-        Just SBoolean -> parseScalar schema (NE.head raws)
-        Just SObject -> parseScalar schema (NE.head raws)
-        Just SNull -> parseScalar schema (NE.head raws)
-        Nothing -> parseScalar schema (NE.head raws)
+headerValueToJson schema raws
+    | schemaType schema == Just SArray = parseArray schema raws
+    | otherwise = parseScalar schema (NE.head raws)
+
+-- | Parse a header value as an array.
+parseArray :: Schema -> NonEmpty ByteString -> Either Text Value
+parseArray schema values =
+    Array . Vector.fromList <$> traverse (parseScalar itemSchema) items
   where
-    parseArray values =
-        let itemSchema = fromMaybe emptySchema (schemaItems schema)
-            items =
-                case values of
-                    single :| [] -> splitCommaValues single
-                    multipleValues -> NE.toList multipleValues
-         in case traverse (parseScalar itemSchema) items of
-                Left err -> Left err
-                Right parsed -> Right (Array (Vector.fromList parsed))
+    itemSchema = fromMaybe emptySchema (schemaItems schema)
+    items = case values of
+        single :| [] -> splitCommaValues single
+        multiple -> NE.toList multiple
 
 parseScalar :: Schema -> ByteString -> Either Text Value
 parseScalar schema raw =
     case schemaType schema of
-        Just SInteger -> parseIntegral
-        Just SNumber -> parseDouble
+        Just SInteger -> parse "expected integer" readInteger
+        Just SNumber -> parse "expected number" readNumber
         Just SBoolean -> parseBool
-        Just SNull ->
-            if T.strip txt == ""
-                then Right Null
-                else Right (String txt)
-        Just SString -> Right (String txt)
-        Just SArray -> Right (String txt)
-        Just SObject -> Right (String txt)
-        Nothing -> Right (String txt)
+        Just SNull | T.strip txt == "" -> Right Null
+        _otherType -> Right (String txt)
   where
     txt = normalizeHeaderValue raw
-    parseIntegral =
-        case readMaybe (T.unpack txt) :: Maybe Integer of
-            Nothing -> Left "expected integer"
-            Just n -> Right (Number (fromIntegral n))
-    parseDouble =
-        case readMaybe (T.unpack txt) :: Maybe Double of
-            Nothing -> Left "expected number"
-            Just n -> Right (Number (fromFloatDigits n))
-    parseBool =
-        case T.toLower txt of
-            "true" -> Right (Bool True)
-            "false" -> Right (Bool False)
-            _ -> Left "expected boolean"
+    parse errMsg reader = maybe (Left errMsg) Right (reader txt)
+    readInteger t = Number . fromIntegral <$> (readMaybe (T.unpack t) :: Maybe Integer)
+    readNumber t = Number . fromFloatDigits <$> (readMaybe (T.unpack t) :: Maybe Double)
+    parseBool = case T.toLower txt of
+        "true" -> Right (Bool True)
+        "false" -> Right (Bool False)
+        _ -> Left "expected boolean"
 
 normalizeHeaderValue :: ByteString -> Text
 normalizeHeaderValue = stripQuotes . T.strip . decodeUtf8
