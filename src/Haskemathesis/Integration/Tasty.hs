@@ -54,6 +54,27 @@ main = do
     let tests = testTreeForUrl defaultTestConfig spec manager "http://localhost:8080"
     defaultMain tests
 @
+
+=== Streaming Endpoint Handling
+
+WAI-based tests (in-memory, synchronous) cannot handle streaming endpoints
+like Server-Sent Events (SSE) or NDJSON streams. These operations are
+__automatically skipped__ when using 'testTreeForApp' or 'testTreeForAppWithConfig'.
+
+To see which operations were skipped, use 'testTreeForAppIO':
+
+@
+main :: IO ()
+main = do
+    spec <- loadOpenApiFile "api.yaml"
+    (tests, skipped) <- testTreeForAppIO defaultTestConfig spec myApp
+    unless (null skipped) $
+        hPutStrLn stderr $ "Skipped streaming operations: " ++ show skipped
+    defaultMain tests
+@
+
+For streaming endpoints, use 'testTreeForUrl' with a running HTTP server
+which properly handles timeouts.
 -}
 module Haskemathesis.Integration.Tasty (
     -- * Basic Test Trees
@@ -65,6 +86,10 @@ module Haskemathesis.Integration.Tasty (
     testTreeForAppWithConfig,
     testTreeForUrl,
 
+    -- * WAI with Streaming Info
+    testTreeForAppIO,
+    testTreeForAppNegativeIO,
+
     -- * Negative Testing
     testTreeForExecutorNegative,
     testTreeForAppNegative,
@@ -72,7 +97,9 @@ module Haskemathesis.Integration.Tasty (
 )
 where
 
+import Data.List (partition)
 import Data.OpenApi (OpenApi)
+import Data.Text (Text)
 import qualified Data.Text as T
 import Haskemathesis.Check.Standard.Helpers (operationLabel)
 import Haskemathesis.Check.Types (Check)
@@ -86,6 +113,7 @@ import Haskemathesis.Property (propertyForOperation, propertyForOperationWithCon
 import Hedgehog.Internal.Property (PropertyName (..))
 import Network.HTTP.Client (Manager)
 import Network.Wai (Application)
+import System.IO (hPutStrLn, stderr)
 import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.Hedgehog (testPropertyNamed)
 
@@ -130,6 +158,11 @@ This is a convenient way to test a WAI application (e.g., Servant,
 Yesod, or any other WAI-based framework) without starting a
 real HTTP server.
 
+__Note:__ Streaming operations (SSE, NDJSON) are automatically filtered
+out because WAI testing is synchronous and cannot handle streaming
+responses. Use 'testTreeForAppIO' if you need to know which operations
+were skipped.
+
 === Parameters
 
 * @mBase@ - Optional base URL for failure reports
@@ -159,7 +192,9 @@ testTreeForApp ::
     Application ->
     TestTree
 testTreeForApp mBase checks openApi app =
-    testTreeForExecutor mBase checks (executeWaiWithTimeout app) (resolveOperations openApi)
+    let allOps = resolveOperations openApi
+        (nonStreaming, _skipped) = partitionStreamingOps allOps
+     in testTreeForExecutor mBase checks (executeWaiWithTimeout app) nonStreaming
 
 {- | Create a Tasty 'TestTree' with full configuration support.
 
@@ -205,6 +240,11 @@ testTreeForExecutorWithConfig openApi config execute ops =
 Combines 'testTreeForExecutorWithConfig' with 'executeWai' for
 convenient testing of WAI applications.
 
+__Note:__ Streaming operations (SSE, NDJSON) are automatically filtered
+out because WAI testing is synchronous and cannot handle streaming
+responses. Use 'testTreeForAppIO' if you need to know which operations
+were skipped.
+
 === Parameters
 
 * @config@ - The 'TestConfig' controlling test generation
@@ -224,7 +264,9 @@ testTreeForAppWithConfig ::
     Application ->
     TestTree
 testTreeForAppWithConfig config openApi app =
-    testTreeForExecutorWithConfig openApi config (executeWaiWithTimeout app) (resolveOperations openApi)
+    let allOps = resolveOperations openApi
+        (nonStreaming, _skipped) = partitionStreamingOps allOps
+     in testTreeForExecutorWithConfig openApi config (executeWaiWithTimeout app) nonStreaming
 
 {- | Create a Tasty 'TestTree' for testing a running HTTP server.
 
@@ -295,6 +337,11 @@ testTreeForExecutorNegative openApi config execute ops =
 Convenience function that combines 'testTreeForExecutorNegative' with
 'executeWai' for testing WAI applications.
 
+__Note:__ Streaming operations (SSE, NDJSON) are automatically filtered
+out because WAI testing is synchronous and cannot handle streaming
+responses. Use 'testTreeForAppNegativeIO' if you need to know which
+operations were skipped.
+
 === Parameters
 
 * @config@ - The 'TestConfig'
@@ -313,7 +360,9 @@ testTreeForAppNegative ::
     Application ->
     TestTree
 testTreeForAppNegative config openApi app =
-    testTreeForExecutorNegative openApi config (executeWaiWithTimeout app) (resolveOperations openApi)
+    let allOps = resolveOperations openApi
+        (nonStreaming, _skipped) = partitionStreamingOps allOps
+     in testTreeForExecutorNegative openApi config (executeWaiWithTimeout app) nonStreaming
 
 {- | Create a Tasty 'TestTree' for negative testing against a live server.
 
@@ -348,3 +397,107 @@ testTreeForUrlNegative ::
     TestTree
 testTreeForUrlNegative config openApi manager baseUrl =
     testTreeForExecutorNegative openApi (config{tcBaseUrl = Just baseUrl}) (executeHttpWithTimeout manager baseUrl) (resolveOperations openApi)
+
+-- -----------------------------------------------------------------------------
+-- WAI IO variants (with streaming operation info)
+-- -----------------------------------------------------------------------------
+
+{- | Create a Tasty 'TestTree' from a WAI 'Application', returning skipped operations.
+
+Like 'testTreeForAppWithConfig', but returns the list of operations that were
+skipped due to being streaming endpoints. Also prints a warning to stderr
+if any operations are skipped.
+
+Streaming operations (SSE, NDJSON) cannot be tested with WAI because WAI
+testing is synchronous and in-memory. For streaming endpoints, use
+'testTreeForUrl' with a running HTTP server.
+
+=== Parameters
+
+* @config@ - The 'TestConfig' controlling test generation
+* @openApi@ - The OpenAPI specification
+* @app@ - Your WAI 'Application'
+
+=== Return Value
+
+Returns a tuple of:
+
+* The 'TestTree' for non-streaming operations
+* List of operation labels that were skipped (streaming operations)
+
+=== Example
+
+@
+main :: IO ()
+main = do
+    spec <- loadOpenApiFile "api.yaml"
+    (tests, skipped) <- testTreeForAppIO defaultTestConfig spec myApp
+    unless (null skipped) $
+        putStrLn $ "Note: " ++ show (length skipped) ++ " streaming ops skipped"
+    defaultMain tests
+@
+-}
+testTreeForAppIO ::
+    TestConfig ->
+    OpenApi ->
+    Application ->
+    IO (TestTree, [Text])
+testTreeForAppIO config openApi app = do
+    let allOps = resolveOperations openApi
+        (nonStreaming, streaming) = partitionStreamingOps allOps
+        skippedLabels = map operationLabel streaming
+        tree = testTreeForExecutorWithConfig openApi config (executeWaiWithTimeout app) nonStreaming
+    warnSkippedStreaming skippedLabels
+    pure (tree, skippedLabels)
+
+{- | Create a negative testing 'TestTree' from a WAI 'Application', returning skipped operations.
+
+Like 'testTreeForAppNegative', but returns the list of operations that were
+skipped due to being streaming endpoints. Also prints a warning to stderr
+if any operations are skipped.
+
+=== Parameters
+
+* @config@ - The 'TestConfig'
+* @openApi@ - The OpenAPI specification
+* @app@ - Your WAI 'Application'
+
+=== Return Value
+
+Returns a tuple of:
+
+* The 'TestTree' for non-streaming operations (negative tests)
+* List of operation labels that were skipped (streaming operations)
+-}
+testTreeForAppNegativeIO ::
+    TestConfig ->
+    OpenApi ->
+    Application ->
+    IO (TestTree, [Text])
+testTreeForAppNegativeIO config openApi app = do
+    let allOps = resolveOperations openApi
+        (nonStreaming, streaming) = partitionStreamingOps allOps
+        skippedLabels = map operationLabel streaming
+        tree = testTreeForExecutorNegative openApi config (executeWaiWithTimeout app) nonStreaming
+    warnSkippedStreaming skippedLabels
+    pure (tree, skippedLabels)
+
+-- -----------------------------------------------------------------------------
+-- Helpers
+-- -----------------------------------------------------------------------------
+
+-- | Partition operations into (non-streaming, streaming).
+partitionStreamingOps :: [ResolvedOperation] -> ([ResolvedOperation], [ResolvedOperation])
+partitionStreamingOps = partition (not . roIsStreaming)
+
+-- | Print a warning to stderr if any streaming operations were skipped.
+warnSkippedStreaming :: [Text] -> IO ()
+warnSkippedStreaming [] = pure ()
+warnSkippedStreaming skipped = do
+    let count = foldl' (\n _ -> n + 1) (0 :: Int) skipped
+    hPutStrLn stderr $
+        "[haskemathesis] Skipping "
+            ++ show count
+            ++ " streaming operation(s) (WAI executor cannot handle streaming):"
+    mapM_ (hPutStrLn stderr . ("  - " ++) . T.unpack) skipped
+    hPutStrLn stderr "  Use testTreeForUrl with a live HTTP server to test streaming endpoints."

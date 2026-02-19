@@ -20,6 +20,26 @@ import Haskemathesis.Config
 main :: IO ()
 main = hspec $ specForAppWithConfig defaultConfig openApiSpec myApp
 @
+
+==== Streaming Endpoint Handling
+
+WAI-based tests (in-memory, synchronous) cannot handle streaming endpoints
+like Server-Sent Events (SSE) or NDJSON streams. These operations are
+__automatically skipped__ when using 'specForApp' or 'specForAppWithConfig'.
+
+To see which operations were skipped, use 'specForAppIO':
+
+@
+main :: IO ()
+main = do
+    (spec, skipped) <- specForAppIO defaultConfig openApiSpec myApp
+    unless (null skipped) $
+        hPutStrLn stderr $ "Skipped streaming operations: " ++ show skipped
+    hspec spec
+@
+
+For streaming endpoints, use 'specForUrl' with a running HTTP server
+which properly handles timeouts.
 -}
 module Haskemathesis.Integration.Hspec (
     -- * Standard testing (WAI Application)
@@ -33,6 +53,10 @@ module Haskemathesis.Integration.Hspec (
     -- * Standard testing (HTTP client)
     specForUrl,
 
+    -- * WAI with Streaming Info
+    specForAppIO,
+    specForAppNegativeIO,
+
     -- * Negative testing
     specForExecutorNegative,
     specForAppNegative,
@@ -40,7 +64,9 @@ module Haskemathesis.Integration.Hspec (
 )
 where
 
+import Data.List (partition)
 import Data.OpenApi (OpenApi)
+import Data.Text (Text)
 import qualified Data.Text as T
 import Haskemathesis.Check.Standard.Helpers (operationLabel)
 import Haskemathesis.Check.Types (Check)
@@ -54,6 +80,7 @@ import Haskemathesis.Property (propertyForOperation, propertyForOperationWithCon
 import Hedgehog (check)
 import Network.HTTP.Client (Manager)
 import Network.Wai (Application)
+import System.IO (hPutStrLn, stderr)
 import Test.Hspec (Spec, describe, it, shouldBe)
 
 {- | Create an Hspec 'Spec' from pre-resolved operations with a custom executor.
@@ -91,6 +118,11 @@ specForExecutor mBase checks execute ops =
 This is the simplest way to test a WAI application against an OpenAPI
 specification. Operations are automatically resolved from the spec.
 
+__Note:__ Streaming operations (SSE, NDJSON) are automatically filtered
+out because WAI testing is synchronous and cannot handle streaming
+responses. Use 'specForAppIO' if you need to know which operations
+were skipped.
+
 ==== Parameters
 
 * @mBase@ - Optional base URL for error reporting
@@ -114,7 +146,9 @@ specForApp ::
     Application ->
     Spec
 specForApp mBase checks openApi app =
-    specForExecutor mBase checks (executeWaiWithTimeout app) (resolveOperations openApi)
+    let allOps = resolveOperations openApi
+        (nonStreaming, _skipped) = partitionStreamingOps allOps
+     in specForExecutor mBase checks (executeWaiWithTimeout app) nonStreaming
 
 {- | Create an Hspec 'Spec' with full configuration and custom executor.
 
@@ -151,6 +185,11 @@ specForExecutorWithConfig openApi config execute ops =
 Combines the convenience of WAI application testing with the flexibility
 of 'TestConfig'. This is the recommended approach for most use cases.
 
+__Note:__ Streaming operations (SSE, NDJSON) are automatically filtered
+out because WAI testing is synchronous and cannot handle streaming
+responses. Use 'specForAppIO' if you need to know which operations
+were skipped.
+
 ==== Parameters
 
 * @config@ - Test configuration
@@ -172,7 +211,9 @@ specForAppWithConfig ::
     Application ->
     Spec
 specForAppWithConfig config openApi app =
-    specForExecutorWithConfig openApi config (executeWaiWithTimeout app) (resolveOperations openApi)
+    let allOps = resolveOperations openApi
+        (nonStreaming, _skipped) = partitionStreamingOps allOps
+     in specForExecutorWithConfig openApi config (executeWaiWithTimeout app) nonStreaming
 
 {- | Create an Hspec 'Spec' for testing a remote HTTP server.
 
@@ -242,6 +283,11 @@ specForExecutorNegative openApi config execute ops =
 
 Convenience wrapper around 'specForExecutorNegative' for WAI applications.
 
+__Note:__ Streaming operations (SSE, NDJSON) are automatically filtered
+out because WAI testing is synchronous and cannot handle streaming
+responses. Use 'specForAppNegativeIO' if you need to know which operations
+were skipped.
+
 ==== Parameters
 
 * @config@ - Test configuration
@@ -262,7 +308,9 @@ specForAppNegative ::
     Application ->
     Spec
 specForAppNegative config openApi app =
-    specForExecutorNegative openApi config (executeWaiWithTimeout app) (resolveOperations openApi)
+    let allOps = resolveOperations openApi
+        (nonStreaming, _skipped) = partitionStreamingOps allOps
+     in specForExecutorNegative openApi config (executeWaiWithTimeout app) nonStreaming
 
 {- | Create an Hspec 'Spec' for negative testing of a remote HTTP server.
 
@@ -315,3 +363,106 @@ specForOperationWithConfig openApi config execute op
     | otherwise =
         it (T.unpack (operationLabel op)) $
             check (propertyForOperationWithConfig openApi config execute op) >>= (`shouldBe` True)
+
+-- -----------------------------------------------------------------------------
+-- WAI IO variants (with streaming operation info)
+-- -----------------------------------------------------------------------------
+
+{- | Create an Hspec 'Spec' from a WAI 'Application', returning skipped operations.
+
+Like 'specForAppWithConfig', but returns the list of operations that were
+skipped due to being streaming endpoints. Also prints a warning to stderr
+if any operations are skipped.
+
+Streaming operations (SSE, NDJSON) cannot be tested with WAI because WAI
+testing is synchronous and in-memory. For streaming endpoints, use
+'specForUrl' with a running HTTP server.
+
+==== Parameters
+
+* @config@ - Test configuration
+* @openApi@ - The OpenAPI specification
+* @app@ - The WAI application to test
+
+==== Return Value
+
+Returns a tuple of:
+
+* The Hspec 'Spec' for non-streaming operations
+* List of operation labels that were skipped (streaming operations)
+
+==== Example
+
+@
+main :: IO ()
+main = do
+    (spec, skipped) <- specForAppIO defaultConfig openApiSpec myApp
+    unless (null skipped) $
+        putStrLn $ "Note: " ++ show (length skipped) ++ " streaming ops skipped"
+    hspec spec
+@
+-}
+specForAppIO ::
+    TestConfig ->
+    OpenApi ->
+    Application ->
+    IO (Spec, [Text])
+specForAppIO config openApi app = do
+    let allOps = resolveOperations openApi
+        (nonStreaming, streaming) = partitionStreamingOps allOps
+        skippedLabels = map operationLabel streaming
+        spec = specForExecutorWithConfig openApi config (executeWaiWithTimeout app) nonStreaming
+    warnSkippedStreaming skippedLabels
+    pure (spec, skippedLabels)
+
+{- | Create a negative testing 'Spec' from a WAI 'Application', returning skipped operations.
+
+Like 'specForAppNegative', but returns the list of operations that were
+skipped due to being streaming endpoints. Also prints a warning to stderr
+if any operations are skipped.
+
+==== Parameters
+
+* @config@ - Test configuration
+* @openApi@ - The OpenAPI specification
+* @app@ - The WAI application to test
+
+==== Return Value
+
+Returns a tuple of:
+
+* The Hspec 'Spec' for non-streaming operations (negative tests)
+* List of operation labels that were skipped (streaming operations)
+-}
+specForAppNegativeIO ::
+    TestConfig ->
+    OpenApi ->
+    Application ->
+    IO (Spec, [Text])
+specForAppNegativeIO config openApi app = do
+    let allOps = resolveOperations openApi
+        (nonStreaming, streaming) = partitionStreamingOps allOps
+        skippedLabels = map operationLabel streaming
+        spec = specForExecutorNegative openApi config (executeWaiWithTimeout app) nonStreaming
+    warnSkippedStreaming skippedLabels
+    pure (spec, skippedLabels)
+
+-- -----------------------------------------------------------------------------
+-- Helpers
+-- -----------------------------------------------------------------------------
+
+-- | Partition operations into (non-streaming, streaming).
+partitionStreamingOps :: [ResolvedOperation] -> ([ResolvedOperation], [ResolvedOperation])
+partitionStreamingOps = partition (not . roIsStreaming)
+
+-- | Print a warning to stderr if any streaming operations were skipped.
+warnSkippedStreaming :: [Text] -> IO ()
+warnSkippedStreaming [] = pure ()
+warnSkippedStreaming skipped = do
+    let count = foldl' (\n _ -> n + 1) (0 :: Int) skipped
+    hPutStrLn stderr $
+        "[haskemathesis] Skipping "
+            ++ show count
+            ++ " streaming operation(s) (WAI executor cannot handle streaming):"
+    mapM_ (hPutStrLn stderr . ("  - " ++) . T.unpack) skipped
+    hPutStrLn stderr "  Use specForUrl with a live HTTP server to test streaming endpoints."

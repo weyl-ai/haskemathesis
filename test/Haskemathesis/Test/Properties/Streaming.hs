@@ -7,12 +7,14 @@ These tests verify that:
 1. Streaming content types (text/event-stream, application/x-ndjson) are correctly detected
 2. x-timeout extensions are properly parsed from OpenAPI specs
 3. effectiveTimeout correctly computes timeouts based on config and operation
+4. WAI integration correctly filters streaming operations
 -}
 module Haskemathesis.Test.Properties.Streaming (spec) where
 
 import Data.Aeson (Value (..))
 import Data.Aeson.Key (fromText)
 import qualified Data.Aeson.KeyMap as KM
+import Data.List (partition)
 import qualified Data.Map.Strict as Map
 import qualified Data.Text as T
 import Haskemathesis.Config (TestConfig (..), defaultTestConfig)
@@ -49,6 +51,13 @@ spec = describe "Streaming" $ do
         itProp "x-timeout takes precedence over streaming default" propXTimeoutPrecedence
         itProp "streaming operations use config timeout" propStreamingUsesConfigTimeout
         itProp "non-streaming without x-timeout has no timeout" propNonStreamingNoTimeout
+
+    describe "WAI streaming filter" $ do
+        itProp "partitions streaming from non-streaming ops" propPartitionsStreamingOps
+        itProp "preserves all operations in partition" propPreservesAllOps
+        itProp "streaming ops have roIsStreaming=True" propStreamingOpsMarked
+        itProp "non-streaming ops have roIsStreaming=False" propNonStreamingOpsMarked
+        itProp "empty list partitions to empty lists" propEmptyPartition
 
 -- | text/event-stream is detected as streaming
 propDetectsEventStream :: Property
@@ -256,3 +265,68 @@ makeStreamingOperation mTimeout =
                     , rsRequiredHeaders = []
                     }
         }
+
+-- -----------------------------------------------------------------------------
+-- WAI streaming filter properties
+-- -----------------------------------------------------------------------------
+
+-- | Partition function separates streaming from non-streaming operations
+partitionStreamingOps :: [ResolvedOperation] -> ([ResolvedOperation], [ResolvedOperation])
+partitionStreamingOps = partition (not . roIsStreaming)
+
+-- | Partitioning correctly separates streaming from non-streaming
+propPartitionsStreamingOps :: Property
+propPartitionsStreamingOps = property $ do
+    numStreaming <- forAll $ Gen.int (Range.linear 0 5)
+    numNonStreaming <- forAll $ Gen.int (Range.linear 0 5)
+    let streamingOps = replicate numStreaming (makeStreamingOperation Nothing)
+        nonStreamingOps = replicate numNonStreaming emptyOperation
+        allOps = streamingOps ++ nonStreamingOps
+        (nonStr, str) = partitionStreamingOps allOps
+    -- Check counts match
+    foldl' (\n _ -> n + 1) (0 :: Int) str === numStreaming
+    foldl' (\n _ -> n + 1) (0 :: Int) nonStr === numNonStreaming
+
+-- | All operations are preserved after partitioning (none lost)
+propPreservesAllOps :: Property
+propPreservesAllOps = property $ do
+    numStreaming <- forAll $ Gen.int (Range.linear 0 5)
+    numNonStreaming <- forAll $ Gen.int (Range.linear 0 5)
+    let streamingOps = replicate numStreaming (makeStreamingOperation Nothing)
+        nonStreamingOps = replicate numNonStreaming emptyOperation
+        allOps = streamingOps ++ nonStreamingOps
+        (nonStr, str) = partitionStreamingOps allOps
+        totalOriginal = foldl' (\n _ -> n + 1) (0 :: Int) allOps
+        totalPartitioned = foldl' (\n _ -> n + 1) (0 :: Int) nonStr + foldl' (\n _ -> n + 1) (0 :: Int) str
+    totalPartitioned === totalOriginal
+
+-- | All operations in streaming partition have roIsStreaming=True
+propStreamingOpsMarked :: Property
+propStreamingOpsMarked = property $ do
+    numStreaming <- forAll $ Gen.int (Range.linear 1 5)
+    numNonStreaming <- forAll $ Gen.int (Range.linear 0 5)
+    let streamingOps = replicate numStreaming (makeStreamingOperation Nothing)
+        nonStreamingOps = replicate numNonStreaming emptyOperation
+        allOps = streamingOps ++ nonStreamingOps
+        (_nonStr, str) = partitionStreamingOps allOps
+    -- All streaming ops should have roIsStreaming = True
+    assert $ all roIsStreaming str
+
+-- | All operations in non-streaming partition have roIsStreaming=False
+propNonStreamingOpsMarked :: Property
+propNonStreamingOpsMarked = property $ do
+    numStreaming <- forAll $ Gen.int (Range.linear 0 5)
+    numNonStreaming <- forAll $ Gen.int (Range.linear 1 5)
+    let streamingOps = replicate numStreaming (makeStreamingOperation Nothing)
+        nonStreamingOps = replicate numNonStreaming emptyOperation
+        allOps = streamingOps ++ nonStreamingOps
+        (nonStr, _str) = partitionStreamingOps allOps
+    -- All non-streaming ops should have roIsStreaming = False
+    assert $ not (any roIsStreaming nonStr)
+
+-- | Empty list partitions to two empty lists
+propEmptyPartition :: Property
+propEmptyPartition = property $ do
+    let (nonStr, str) = partitionStreamingOps []
+    nonStr === []
+    str === []

@@ -222,6 +222,10 @@ These content types are used to automatically detect streaming operations:
 
 When an operation's success responses include any of these content types,
 the operation is marked as streaming ('roIsStreaming' = 'True').
+
+Note: WebSocket endpoints typically use the @Upgrade@ header mechanism
+rather than a specific content type, so they are not detected here.
+WebSocket support requires separate handling at the protocol level.
 -}
 streamingContentTypes :: [Text]
 streamingContentTypes =
