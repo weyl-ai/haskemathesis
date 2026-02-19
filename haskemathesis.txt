@@ -1333,6 +1333,11 @@ isStreamingContentType :: Text -> Bool
 --   When an operation's success responses include any of these content
 --   types, the operation is marked as streaming (<a>roIsStreaming</a> =
 --   <a>True</a>).
+--   
+--   Note: WebSocket endpoints typically use the <tt>Upgrade</tt> header
+--   mechanism rather than a specific content type, so they are not
+--   detected here. WebSocket support requires separate handling at the
+--   protocol level.
 streamingContentTypes :: [Text]
 instance GHC.Classes.Eq Haskemathesis.OpenApi.Types.ParamLocation
 instance GHC.Classes.Eq Haskemathesis.OpenApi.Types.ResolvedOperation
@@ -3307,6 +3312,28 @@ effectiveTimeout :: TestConfig -> ResolvedOperation -> Maybe Int
 --       let tests = testTreeForUrl defaultTestConfig spec manager "<a>http://localhost:8080"</a>
 --       defaultMain tests
 --   </pre>
+--   
+--   <h3>Streaming Endpoint Handling</h3>
+--   
+--   WAI-based tests (in-memory, synchronous) cannot handle streaming
+--   endpoints like Server-Sent Events (SSE) or NDJSON streams. These
+--   operations are <b>automatically skipped</b> when using
+--   <a>testTreeForApp</a> or <a>testTreeForAppWithConfig</a>.
+--   
+--   To see which operations were skipped, use <a>testTreeForAppIO</a>:
+--   
+--   <pre>
+--   main :: IO ()
+--   main = do
+--       spec &lt;- loadOpenApiFile "api.yaml"
+--       (tests, skipped) &lt;- testTreeForAppIO defaultTestConfig spec myApp
+--       unless (null skipped) $
+--           hPutStrLn stderr $ "Skipped streaming operations: " ++ show skipped
+--       defaultMain tests
+--   </pre>
+--   
+--   For streaming endpoints, use <a>testTreeForUrl</a> with a running HTTP
+--   server which properly handles timeouts.
 module Haskemathesis.Integration.Tasty
 
 -- | Create a Tasty <a>TestTree</a> from a custom executor.
@@ -3340,6 +3367,11 @@ testTreeForExecutor :: Maybe BaseUrl -> [Check] -> ExecutorWithTimeout -> [Resol
 --   This is a convenient way to test a WAI application (e.g., Servant,
 --   Yesod, or any other WAI-based framework) without starting a real HTTP
 --   server.
+--   
+--   <b>Note:</b> Streaming operations (SSE, NDJSON) are automatically
+--   filtered out because WAI testing is synchronous and cannot handle
+--   streaming responses. Use <a>testTreeForAppIO</a> if you need to know
+--   which operations were skipped.
 --   
 --   <h3>Parameters</h3>
 --   
@@ -3401,6 +3433,11 @@ testTreeForExecutorWithConfig :: OpenApi -> TestConfig -> ExecutorWithTimeout ->
 --   Combines <a>testTreeForExecutorWithConfig</a> with <tt>executeWai</tt>
 --   for convenient testing of WAI applications.
 --   
+--   <b>Note:</b> Streaming operations (SSE, NDJSON) are automatically
+--   filtered out because WAI testing is synchronous and cannot handle
+--   streaming responses. Use <a>testTreeForAppIO</a> if you need to know
+--   which operations were skipped.
+--   
 --   <h3>Parameters</h3>
 --   
 --   <ul>
@@ -3448,6 +3485,76 @@ testTreeForAppWithConfig :: TestConfig -> OpenApi -> Application -> TestTree
 --   </pre>
 testTreeForUrl :: TestConfig -> OpenApi -> Manager -> BaseUrl -> TestTree
 
+-- | Create a Tasty <a>TestTree</a> from a WAI <a>Application</a>,
+--   returning skipped operations.
+--   
+--   Like <a>testTreeForAppWithConfig</a>, but returns the list of
+--   operations that were skipped due to being streaming endpoints. Also
+--   prints a warning to stderr if any operations are skipped.
+--   
+--   Streaming operations (SSE, NDJSON) cannot be tested with WAI because
+--   WAI testing is synchronous and in-memory. For streaming endpoints, use
+--   <a>testTreeForUrl</a> with a running HTTP server.
+--   
+--   <h3>Parameters</h3>
+--   
+--   <ul>
+--   <li><tt>config</tt> - The <a>TestConfig</a> controlling test
+--   generation</li>
+--   <li><tt>openApi</tt> - The OpenAPI specification</li>
+--   <li><tt>app</tt> - Your WAI <a>Application</a></li>
+--   </ul>
+--   
+--   <h3>Return Value</h3>
+--   
+--   Returns a tuple of:
+--   
+--   <ul>
+--   <li>The <a>TestTree</a> for non-streaming operations</li>
+--   <li>List of operation labels that were skipped (streaming
+--   operations)</li>
+--   </ul>
+--   
+--   <h3>Example</h3>
+--   
+--   <pre>
+--   main :: IO ()
+--   main = do
+--       spec &lt;- loadOpenApiFile "api.yaml"
+--       (tests, skipped) &lt;- testTreeForAppIO defaultTestConfig spec myApp
+--       unless (null skipped) $
+--           putStrLn $ "Note: " ++ show (length skipped) ++ " streaming ops skipped"
+--       defaultMain tests
+--   </pre>
+testTreeForAppIO :: TestConfig -> OpenApi -> Application -> IO (TestTree, [Text])
+
+-- | Create a negative testing <a>TestTree</a> from a WAI
+--   <a>Application</a>, returning skipped operations.
+--   
+--   Like <a>testTreeForAppNegative</a>, but returns the list of operations
+--   that were skipped due to being streaming endpoints. Also prints a
+--   warning to stderr if any operations are skipped.
+--   
+--   <h3>Parameters</h3>
+--   
+--   <ul>
+--   <li><tt>config</tt> - The <a>TestConfig</a></li>
+--   <li><tt>openApi</tt> - The OpenAPI specification</li>
+--   <li><tt>app</tt> - Your WAI <a>Application</a></li>
+--   </ul>
+--   
+--   <h3>Return Value</h3>
+--   
+--   Returns a tuple of:
+--   
+--   <ul>
+--   <li>The <a>TestTree</a> for non-streaming operations (negative
+--   tests)</li>
+--   <li>List of operation labels that were skipped (streaming
+--   operations)</li>
+--   </ul>
+testTreeForAppNegativeIO :: TestConfig -> OpenApi -> Application -> IO (TestTree, [Text])
+
 -- | Create a Tasty <a>TestTree</a> for negative testing with a custom
 --   executor.
 --   
@@ -3477,6 +3584,11 @@ testTreeForExecutorNegative :: OpenApi -> TestConfig -> ExecutorWithTimeout -> [
 --   
 --   Convenience function that combines <a>testTreeForExecutorNegative</a>
 --   with <tt>executeWai</tt> for testing WAI applications.
+--   
+--   <b>Note:</b> Streaming operations (SSE, NDJSON) are automatically
+--   filtered out because WAI testing is synchronous and cannot handle
+--   streaming responses. Use <a>testTreeForAppNegativeIO</a> if you need
+--   to know which operations were skipped.
 --   
 --   <h3>Parameters</h3>
 --   
@@ -3538,12 +3650,38 @@ testTreeForUrlNegative :: TestConfig -> OpenApi -> Manager -> BaseUrl -> TestTre
 --   main :: IO ()
 --   main = hspec $ specForAppWithConfig defaultConfig openApiSpec myApp
 --   </pre>
+--   
+--   <h4>Streaming Endpoint Handling</h4>
+--   
+--   WAI-based tests (in-memory, synchronous) cannot handle streaming
+--   endpoints like Server-Sent Events (SSE) or NDJSON streams. These
+--   operations are <b>automatically skipped</b> when using
+--   <a>specForApp</a> or <a>specForAppWithConfig</a>.
+--   
+--   To see which operations were skipped, use <a>specForAppIO</a>:
+--   
+--   <pre>
+--   main :: IO ()
+--   main = do
+--       (spec, skipped) &lt;- specForAppIO defaultConfig openApiSpec myApp
+--       unless (null skipped) $
+--           hPutStrLn stderr $ "Skipped streaming operations: " ++ show skipped
+--       hspec spec
+--   </pre>
+--   
+--   For streaming endpoints, use <a>specForUrl</a> with a running HTTP
+--   server which properly handles timeouts.
 module Haskemathesis.Integration.Hspec
 
 -- | Create an Hspec <a>Spec</a> for a WAI <a>Application</a>.
 --   
 --   This is the simplest way to test a WAI application against an OpenAPI
 --   specification. Operations are automatically resolved from the spec.
+--   
+--   <b>Note:</b> Streaming operations (SSE, NDJSON) are automatically
+--   filtered out because WAI testing is synchronous and cannot handle
+--   streaming responses. Use <a>specForAppIO</a> if you need to know which
+--   operations were skipped.
 --   
 --   <h4>Parameters</h4>
 --   
@@ -3570,6 +3708,11 @@ specForApp :: Maybe BaseUrl -> [Check] -> OpenApi -> Application -> Spec
 --   Combines the convenience of WAI application testing with the
 --   flexibility of <a>TestConfig</a>. This is the recommended approach for
 --   most use cases.
+--   
+--   <b>Note:</b> Streaming operations (SSE, NDJSON) are automatically
+--   filtered out because WAI testing is synchronous and cannot handle
+--   streaming responses. Use <a>specForAppIO</a> if you need to know which
+--   operations were skipped.
 --   
 --   <h4>Parameters</h4>
 --   
@@ -3665,6 +3808,74 @@ specForExecutorWithConfig :: OpenApi -> TestConfig -> ExecutorWithTimeout -> [Re
 --   </pre>
 specForUrl :: TestConfig -> OpenApi -> Manager -> BaseUrl -> Spec
 
+-- | Create an Hspec <a>Spec</a> from a WAI <a>Application</a>, returning
+--   skipped operations.
+--   
+--   Like <a>specForAppWithConfig</a>, but returns the list of operations
+--   that were skipped due to being streaming endpoints. Also prints a
+--   warning to stderr if any operations are skipped.
+--   
+--   Streaming operations (SSE, NDJSON) cannot be tested with WAI because
+--   WAI testing is synchronous and in-memory. For streaming endpoints, use
+--   <a>specForUrl</a> with a running HTTP server.
+--   
+--   <h4>Parameters</h4>
+--   
+--   <ul>
+--   <li><tt>config</tt> - Test configuration</li>
+--   <li><tt>openApi</tt> - The OpenAPI specification</li>
+--   <li><tt>app</tt> - The WAI application to test</li>
+--   </ul>
+--   
+--   <h4>Return Value</h4>
+--   
+--   Returns a tuple of:
+--   
+--   <ul>
+--   <li>The Hspec <a>Spec</a> for non-streaming operations</li>
+--   <li>List of operation labels that were skipped (streaming
+--   operations)</li>
+--   </ul>
+--   
+--   <h4>Example</h4>
+--   
+--   <pre>
+--   main :: IO ()
+--   main = do
+--       (spec, skipped) &lt;- specForAppIO defaultConfig openApiSpec myApp
+--       unless (null skipped) $
+--           putStrLn $ "Note: " ++ show (length skipped) ++ " streaming ops skipped"
+--       hspec spec
+--   </pre>
+specForAppIO :: TestConfig -> OpenApi -> Application -> IO (Spec, [Text])
+
+-- | Create a negative testing <a>Spec</a> from a WAI <a>Application</a>,
+--   returning skipped operations.
+--   
+--   Like <a>specForAppNegative</a>, but returns the list of operations
+--   that were skipped due to being streaming endpoints. Also prints a
+--   warning to stderr if any operations are skipped.
+--   
+--   <h4>Parameters</h4>
+--   
+--   <ul>
+--   <li><tt>config</tt> - Test configuration</li>
+--   <li><tt>openApi</tt> - The OpenAPI specification</li>
+--   <li><tt>app</tt> - The WAI application to test</li>
+--   </ul>
+--   
+--   <h4>Return Value</h4>
+--   
+--   Returns a tuple of:
+--   
+--   <ul>
+--   <li>The Hspec <a>Spec</a> for non-streaming operations (negative
+--   tests)</li>
+--   <li>List of operation labels that were skipped (streaming
+--   operations)</li>
+--   </ul>
+specForAppNegativeIO :: TestConfig -> OpenApi -> Application -> IO (Spec, [Text])
+
 -- | Create an Hspec <a>Spec</a> for negative testing with a custom
 --   executor.
 --   
@@ -3697,6 +3908,11 @@ specForExecutorNegative :: OpenApi -> TestConfig -> ExecutorWithTimeout -> [Reso
 --   
 --   Convenience wrapper around <a>specForExecutorNegative</a> for WAI
 --   applications.
+--   
+--   <b>Note:</b> Streaming operations (SSE, NDJSON) are automatically
+--   filtered out because WAI testing is synchronous and cannot handle
+--   streaming responses. Use <a>specForAppNegativeIO</a> if you need to
+--   know which operations were skipped.
 --   
 --   <h4>Parameters</h4>
 --   

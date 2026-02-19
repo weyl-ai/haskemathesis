@@ -63,27 +63,27 @@ checks = ['responseSchemaConformance', 'notAServerError']
 -&gt; (ApiRequest -&gt; ApiResponse -&gt; ResolvedOperation -&gt; CheckResult)
 -&gt; Check
 forall a b. (a -&gt; b) -&gt; a -&gt; b
-</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="hs-glyph">\</span><span id="local-6989586621679223637"><span class="annot"><span class="annottext">ApiRequest
-</span><a href="#local-6989586621679223637"><span class="hs-identifier hs-var">req</span></a></span></span><span> </span><span id="local-6989586621679223638"><span class="annot"><span class="annottext">ApiResponse
-</span><a href="#local-6989586621679223638"><span class="hs-identifier hs-var">res</span></a></span></span><span> </span><span id="local-6989586621679223639"><span class="annot"><span class="annottext">ResolvedOperation
-</span><a href="#local-6989586621679223639"><span class="hs-identifier hs-var">op</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="hs-glyph">\</span><span id="local-6989586621679224470"><span class="annot"><span class="annottext">ApiRequest
+</span><a href="#local-6989586621679224470"><span class="hs-identifier hs-var">req</span></a></span></span><span> </span><span id="local-6989586621679224471"><span class="annot"><span class="annottext">ApiResponse
+</span><a href="#local-6989586621679224471"><span class="hs-identifier hs-var">res</span></a></span></span><span> </span><span id="local-6989586621679224472"><span class="annot"><span class="annottext">ResolvedOperation
+</span><a href="#local-6989586621679224472"><span class="hs-identifier hs-var">op</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
 </span><span id="line-57"></span><span>        </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">ApiResponse -&gt; ResolvedOperation -&gt; Maybe Schema
 </span><a href="Haskemathesis.Check.Standard.Helpers.html#findResponseSchema"><span class="hs-identifier hs-var">findResponseSchema</span></a></span><span> </span><span class="annot"><span class="annottext">ApiResponse
-</span><a href="#local-6989586621679223638"><span class="hs-identifier hs-var">res</span></a></span><span> </span><span class="annot"><span class="annottext">ResolvedOperation
-</span><a href="#local-6989586621679223639"><span class="hs-identifier hs-var">op</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><a href="#local-6989586621679224471"><span class="hs-identifier hs-var">res</span></a></span><span> </span><span class="annot"><span class="annottext">ResolvedOperation
+</span><a href="#local-6989586621679224472"><span class="hs-identifier hs-var">op</span></a></span><span> </span><span class="hs-keyword">of</span><span>
 </span><span id="line-58"></span><span>            </span><span class="annot"><span class="annottext">Maybe Schema
 </span><span class="hs-identifier hs-var">Nothing</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">CheckResult
 </span><a href="Haskemathesis.Check.Types.html#CheckPassed"><span class="hs-identifier hs-var">CheckPassed</span></a></span><span>
-</span><span id="line-59"></span><span>            </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span id="local-6989586621679223641"><span class="annot"><span class="annottext">Schema
-</span><a href="#local-6989586621679223641"><span class="hs-identifier hs-var">schema</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-59"></span><span>            </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span id="local-6989586621679224474"><span class="annot"><span class="annottext">Schema
+</span><a href="#local-6989586621679224474"><span class="hs-identifier hs-var">schema</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
 </span><span id="line-60"></span><span>                </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">ByteString -&gt; Either String Value
 forall a. FromJSON a =&gt; ByteString -&gt; Either String a
 </span><a href="file:///nix/store/bjx03k98335ijsml9dq303bj5ddk8a5f-aeson-2.2.3.0-doc/share/doc/aeson-2.2.3.0/html/src/Data.Aeson.Decoding.html#eitherDecode"><span class="hs-identifier hs-var">eitherDecode</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">StrictByteString -&gt; ByteString
 </span><span class="hs-identifier hs-var">LBS.fromStrict</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">ApiResponse -&gt; StrictByteString
 </span><a href="Haskemathesis.Execute.Types.html#resBody"><span class="hs-identifier hs-var">resBody</span></a></span><span> </span><span class="annot"><span class="annottext">ApiResponse
-</span><a href="#local-6989586621679223638"><span class="hs-identifier hs-var">res</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="hs-keyword">of</span><span>
-</span><span id="line-61"></span><span>                    </span><span class="annot"><span class="hs-identifier hs-type">Left</span></span><span> </span><span id="local-6989586621679223644"><span class="annot"><span class="annottext">String
-</span><a href="#local-6989586621679223644"><span class="hs-identifier hs-var">err</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><a href="#local-6989586621679224471"><span class="hs-identifier hs-var">res</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-61"></span><span>                    </span><span class="annot"><span class="hs-identifier hs-type">Left</span></span><span> </span><span id="local-6989586621679224477"><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679224477"><span class="hs-identifier hs-var">err</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
 </span><span id="line-62"></span><span>                        </span><span class="annot"><span class="annottext">FailureDetail -&gt; CheckResult
 </span><a href="Haskemathesis.Check.Types.html#CheckFailed"><span class="hs-identifier hs-var">CheckFailed</span></a></span><span>
 </span><span id="line-63"></span><span>                            </span><span class="hs-special">(</span><span> </span><span class="annot"><span class="annottext">Text
@@ -102,34 +102,34 @@ forall a. FromJSON a =&gt; ByteString -&gt; Either String a
 forall a. Semigroup a =&gt; a -&gt; a -&gt; a
 </span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; Text
 </span><span class="hs-identifier hs-var">T.pack</span></span><span> </span><span class="annot"><span class="annottext">String
-</span><a href="#local-6989586621679223644"><span class="hs-identifier hs-var">err</span></a></span><span class="hs-special">)</span><span>
+</span><a href="#local-6989586621679224477"><span class="hs-identifier hs-var">err</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-66"></span><span>                                </span><span class="hs-special">[</span><span class="hs-special">]</span><span>
 </span><span id="line-67"></span><span>                                </span><span class="annot"><span class="annottext">Maybe Text
 forall a. Maybe a
 </span><span class="hs-identifier hs-var">Nothing</span></span><span>
 </span><span id="line-68"></span><span>                                </span><span class="annot"><span class="annottext">ApiRequest
-</span><a href="#local-6989586621679223637"><span class="hs-identifier hs-var">req</span></a></span><span>
+</span><a href="#local-6989586621679224470"><span class="hs-identifier hs-var">req</span></a></span><span>
 </span><span id="line-69"></span><span>                                </span><span class="annot"><span class="annottext">ApiResponse
-</span><a href="#local-6989586621679223638"><span class="hs-identifier hs-var">res</span></a></span><span>
+</span><a href="#local-6989586621679224471"><span class="hs-identifier hs-var">res</span></a></span><span>
 </span><span id="line-70"></span><span>                                </span><span class="annot"><span class="annottext">ResolvedOperation
-</span><a href="#local-6989586621679223639"><span class="hs-identifier hs-var">op</span></a></span><span>
+</span><a href="#local-6989586621679224472"><span class="hs-identifier hs-var">op</span></a></span><span>
 </span><span id="line-71"></span><span>                            </span><span class="hs-special">)</span><span>
-</span><span id="line-72"></span><span>                    </span><span class="annot"><span class="hs-identifier hs-type">Right</span></span><span> </span><span id="local-6989586621679223647"><span class="annot"><span class="annottext">Value
-</span><a href="#local-6989586621679223647"><span class="hs-identifier hs-var">value</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-72"></span><span>                    </span><span class="annot"><span class="hs-identifier hs-type">Right</span></span><span> </span><span id="local-6989586621679224480"><span class="annot"><span class="annottext">Value
+</span><a href="#local-6989586621679224480"><span class="hs-identifier hs-var">value</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
 </span><span id="line-73"></span><span>                        </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">Schema -&gt; Value -&gt; [Text]
 </span><a href="Haskemathesis.Validate.html#validateErrors"><span class="hs-identifier hs-var">validateErrors</span></a></span><span> </span><span class="annot"><span class="annottext">Schema
-</span><a href="#local-6989586621679223641"><span class="hs-identifier hs-var">schema</span></a></span><span> </span><span class="annot"><span class="annottext">Value
-</span><a href="#local-6989586621679223647"><span class="hs-identifier hs-var">value</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><a href="#local-6989586621679224474"><span class="hs-identifier hs-var">schema</span></a></span><span> </span><span class="annot"><span class="annottext">Value
+</span><a href="#local-6989586621679224480"><span class="hs-identifier hs-var">value</span></a></span><span> </span><span class="hs-keyword">of</span><span>
 </span><span id="line-74"></span><span>                            </span><span class="hs-special">[</span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">CheckResult
 </span><a href="Haskemathesis.Check.Types.html#CheckPassed"><span class="hs-identifier hs-var">CheckPassed</span></a></span><span>
-</span><span id="line-75"></span><span>                            </span><span id="local-6989586621679223648"><span class="annot"><span class="annottext">[Text]
-</span><a href="#local-6989586621679223648"><span class="hs-identifier hs-var">errs</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
-</span><span id="line-76"></span><span>                                </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621679223649"><span class="annot"><span class="annottext">diff :: Text
-</span><a href="#local-6989586621679223649"><span class="hs-identifier hs-var hs-var">diff</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Schema -&gt; Value -&gt; [Text] -&gt; Text
+</span><span id="line-75"></span><span>                            </span><span id="local-6989586621679224481"><span class="annot"><span class="annottext">[Text]
+</span><a href="#local-6989586621679224481"><span class="hs-identifier hs-var">errs</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-76"></span><span>                                </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621679224482"><span class="annot"><span class="annottext">diff :: Text
+</span><a href="#local-6989586621679224482"><span class="hs-identifier hs-var hs-var">diff</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Schema -&gt; Value -&gt; [Text] -&gt; Text
 </span><a href="Haskemathesis.Check.Standard.ResponseSchema.html#schemaDiff"><span class="hs-identifier hs-var">schemaDiff</span></a></span><span> </span><span class="annot"><span class="annottext">Schema
-</span><a href="#local-6989586621679223641"><span class="hs-identifier hs-var">schema</span></a></span><span> </span><span class="annot"><span class="annottext">Value
-</span><a href="#local-6989586621679223647"><span class="hs-identifier hs-var">value</span></a></span><span> </span><span class="annot"><span class="annottext">[Text]
-</span><a href="#local-6989586621679223648"><span class="hs-identifier hs-var">errs</span></a></span><span>
+</span><a href="#local-6989586621679224474"><span class="hs-identifier hs-var">schema</span></a></span><span> </span><span class="annot"><span class="annottext">Value
+</span><a href="#local-6989586621679224480"><span class="hs-identifier hs-var">value</span></a></span><span> </span><span class="annot"><span class="annottext">[Text]
+</span><a href="#local-6989586621679224481"><span class="hs-identifier hs-var">errs</span></a></span><span>
 </span><span id="line-77"></span><span>                                 </span><span class="hs-keyword">in</span><span> </span><span class="annot"><span class="annottext">FailureDetail -&gt; CheckResult
 </span><a href="Haskemathesis.Check.Types.html#CheckFailed"><span class="hs-identifier hs-var">CheckFailed</span></a></span><span>
 </span><span id="line-78"></span><span>                                        </span><span class="hs-special">(</span><span> </span><span class="annot"><span class="annottext">Text
@@ -149,27 +149,27 @@ forall a. Semigroup a =&gt; a -&gt; a -&gt; a
 </span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; [Text] -&gt; Text
 </span><span class="hs-identifier hs-var">T.intercalate</span></span><span> </span><span class="annot"><span class="annottext">Text
 </span><span class="hs-string">&quot;; &quot;</span></span><span> </span><span class="annot"><span class="annottext">[Text]
-</span><a href="#local-6989586621679223648"><span class="hs-identifier hs-var">errs</span></a></span><span class="hs-special">)</span><span>
+</span><a href="#local-6989586621679224481"><span class="hs-identifier hs-var">errs</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-81"></span><span>                                            </span><span class="annot"><span class="annottext">[Text]
-</span><a href="#local-6989586621679223648"><span class="hs-identifier hs-var">errs</span></a></span><span>
+</span><a href="#local-6989586621679224481"><span class="hs-identifier hs-var">errs</span></a></span><span>
 </span><span id="line-82"></span><span>                                            </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Text -&gt; Maybe Text
 forall a. a -&gt; Maybe a
 </span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">Text
-</span><a href="#local-6989586621679223649"><span class="hs-identifier hs-var">diff</span></a></span><span class="hs-special">)</span><span>
+</span><a href="#local-6989586621679224482"><span class="hs-identifier hs-var">diff</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-83"></span><span>                                            </span><span class="annot"><span class="annottext">ApiRequest
-</span><a href="#local-6989586621679223637"><span class="hs-identifier hs-var">req</span></a></span><span>
+</span><a href="#local-6989586621679224470"><span class="hs-identifier hs-var">req</span></a></span><span>
 </span><span id="line-84"></span><span>                                            </span><span class="annot"><span class="annottext">ApiResponse
-</span><a href="#local-6989586621679223638"><span class="hs-identifier hs-var">res</span></a></span><span>
+</span><a href="#local-6989586621679224471"><span class="hs-identifier hs-var">res</span></a></span><span>
 </span><span id="line-85"></span><span>                                            </span><span class="annot"><span class="annottext">ResolvedOperation
-</span><a href="#local-6989586621679223639"><span class="hs-identifier hs-var">op</span></a></span><span>
+</span><a href="#local-6989586621679224472"><span class="hs-identifier hs-var">op</span></a></span><span>
 </span><span id="line-86"></span><span>                                        </span><span class="hs-special">)</span><span>
 </span><span id="line-87"></span><span>
 </span><span id="line-88"></span><span class="annot"><a href="Haskemathesis.Check.Standard.ResponseSchema.html#schemaDiff"><span class="hs-identifier hs-type">schemaDiff</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Haskemathesis.Schema.html#Schema"><span class="hs-identifier hs-type">Schema</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="file:///nix/store/bjx03k98335ijsml9dq303bj5ddk8a5f-aeson-2.2.3.0-doc/share/doc/aeson-2.2.3.0/html/src/Data.Aeson.Types.Internal.html#Value"><span class="hs-identifier hs-type">Value</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
 </span><span id="line-89"></span><span id="schemaDiff"><span class="annot"><span class="annottext">schemaDiff :: Schema -&gt; Value -&gt; [Text] -&gt; Text
-</span><a href="Haskemathesis.Check.Standard.ResponseSchema.html#schemaDiff"><span class="hs-identifier hs-var hs-var">schemaDiff</span></a></span></span><span> </span><span id="local-6989586621679223652"><span class="annot"><span class="annottext">Schema
-</span><a href="#local-6989586621679223652"><span class="hs-identifier hs-var">schema</span></a></span></span><span> </span><span id="local-6989586621679223653"><span class="annot"><span class="annottext">Value
-</span><a href="#local-6989586621679223653"><span class="hs-identifier hs-var">value</span></a></span></span><span> </span><span id="local-6989586621679223654"><span class="annot"><span class="annottext">[Text]
-</span><a href="#local-6989586621679223654"><span class="hs-identifier hs-var">errs</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><a href="Haskemathesis.Check.Standard.ResponseSchema.html#schemaDiff"><span class="hs-identifier hs-var hs-var">schemaDiff</span></a></span></span><span> </span><span id="local-6989586621679224485"><span class="annot"><span class="annottext">Schema
+</span><a href="#local-6989586621679224485"><span class="hs-identifier hs-var">schema</span></a></span></span><span> </span><span id="local-6989586621679224486"><span class="annot"><span class="annottext">Value
+</span><a href="#local-6989586621679224486"><span class="hs-identifier hs-var">value</span></a></span></span><span> </span><span id="local-6989586621679224487"><span class="annot"><span class="annottext">[Text]
+</span><a href="#local-6989586621679224487"><span class="hs-identifier hs-var">errs</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
 </span><span id="line-90"></span><span>    </span><span class="annot"><span class="annottext">Text -&gt; [Text] -&gt; Text
 </span><span class="hs-identifier hs-var">T.intercalate</span></span><span>
 </span><span id="line-91"></span><span>        </span><span class="annot"><span class="annottext">Text
@@ -182,7 +182,7 @@ forall a. Semigroup a =&gt; a -&gt; a -&gt; a
 </span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Maybe SchemaType -&gt; Text
 </span><a href="Haskemathesis.Check.Standard.ResponseSchema.html#renderSchemaType"><span class="hs-identifier hs-var">renderSchemaType</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Schema -&gt; Maybe SchemaType
 </span><a href="Haskemathesis.Schema.html#schemaType"><span class="hs-identifier hs-var">schemaType</span></a></span><span> </span><span class="annot"><span class="annottext">Schema
-</span><a href="#local-6989586621679223652"><span class="hs-identifier hs-var">schema</span></a></span><span class="hs-special">)</span><span>
+</span><a href="#local-6989586621679224485"><span class="hs-identifier hs-var">schema</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-94"></span><span>          </span><span class="hs-special">]</span><span>
 </span><span id="line-95"></span><span>            </span><span class="annot"><span class="annottext">[Text] -&gt; [Text] -&gt; [Text]
 forall a. Semigroup a =&gt; a -&gt; a -&gt; a
@@ -192,7 +192,7 @@ forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
 </span><span class="hs-string">&quot;  - &quot;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
 forall a. Semigroup a =&gt; a -&gt; a -&gt; a
 </span><span class="hs-operator hs-var">&lt;&gt;</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[Text]
-</span><a href="#local-6989586621679223654"><span class="hs-identifier hs-var">errs</span></a></span><span>
+</span><a href="#local-6989586621679224487"><span class="hs-identifier hs-var">errs</span></a></span><span>
 </span><span id="line-96"></span><span>            </span><span class="annot"><span class="annottext">[Text] -&gt; [Text] -&gt; [Text]
 forall a. Semigroup a =&gt; a -&gt; a -&gt; a
 </span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Text
@@ -203,15 +203,15 @@ forall a. Semigroup a =&gt; a -&gt; a -&gt; a
 </span><span class="hs-identifier hs-var">LBS.toStrict</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Value -&gt; ByteString
 forall a. ToJSON a =&gt; a -&gt; ByteString
 </span><a href="file:///nix/store/bjx03k98335ijsml9dq303bj5ddk8a5f-aeson-2.2.3.0-doc/share/doc/aeson-2.2.3.0/html/src/Data.Aeson.html#encode"><span class="hs-identifier hs-var">encode</span></a></span><span> </span><span class="annot"><span class="annottext">Value
-</span><a href="#local-6989586621679223653"><span class="hs-identifier hs-var">value</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span class="hs-special">]</span><span>
+</span><a href="#local-6989586621679224486"><span class="hs-identifier hs-var">value</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span class="hs-special">]</span><span>
 </span><span id="line-97"></span><span>        </span><span class="hs-special">)</span><span>
 </span><span id="line-98"></span><span>
 </span><span id="line-99"></span><span class="annot"><a href="Haskemathesis.Check.Standard.ResponseSchema.html#renderSchemaType"><span class="hs-identifier hs-type">renderSchemaType</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="Haskemathesis.Schema.html#SchemaType"><span class="hs-identifier hs-type">SchemaType</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
 </span><span id="line-100"></span><span id="renderSchemaType"><span class="annot"><span class="annottext">renderSchemaType :: Maybe SchemaType -&gt; Text
-</span><a href="Haskemathesis.Check.Standard.ResponseSchema.html#renderSchemaType"><span class="hs-identifier hs-var hs-var">renderSchemaType</span></a></span></span><span> </span><span id="local-6989586621679223658"><span class="annot"><span class="annottext">Maybe SchemaType
-</span><a href="#local-6989586621679223658"><span class="hs-identifier hs-var">mType</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><a href="Haskemathesis.Check.Standard.ResponseSchema.html#renderSchemaType"><span class="hs-identifier hs-var hs-var">renderSchemaType</span></a></span></span><span> </span><span id="local-6989586621679224491"><span class="annot"><span class="annottext">Maybe SchemaType
+</span><a href="#local-6989586621679224491"><span class="hs-identifier hs-var">mType</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
 </span><span id="line-101"></span><span>    </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">Maybe SchemaType
-</span><a href="#local-6989586621679223658"><span class="hs-identifier hs-var">mType</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><a href="#local-6989586621679224491"><span class="hs-identifier hs-var">mType</span></a></span><span> </span><span class="hs-keyword">of</span><span>
 </span><span id="line-102"></span><span>        </span><span class="annot"><span class="annottext">Maybe SchemaType
 </span><span class="hs-identifier hs-var">Nothing</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Text
 </span><span class="hs-string">&quot;unspecified&quot;</span></span><span>
