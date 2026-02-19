@@ -66,7 +66,7 @@ Each test case represents one API operation being tested.
 </span><a href="Haskemathesis.Report.JUnit.html#tcrTestCount"><span class="hs-identifier hs-var hs-var">tcrTestCount</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-glyph">!</span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span>
 </span><span id="line-62"></span><span>    </span><span class="annot"><span class="hs-comment">-- ^ Number of individual property tests run</span></span><span>
 </span><span id="line-63"></span><span>    </span><span class="hs-special">}</span><span>
-</span><span id="line-64"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679223634"><span id="local-6989586621679223646"><span class="annot"><span class="annottext">TestCaseResult -&gt; TestCaseResult -&gt; Bool
+</span><span id="line-64"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679223670"><span id="local-6989586621679223682"><span class="annot"><span class="annottext">TestCaseResult -&gt; TestCaseResult -&gt; Bool
 (TestCaseResult -&gt; TestCaseResult -&gt; Bool)
 -&gt; (TestCaseResult -&gt; TestCaseResult -&gt; Bool) -&gt; Eq TestCaseResult
 forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
@@ -74,7 +74,7 @@ $c== :: TestCaseResult -&gt; TestCaseResult -&gt; Bool
 == :: TestCaseResult -&gt; TestCaseResult -&gt; Bool
 $c/= :: TestCaseResult -&gt; TestCaseResult -&gt; Bool
 /= :: TestCaseResult -&gt; TestCaseResult -&gt; Bool
-</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679223651"><span id="local-6989586621679223664"><span id="local-6989586621679223668"><span class="annot"><span class="annottext">Int -&gt; TestCaseResult -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679223687"><span id="local-6989586621679223700"><span id="local-6989586621679223704"><span class="annot"><span class="annottext">Int -&gt; TestCaseResult -&gt; ShowS
 [TestCaseResult] -&gt; ShowS
 TestCaseResult -&gt; String
 (Int -&gt; TestCaseResult -&gt; ShowS)
@@ -106,7 +106,7 @@ A test suite contains multiple test cases.
 </span><a href="Haskemathesis.Report.JUnit.html#tsrTime"><span class="hs-identifier hs-var hs-var">tsrTime</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-glyph">!</span><span class="annot"><span class="hs-identifier hs-type">NominalDiffTime</span></span><span>
 </span><span id="line-76"></span><span>    </span><span class="annot"><span class="hs-comment">-- ^ Total time taken for all tests</span></span><span>
 </span><span id="line-77"></span><span>    </span><span class="hs-special">}</span><span>
-</span><span id="line-78"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679223677"><span id="local-6989586621679223684"><span class="annot"><span class="annottext">TestSuiteResult -&gt; TestSuiteResult -&gt; Bool
+</span><span id="line-78"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679223713"><span id="local-6989586621679223720"><span class="annot"><span class="annottext">TestSuiteResult -&gt; TestSuiteResult -&gt; Bool
 (TestSuiteResult -&gt; TestSuiteResult -&gt; Bool)
 -&gt; (TestSuiteResult -&gt; TestSuiteResult -&gt; Bool)
 -&gt; Eq TestSuiteResult
@@ -115,7 +115,7 @@ $c== :: TestSuiteResult -&gt; TestSuiteResult -&gt; Bool
 == :: TestSuiteResult -&gt; TestSuiteResult -&gt; Bool
 $c/= :: TestSuiteResult -&gt; TestSuiteResult -&gt; Bool
 /= :: TestSuiteResult -&gt; TestSuiteResult -&gt; Bool
-</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679223688"><span id="local-6989586621679223696"><span id="local-6989586621679223700"><span class="annot"><span class="annottext">Int -&gt; TestSuiteResult -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679223724"><span id="local-6989586621679223732"><span id="local-6989586621679223736"><span class="annot"><span class="annottext">Int -&gt; TestSuiteResult -&gt; ShowS
 [TestSuiteResult] -&gt; ShowS
 TestSuiteResult -&gt; String
 (Int -&gt; TestSuiteResult -&gt; ShowS)
@@ -162,44 +162,44 @@ Returns JUnit XML as 'Text'.
 -}</span></span><span>
 </span><span id="line-108"></span><span class="annot"><a href="Haskemathesis.Report.JUnit.html#renderJUnitXml"><span class="hs-identifier hs-type">renderJUnitXml</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="Haskemathesis.Report.JUnit.html#TestCaseResult"><span class="hs-identifier hs-type">TestCaseResult</span></a></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
 </span><span id="line-109"></span><span id="renderJUnitXml"><span class="annot"><span class="annottext">renderJUnitXml :: Text -&gt; [TestCaseResult] -&gt; Text
-</span><a href="Haskemathesis.Report.JUnit.html#renderJUnitXml"><span class="hs-identifier hs-var hs-var">renderJUnitXml</span></a></span></span><span> </span><span id="local-6989586621679223702"><span class="annot"><span class="annottext">Text
-</span><a href="#local-6989586621679223702"><span class="hs-identifier hs-var">suiteName</span></a></span></span><span> </span><span id="local-6989586621679223703"><span class="annot"><span class="annottext">[TestCaseResult]
-</span><a href="#local-6989586621679223703"><span class="hs-identifier hs-var">results</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
-</span><span id="line-110"></span><span>    </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621679223709"><span class="annot"><span class="annottext">totalTests :: Int
-</span><a href="#local-6989586621679223709"><span class="hs-identifier hs-var hs-var">totalTests</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(Int -&gt; TestCaseResult -&gt; Int) -&gt; Int -&gt; [TestCaseResult] -&gt; Int
+</span><a href="Haskemathesis.Report.JUnit.html#renderJUnitXml"><span class="hs-identifier hs-var hs-var">renderJUnitXml</span></a></span></span><span> </span><span id="local-6989586621679223738"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679223738"><span class="hs-identifier hs-var">suiteName</span></a></span></span><span> </span><span id="local-6989586621679223739"><span class="annot"><span class="annottext">[TestCaseResult]
+</span><a href="#local-6989586621679223739"><span class="hs-identifier hs-var">results</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-110"></span><span>    </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621679223745"><span class="annot"><span class="annottext">totalTests :: Int
+</span><a href="#local-6989586621679223745"><span class="hs-identifier hs-var hs-var">totalTests</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(Int -&gt; TestCaseResult -&gt; Int) -&gt; Int -&gt; [TestCaseResult] -&gt; Int
 forall b a. (b -&gt; a -&gt; b) -&gt; b -&gt; [a] -&gt; b
 forall (t :: * -&gt; *) b a.
 Foldable t =&gt;
 (b -&gt; a -&gt; b) -&gt; b -&gt; t a -&gt; b
-</span><span class="hs-identifier hs-var">foldl'</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span id="local-6989586621679223711"><span class="annot"><span class="annottext">Int
-</span><a href="#local-6989586621679223711"><span class="hs-identifier hs-var">n</span></a></span></span><span> </span><span class="annot"><span class="annottext">TestCaseResult
+</span><span class="hs-identifier hs-var">foldl'</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span id="local-6989586621679223747"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679223747"><span class="hs-identifier hs-var">n</span></a></span></span><span> </span><span class="annot"><span class="annottext">TestCaseResult
 </span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Int
-</span><a href="#local-6989586621679223711"><span class="hs-identifier hs-var">n</span></a></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Int
+</span><a href="#local-6989586621679223747"><span class="hs-identifier hs-var">n</span></a></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Int
 forall a. Num a =&gt; a -&gt; a -&gt; a
 </span><span class="hs-operator hs-var">+</span></span><span> </span><span class="annot"><span class="annottext">Int
 </span><span class="hs-number">1</span></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Int
 </span><span class="hs-number">0</span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[TestCaseResult]
-</span><a href="#local-6989586621679223703"><span class="hs-identifier hs-var">results</span></a></span><span>
-</span><span id="line-111"></span><span>        </span><span id="local-6989586621679223716"><span class="annot"><span class="annottext">failures :: Int
-</span><a href="#local-6989586621679223716"><span class="hs-identifier hs-var hs-var">failures</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(Int -&gt; TestCaseResult -&gt; Int) -&gt; Int -&gt; [TestCaseResult] -&gt; Int
+</span><a href="#local-6989586621679223739"><span class="hs-identifier hs-var">results</span></a></span><span>
+</span><span id="line-111"></span><span>        </span><span id="local-6989586621679223752"><span class="annot"><span class="annottext">failures :: Int
+</span><a href="#local-6989586621679223752"><span class="hs-identifier hs-var hs-var">failures</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(Int -&gt; TestCaseResult -&gt; Int) -&gt; Int -&gt; [TestCaseResult] -&gt; Int
 forall b a. (b -&gt; a -&gt; b) -&gt; b -&gt; [a] -&gt; b
 forall (t :: * -&gt; *) b a.
 Foldable t =&gt;
 (b -&gt; a -&gt; b) -&gt; b -&gt; t a -&gt; b
-</span><span class="hs-identifier hs-var">foldl'</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span id="local-6989586621679223717"><span class="annot"><span class="annottext">Int
-</span><a href="#local-6989586621679223717"><span class="hs-identifier hs-var">n</span></a></span></span><span> </span><span id="local-6989586621679223718"><span class="annot"><span class="annottext">TestCaseResult
-</span><a href="#local-6989586621679223718"><span class="hs-identifier hs-var">r</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-keyword">if</span><span> </span><span class="annot"><span class="annottext">TestCaseResult -&gt; Bool
+</span><span class="hs-identifier hs-var">foldl'</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span id="local-6989586621679223753"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679223753"><span class="hs-identifier hs-var">n</span></a></span></span><span> </span><span id="local-6989586621679223754"><span class="annot"><span class="annottext">TestCaseResult
+</span><a href="#local-6989586621679223754"><span class="hs-identifier hs-var">r</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-keyword">if</span><span> </span><span class="annot"><span class="annottext">TestCaseResult -&gt; Bool
 </span><a href="Haskemathesis.Report.JUnit.html#tcrPassed"><span class="hs-identifier hs-var">tcrPassed</span></a></span><span> </span><span class="annot"><span class="annottext">TestCaseResult
-</span><a href="#local-6989586621679223718"><span class="hs-identifier hs-var">r</span></a></span><span> </span><span class="hs-keyword">then</span><span> </span><span class="annot"><span class="annottext">Int
-</span><a href="#local-6989586621679223717"><span class="hs-identifier hs-var">n</span></a></span><span> </span><span class="hs-keyword">else</span><span> </span><span class="annot"><span class="annottext">Int
-</span><a href="#local-6989586621679223717"><span class="hs-identifier hs-var">n</span></a></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Int
+</span><a href="#local-6989586621679223754"><span class="hs-identifier hs-var">r</span></a></span><span> </span><span class="hs-keyword">then</span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679223753"><span class="hs-identifier hs-var">n</span></a></span><span> </span><span class="hs-keyword">else</span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679223753"><span class="hs-identifier hs-var">n</span></a></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Int
 forall a. Num a =&gt; a -&gt; a -&gt; a
 </span><span class="hs-operator hs-var">+</span></span><span> </span><span class="annot"><span class="annottext">Int
 </span><span class="hs-number">1</span></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Int
 </span><span class="hs-number">0</span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[TestCaseResult]
-</span><a href="#local-6989586621679223703"><span class="hs-identifier hs-var">results</span></a></span><span>
-</span><span id="line-112"></span><span>        </span><span id="local-6989586621679223723"><span class="annot"><span class="annottext">totalTime :: NominalDiffTime
-</span><a href="#local-6989586621679223723"><span class="hs-identifier hs-var hs-var">totalTime</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(NominalDiffTime -&gt; NominalDiffTime -&gt; NominalDiffTime)
+</span><a href="#local-6989586621679223739"><span class="hs-identifier hs-var">results</span></a></span><span>
+</span><span id="line-112"></span><span>        </span><span id="local-6989586621679223759"><span class="annot"><span class="annottext">totalTime :: NominalDiffTime
+</span><a href="#local-6989586621679223759"><span class="hs-identifier hs-var hs-var">totalTime</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(NominalDiffTime -&gt; NominalDiffTime -&gt; NominalDiffTime)
 -&gt; NominalDiffTime -&gt; [NominalDiffTime] -&gt; NominalDiffTime
 forall b a. (b -&gt; a -&gt; b) -&gt; b -&gt; [a] -&gt; b
 forall (t :: * -&gt; *) b a.
@@ -213,7 +213,7 @@ forall a. Num a =&gt; a -&gt; a -&gt; a
 forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
 </span><span class="hs-identifier hs-var">map</span></span><span> </span><span class="annot"><span class="annottext">TestCaseResult -&gt; NominalDiffTime
 </span><a href="Haskemathesis.Report.JUnit.html#tcrTime"><span class="hs-identifier hs-var">tcrTime</span></a></span><span> </span><span class="annot"><span class="annottext">[TestCaseResult]
-</span><a href="#local-6989586621679223703"><span class="hs-identifier hs-var">results</span></a></span><span class="hs-special">)</span><span>
+</span><a href="#local-6989586621679223739"><span class="hs-identifier hs-var">results</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-113"></span><span>     </span><span class="hs-keyword">in</span><span> </span><span class="annot"><span class="annottext">Text -&gt; [Text] -&gt; Text
 </span><span class="hs-identifier hs-var">T.intercalate</span></span><span>
 </span><span id="line-114"></span><span>            </span><span class="annot"><span class="annottext">Text
@@ -228,7 +228,7 @@ forall a. Semigroup a =&gt; a -&gt; a -&gt; a
 </span><span class="hs-identifier hs-var">T.pack</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Int -&gt; String
 forall a. Show a =&gt; a -&gt; String
 </span><span class="hs-identifier hs-var">show</span></span><span> </span><span class="annot"><span class="annottext">Int
-</span><a href="#local-6989586621679223709"><span class="hs-identifier hs-var">totalTests</span></a></span><span class="hs-special">)</span><span>
+</span><a href="#local-6989586621679223745"><span class="hs-identifier hs-var">totalTests</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-118"></span><span>                </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
 forall a. Semigroup a =&gt; a -&gt; a -&gt; a
 </span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Text
@@ -239,7 +239,7 @@ forall a. Semigroup a =&gt; a -&gt; a -&gt; a
 </span><span class="hs-identifier hs-var">T.pack</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Int -&gt; String
 forall a. Show a =&gt; a -&gt; String
 </span><span class="hs-identifier hs-var">show</span></span><span> </span><span class="annot"><span class="annottext">Int
-</span><a href="#local-6989586621679223716"><span class="hs-identifier hs-var">failures</span></a></span><span class="hs-special">)</span><span>
+</span><a href="#local-6989586621679223752"><span class="hs-identifier hs-var">failures</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-120"></span><span>                </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
 forall a. Semigroup a =&gt; a -&gt; a -&gt; a
 </span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Text
@@ -248,7 +248,7 @@ forall a. Semigroup a =&gt; a -&gt; a -&gt; a
 forall a. Semigroup a =&gt; a -&gt; a -&gt; a
 </span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">NominalDiffTime -&gt; Text
 </span><a href="Haskemathesis.Report.JUnit.html#formatTime"><span class="hs-identifier hs-var">formatTime</span></a></span><span> </span><span class="annot"><span class="annottext">NominalDiffTime
-</span><a href="#local-6989586621679223723"><span class="hs-identifier hs-var">totalTime</span></a></span><span>
+</span><a href="#local-6989586621679223759"><span class="hs-identifier hs-var">totalTime</span></a></span><span>
 </span><span id="line-122"></span><span>                </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
 forall a. Semigroup a =&gt; a -&gt; a -&gt; a
 </span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Text
@@ -256,9 +256,9 @@ forall a. Semigroup a =&gt; a -&gt; a -&gt; a
 </span><span id="line-123"></span><span>            </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">TestSuiteResult -&gt; Text
 </span><a href="Haskemathesis.Report.JUnit.html#renderTestSuite"><span class="hs-identifier hs-var">renderTestSuite</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Text -&gt; [TestCaseResult] -&gt; NominalDiffTime -&gt; TestSuiteResult
 </span><a href="Haskemathesis.Report.JUnit.html#TestSuiteResult"><span class="hs-identifier hs-var">TestSuiteResult</span></a></span><span> </span><span class="annot"><span class="annottext">Text
-</span><a href="#local-6989586621679223702"><span class="hs-identifier hs-var">suiteName</span></a></span><span> </span><span class="annot"><span class="annottext">[TestCaseResult]
-</span><a href="#local-6989586621679223703"><span class="hs-identifier hs-var">results</span></a></span><span> </span><span class="annot"><span class="annottext">NominalDiffTime
-</span><a href="#local-6989586621679223723"><span class="hs-identifier hs-var">totalTime</span></a></span><span class="hs-special">)</span><span>
+</span><a href="#local-6989586621679223738"><span class="hs-identifier hs-var">suiteName</span></a></span><span> </span><span class="annot"><span class="annottext">[TestCaseResult]
+</span><a href="#local-6989586621679223739"><span class="hs-identifier hs-var">results</span></a></span><span> </span><span class="annot"><span class="annottext">NominalDiffTime
+</span><a href="#local-6989586621679223759"><span class="hs-identifier hs-var">totalTime</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-124"></span><span>            </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Text
 </span><span class="hs-string">&quot;&lt;/testsuites&gt;&quot;</span></span><span>
 </span><span id="line-125"></span><span>            </span><span class="hs-special">]</span><span>
@@ -269,43 +269,43 @@ This is useful if you need to generate multiple test suites in one document.
 -}</span></span><span>
 </span><span id="line-131"></span><span class="annot"><a href="Haskemathesis.Report.JUnit.html#renderTestSuite"><span class="hs-identifier hs-type">renderTestSuite</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Haskemathesis.Report.JUnit.html#TestSuiteResult"><span class="hs-identifier hs-type">TestSuiteResult</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
 </span><span id="line-132"></span><span id="renderTestSuite"><span class="annot"><span class="annottext">renderTestSuite :: TestSuiteResult -&gt; Text
-</span><a href="Haskemathesis.Report.JUnit.html#renderTestSuite"><span class="hs-identifier hs-var hs-var">renderTestSuite</span></a></span></span><span> </span><span id="local-6989586621679223728"><span class="annot"><span class="annottext">TestSuiteResult
-</span><a href="#local-6989586621679223728"><span class="hs-identifier hs-var">suite</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
-</span><span id="line-133"></span><span>    </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621679223732"><span class="annot"><span class="annottext">totalTests :: Int
-</span><a href="#local-6989586621679223732"><span class="hs-identifier hs-var hs-var">totalTests</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(Int -&gt; TestCaseResult -&gt; Int) -&gt; Int -&gt; [TestCaseResult] -&gt; Int
+</span><a href="Haskemathesis.Report.JUnit.html#renderTestSuite"><span class="hs-identifier hs-var hs-var">renderTestSuite</span></a></span></span><span> </span><span id="local-6989586621679223764"><span class="annot"><span class="annottext">TestSuiteResult
+</span><a href="#local-6989586621679223764"><span class="hs-identifier hs-var">suite</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-133"></span><span>    </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621679223768"><span class="annot"><span class="annottext">totalTests :: Int
+</span><a href="#local-6989586621679223768"><span class="hs-identifier hs-var hs-var">totalTests</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(Int -&gt; TestCaseResult -&gt; Int) -&gt; Int -&gt; [TestCaseResult] -&gt; Int
 forall b a. (b -&gt; a -&gt; b) -&gt; b -&gt; [a] -&gt; b
 forall (t :: * -&gt; *) b a.
 Foldable t =&gt;
 (b -&gt; a -&gt; b) -&gt; b -&gt; t a -&gt; b
-</span><span class="hs-identifier hs-var">foldl'</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span id="local-6989586621679223733"><span class="annot"><span class="annottext">Int
-</span><a href="#local-6989586621679223733"><span class="hs-identifier hs-var">n</span></a></span></span><span> </span><span class="annot"><span class="annottext">TestCaseResult
+</span><span class="hs-identifier hs-var">foldl'</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span id="local-6989586621679223769"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679223769"><span class="hs-identifier hs-var">n</span></a></span></span><span> </span><span class="annot"><span class="annottext">TestCaseResult
 </span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Int
-</span><a href="#local-6989586621679223733"><span class="hs-identifier hs-var">n</span></a></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Int
+</span><a href="#local-6989586621679223769"><span class="hs-identifier hs-var">n</span></a></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Int
 forall a. Num a =&gt; a -&gt; a -&gt; a
 </span><span class="hs-operator hs-var">+</span></span><span> </span><span class="annot"><span class="annottext">Int
 </span><span class="hs-number">1</span></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Int
 </span><span class="hs-number">0</span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">TestSuiteResult -&gt; [TestCaseResult]
 </span><a href="Haskemathesis.Report.JUnit.html#tsrTests"><span class="hs-identifier hs-var">tsrTests</span></a></span><span> </span><span class="annot"><span class="annottext">TestSuiteResult
-</span><a href="#local-6989586621679223728"><span class="hs-identifier hs-var">suite</span></a></span><span class="hs-special">)</span><span>
-</span><span id="line-134"></span><span>        </span><span id="local-6989586621679223737"><span class="annot"><span class="annottext">failures :: Int
-</span><a href="#local-6989586621679223737"><span class="hs-identifier hs-var hs-var">failures</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(Int -&gt; TestCaseResult -&gt; Int) -&gt; Int -&gt; [TestCaseResult] -&gt; Int
+</span><a href="#local-6989586621679223764"><span class="hs-identifier hs-var">suite</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-134"></span><span>        </span><span id="local-6989586621679223773"><span class="annot"><span class="annottext">failures :: Int
+</span><a href="#local-6989586621679223773"><span class="hs-identifier hs-var hs-var">failures</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(Int -&gt; TestCaseResult -&gt; Int) -&gt; Int -&gt; [TestCaseResult] -&gt; Int
 forall b a. (b -&gt; a -&gt; b) -&gt; b -&gt; [a] -&gt; b
 forall (t :: * -&gt; *) b a.
 Foldable t =&gt;
 (b -&gt; a -&gt; b) -&gt; b -&gt; t a -&gt; b
-</span><span class="hs-identifier hs-var">foldl'</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span id="local-6989586621679223738"><span class="annot"><span class="annottext">Int
-</span><a href="#local-6989586621679223738"><span class="hs-identifier hs-var">n</span></a></span></span><span> </span><span id="local-6989586621679223739"><span class="annot"><span class="annottext">TestCaseResult
-</span><a href="#local-6989586621679223739"><span class="hs-identifier hs-var">r</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-keyword">if</span><span> </span><span class="annot"><span class="annottext">TestCaseResult -&gt; Bool
+</span><span class="hs-identifier hs-var">foldl'</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span id="local-6989586621679223774"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679223774"><span class="hs-identifier hs-var">n</span></a></span></span><span> </span><span id="local-6989586621679223775"><span class="annot"><span class="annottext">TestCaseResult
+</span><a href="#local-6989586621679223775"><span class="hs-identifier hs-var">r</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-keyword">if</span><span> </span><span class="annot"><span class="annottext">TestCaseResult -&gt; Bool
 </span><a href="Haskemathesis.Report.JUnit.html#tcrPassed"><span class="hs-identifier hs-var">tcrPassed</span></a></span><span> </span><span class="annot"><span class="annottext">TestCaseResult
-</span><a href="#local-6989586621679223739"><span class="hs-identifier hs-var">r</span></a></span><span> </span><span class="hs-keyword">then</span><span> </span><span class="annot"><span class="annottext">Int
-</span><a href="#local-6989586621679223738"><span class="hs-identifier hs-var">n</span></a></span><span> </span><span class="hs-keyword">else</span><span> </span><span class="annot"><span class="annottext">Int
-</span><a href="#local-6989586621679223738"><span class="hs-identifier hs-var">n</span></a></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Int
+</span><a href="#local-6989586621679223775"><span class="hs-identifier hs-var">r</span></a></span><span> </span><span class="hs-keyword">then</span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679223774"><span class="hs-identifier hs-var">n</span></a></span><span> </span><span class="hs-keyword">else</span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679223774"><span class="hs-identifier hs-var">n</span></a></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Int
 forall a. Num a =&gt; a -&gt; a -&gt; a
 </span><span class="hs-operator hs-var">+</span></span><span> </span><span class="annot"><span class="annottext">Int
 </span><span class="hs-number">1</span></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Int
 </span><span class="hs-number">0</span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">TestSuiteResult -&gt; [TestCaseResult]
 </span><a href="Haskemathesis.Report.JUnit.html#tsrTests"><span class="hs-identifier hs-var">tsrTests</span></a></span><span> </span><span class="annot"><span class="annottext">TestSuiteResult
-</span><a href="#local-6989586621679223728"><span class="hs-identifier hs-var">suite</span></a></span><span class="hs-special">)</span><span>
+</span><a href="#local-6989586621679223764"><span class="hs-identifier hs-var">suite</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-135"></span><span>     </span><span class="hs-keyword">in</span><span> </span><span class="annot"><span class="annottext">Text -&gt; [Text] -&gt; Text
 </span><span class="hs-identifier hs-var">T.intercalate</span></span><span>
 </span><span id="line-136"></span><span>            </span><span class="annot"><span class="annottext">Text
@@ -317,7 +317,7 @@ forall a. Semigroup a =&gt; a -&gt; a -&gt; a
 </span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text
 </span><a href="Haskemathesis.Report.JUnit.html#escapeXml"><span class="hs-identifier hs-var">escapeXml</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">TestSuiteResult -&gt; Text
 </span><a href="Haskemathesis.Report.JUnit.html#tsrName"><span class="hs-identifier hs-var">tsrName</span></a></span><span> </span><span class="annot"><span class="annottext">TestSuiteResult
-</span><a href="#local-6989586621679223728"><span class="hs-identifier hs-var">suite</span></a></span><span class="hs-special">)</span><span>
+</span><a href="#local-6989586621679223764"><span class="hs-identifier hs-var">suite</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-139"></span><span>                    </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
 forall a. Semigroup a =&gt; a -&gt; a -&gt; a
 </span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Text
@@ -328,7 +328,7 @@ forall a. Semigroup a =&gt; a -&gt; a -&gt; a
 </span><span class="hs-identifier hs-var">T.pack</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Int -&gt; String
 forall a. Show a =&gt; a -&gt; String
 </span><span class="hs-identifier hs-var">show</span></span><span> </span><span class="annot"><span class="annottext">Int
-</span><a href="#local-6989586621679223732"><span class="hs-identifier hs-var">totalTests</span></a></span><span class="hs-special">)</span><span>
+</span><a href="#local-6989586621679223768"><span class="hs-identifier hs-var">totalTests</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-141"></span><span>                    </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
 forall a. Semigroup a =&gt; a -&gt; a -&gt; a
 </span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Text
@@ -339,7 +339,7 @@ forall a. Semigroup a =&gt; a -&gt; a -&gt; a
 </span><span class="hs-identifier hs-var">T.pack</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Int -&gt; String
 forall a. Show a =&gt; a -&gt; String
 </span><span class="hs-identifier hs-var">show</span></span><span> </span><span class="annot"><span class="annottext">Int
-</span><a href="#local-6989586621679223737"><span class="hs-identifier hs-var">failures</span></a></span><span class="hs-special">)</span><span>
+</span><a href="#local-6989586621679223773"><span class="hs-identifier hs-var">failures</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-143"></span><span>                    </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
 forall a. Semigroup a =&gt; a -&gt; a -&gt; a
 </span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Text
@@ -349,7 +349,7 @@ forall a. Semigroup a =&gt; a -&gt; a -&gt; a
 </span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">NominalDiffTime -&gt; Text
 </span><a href="Haskemathesis.Report.JUnit.html#formatTime"><span class="hs-identifier hs-var">formatTime</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">TestSuiteResult -&gt; NominalDiffTime
 </span><a href="Haskemathesis.Report.JUnit.html#tsrTime"><span class="hs-identifier hs-var">tsrTime</span></a></span><span> </span><span class="annot"><span class="annottext">TestSuiteResult
-</span><a href="#local-6989586621679223728"><span class="hs-identifier hs-var">suite</span></a></span><span class="hs-special">)</span><span>
+</span><a href="#local-6989586621679223764"><span class="hs-identifier hs-var">suite</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-145"></span><span>                    </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
 forall a. Semigroup a =&gt; a -&gt; a -&gt; a
 </span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Text
@@ -362,7 +362,7 @@ forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
 </span><span class="hs-identifier hs-var">map</span></span><span> </span><span class="annot"><span class="annottext">TestCaseResult -&gt; Text
 </span><a href="Haskemathesis.Report.JUnit.html#renderTestCase"><span class="hs-identifier hs-var">renderTestCase</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">TestSuiteResult -&gt; [TestCaseResult]
 </span><a href="Haskemathesis.Report.JUnit.html#tsrTests"><span class="hs-identifier hs-var">tsrTests</span></a></span><span> </span><span class="annot"><span class="annottext">TestSuiteResult
-</span><a href="#local-6989586621679223728"><span class="hs-identifier hs-var">suite</span></a></span><span class="hs-special">)</span><span>
+</span><a href="#local-6989586621679223764"><span class="hs-identifier hs-var">suite</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-148"></span><span>                </span><span class="annot"><span class="annottext">[Text] -&gt; [Text] -&gt; [Text]
 forall a. [a] -&gt; [a] -&gt; [a]
 </span><span class="hs-operator hs-var">++</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Text
@@ -372,11 +372,11 @@ forall a. [a] -&gt; [a] -&gt; [a]
 </span><span id="line-151"></span><span class="annot"><span class="hs-comment">-- | Render a single test case as XML.</span></span><span>
 </span><span id="line-152"></span><span class="annot"><a href="Haskemathesis.Report.JUnit.html#renderTestCase"><span class="hs-identifier hs-type">renderTestCase</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Haskemathesis.Report.JUnit.html#TestCaseResult"><span class="hs-identifier hs-type">TestCaseResult</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
 </span><span id="line-153"></span><span id="renderTestCase"><span class="annot"><span class="annottext">renderTestCase :: TestCaseResult -&gt; Text
-</span><a href="Haskemathesis.Report.JUnit.html#renderTestCase"><span class="hs-identifier hs-var hs-var">renderTestCase</span></a></span></span><span> </span><span id="local-6989586621679223742"><span class="annot"><span class="annottext">TestCaseResult
-</span><a href="#local-6989586621679223742"><span class="hs-identifier hs-var">tc</span></a></span></span><span>
+</span><a href="Haskemathesis.Report.JUnit.html#renderTestCase"><span class="hs-identifier hs-var hs-var">renderTestCase</span></a></span></span><span> </span><span id="local-6989586621679223778"><span class="annot"><span class="annottext">TestCaseResult
+</span><a href="#local-6989586621679223778"><span class="hs-identifier hs-var">tc</span></a></span></span><span>
 </span><span id="line-154"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">TestCaseResult -&gt; Bool
 </span><a href="Haskemathesis.Report.JUnit.html#tcrPassed"><span class="hs-identifier hs-var">tcrPassed</span></a></span><span> </span><span class="annot"><span class="annottext">TestCaseResult
-</span><a href="#local-6989586621679223742"><span class="hs-identifier hs-var">tc</span></a></span><span> </span><span class="hs-glyph">=</span><span>
+</span><a href="#local-6989586621679223778"><span class="hs-identifier hs-var">tc</span></a></span><span> </span><span class="hs-glyph">=</span><span>
 </span><span id="line-155"></span><span>        </span><span class="annot"><span class="annottext">Text
 </span><span class="hs-string">&quot;    &lt;testcase name=\&quot;&quot;</span></span><span>
 </span><span id="line-156"></span><span>            </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
@@ -384,7 +384,7 @@ forall a. Semigroup a =&gt; a -&gt; a -&gt; a
 </span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text
 </span><a href="Haskemathesis.Report.JUnit.html#escapeXml"><span class="hs-identifier hs-var">escapeXml</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">TestCaseResult -&gt; Text
 </span><a href="Haskemathesis.Report.JUnit.html#tcrName"><span class="hs-identifier hs-var">tcrName</span></a></span><span> </span><span class="annot"><span class="annottext">TestCaseResult
-</span><a href="#local-6989586621679223742"><span class="hs-identifier hs-var">tc</span></a></span><span class="hs-special">)</span><span>
+</span><a href="#local-6989586621679223778"><span class="hs-identifier hs-var">tc</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-157"></span><span>            </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
 forall a. Semigroup a =&gt; a -&gt; a -&gt; a
 </span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Text
@@ -394,7 +394,7 @@ forall a. Semigroup a =&gt; a -&gt; a -&gt; a
 </span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">NominalDiffTime -&gt; Text
 </span><a href="Haskemathesis.Report.JUnit.html#formatTime"><span class="hs-identifier hs-var">formatTime</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">TestCaseResult -&gt; NominalDiffTime
 </span><a href="Haskemathesis.Report.JUnit.html#tcrTime"><span class="hs-identifier hs-var">tcrTime</span></a></span><span> </span><span class="annot"><span class="annottext">TestCaseResult
-</span><a href="#local-6989586621679223742"><span class="hs-identifier hs-var">tc</span></a></span><span class="hs-special">)</span><span>
+</span><a href="#local-6989586621679223778"><span class="hs-identifier hs-var">tc</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-159"></span><span>            </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
 forall a. Semigroup a =&gt; a -&gt; a -&gt; a
 </span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Text
@@ -412,7 +412,7 @@ forall a. Semigroup a =&gt; a -&gt; a -&gt; a
 </span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text
 </span><a href="Haskemathesis.Report.JUnit.html#escapeXml"><span class="hs-identifier hs-var">escapeXml</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">TestCaseResult -&gt; Text
 </span><a href="Haskemathesis.Report.JUnit.html#tcrName"><span class="hs-identifier hs-var">tcrName</span></a></span><span> </span><span class="annot"><span class="annottext">TestCaseResult
-</span><a href="#local-6989586621679223742"><span class="hs-identifier hs-var">tc</span></a></span><span class="hs-special">)</span><span>
+</span><a href="#local-6989586621679223778"><span class="hs-identifier hs-var">tc</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-165"></span><span>                </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
 forall a. Semigroup a =&gt; a -&gt; a -&gt; a
 </span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Text
@@ -422,7 +422,7 @@ forall a. Semigroup a =&gt; a -&gt; a -&gt; a
 </span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">NominalDiffTime -&gt; Text
 </span><a href="Haskemathesis.Report.JUnit.html#formatTime"><span class="hs-identifier hs-var">formatTime</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">TestCaseResult -&gt; NominalDiffTime
 </span><a href="Haskemathesis.Report.JUnit.html#tcrTime"><span class="hs-identifier hs-var">tcrTime</span></a></span><span> </span><span class="annot"><span class="annottext">TestCaseResult
-</span><a href="#local-6989586621679223742"><span class="hs-identifier hs-var">tc</span></a></span><span class="hs-special">)</span><span>
+</span><a href="#local-6989586621679223778"><span class="hs-identifier hs-var">tc</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-167"></span><span>                </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
 forall a. Semigroup a =&gt; a -&gt; a -&gt; a
 </span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Text
@@ -437,7 +437,7 @@ forall a. a -&gt; Maybe a -&gt; a
 </span><span class="hs-identifier hs-var">fromMaybe</span></span><span> </span><span class="annot"><span class="annottext">Text
 </span><span class="hs-string">&quot;Test failed&quot;</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">TestCaseResult -&gt; Maybe Text
 </span><a href="Haskemathesis.Report.JUnit.html#tcrFailureMessage"><span class="hs-identifier hs-var">tcrFailureMessage</span></a></span><span> </span><span class="annot"><span class="annottext">TestCaseResult
-</span><a href="#local-6989586621679223742"><span class="hs-identifier hs-var">tc</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><a href="#local-6989586621679223778"><span class="hs-identifier hs-var">tc</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
 </span><span id="line-170"></span><span>                </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
 forall a. Semigroup a =&gt; a -&gt; a -&gt; a
 </span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Text
@@ -450,7 +450,7 @@ forall a. a -&gt; Maybe a -&gt; a
 </span><span class="hs-identifier hs-var">fromMaybe</span></span><span> </span><span class="annot"><span class="annottext">Text
 </span><span class="hs-string">&quot;&quot;</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">TestCaseResult -&gt; Maybe Text
 </span><a href="Haskemathesis.Report.JUnit.html#tcrFailureMessage"><span class="hs-identifier hs-var">tcrFailureMessage</span></a></span><span> </span><span class="annot"><span class="annottext">TestCaseResult
-</span><a href="#local-6989586621679223742"><span class="hs-identifier hs-var">tc</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><a href="#local-6989586621679223778"><span class="hs-identifier hs-var">tc</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
 </span><span id="line-172"></span><span>                </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
 forall a. Semigroup a =&gt; a -&gt; a -&gt; a
 </span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Text
@@ -462,16 +462,16 @@ forall a. Semigroup a =&gt; a -&gt; a -&gt; a
 </span><span id="line-176"></span><span class="annot"><span class="hs-comment">-- | Format time as seconds with 3 decimal places.</span></span><span>
 </span><span id="line-177"></span><span class="annot"><a href="Haskemathesis.Report.JUnit.html#formatTime"><span class="hs-identifier hs-type">formatTime</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">NominalDiffTime</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
 </span><span id="line-178"></span><span id="formatTime"><span class="annot"><span class="annottext">formatTime :: NominalDiffTime -&gt; Text
-</span><a href="Haskemathesis.Report.JUnit.html#formatTime"><span class="hs-identifier hs-var hs-var">formatTime</span></a></span></span><span> </span><span id="local-6989586621679223743"><span class="annot"><span class="annottext">NominalDiffTime
-</span><a href="#local-6989586621679223743"><span class="hs-identifier hs-var">dt</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
-</span><span id="line-179"></span><span>    </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621679223748"><span class="annot"><span class="annottext">seconds :: Double
-</span><a href="#local-6989586621679223748"><span class="hs-identifier hs-var hs-var">seconds</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">NominalDiffTime -&gt; Double
+</span><a href="Haskemathesis.Report.JUnit.html#formatTime"><span class="hs-identifier hs-var hs-var">formatTime</span></a></span></span><span> </span><span id="local-6989586621679223779"><span class="annot"><span class="annottext">NominalDiffTime
+</span><a href="#local-6989586621679223779"><span class="hs-identifier hs-var">dt</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-179"></span><span>    </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621679223784"><span class="annot"><span class="annottext">seconds :: Double
+</span><a href="#local-6989586621679223784"><span class="hs-identifier hs-var hs-var">seconds</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">NominalDiffTime -&gt; Double
 forall a b. (Real a, Fractional b) =&gt; a -&gt; b
 </span><span class="hs-identifier hs-var">realToFrac</span></span><span> </span><span class="annot"><span class="annottext">NominalDiffTime
-</span><a href="#local-6989586621679223743"><span class="hs-identifier hs-var">dt</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Double</span></span><span>
+</span><a href="#local-6989586621679223779"><span class="hs-identifier hs-var">dt</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Double</span></span><span>
 </span><span id="line-180"></span><span>        </span><span class="hs-comment">-- Show with 3 decimal places</span><span>
-</span><span id="line-181"></span><span>        </span><span id="local-6989586621679223762"><span class="annot"><span class="annottext">formatted :: String
-</span><a href="#local-6989586621679223762"><span class="hs-identifier hs-var hs-var">formatted</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Double -&gt; String
+</span><span id="line-181"></span><span>        </span><span id="local-6989586621679223798"><span class="annot"><span class="annottext">formatted :: String
+</span><a href="#local-6989586621679223798"><span class="hs-identifier hs-var hs-var">formatted</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Double -&gt; String
 forall a. Show a =&gt; a -&gt; String
 </span><span class="hs-identifier hs-var">show</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Int -&gt; Double
 forall a b. (Integral a, Num b) =&gt; a -&gt; b
@@ -479,7 +479,7 @@ forall a b. (Integral a, Num b) =&gt; a -&gt; b
 forall b. Integral b =&gt; Double -&gt; b
 forall a b. (RealFrac a, Integral b) =&gt; a -&gt; b
 </span><span class="hs-identifier hs-var">round</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Double
-</span><a href="#local-6989586621679223748"><span class="hs-identifier hs-var">seconds</span></a></span><span> </span><span class="annot"><span class="annottext">Double -&gt; Double -&gt; Double
+</span><a href="#local-6989586621679223784"><span class="hs-identifier hs-var">seconds</span></a></span><span> </span><span class="annot"><span class="annottext">Double -&gt; Double -&gt; Double
 forall a. Num a =&gt; a -&gt; a -&gt; a
 </span><span class="hs-operator hs-var">*</span></span><span> </span><span class="annot"><span class="annottext">Double
 </span><span class="hs-number">1000</span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Double -&gt; Double -&gt; Double
@@ -488,7 +488,7 @@ forall a. Fractional a =&gt; a -&gt; a -&gt; a
 </span><span class="hs-number">1000</span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Double</span></span><span class="hs-special">)</span><span>
 </span><span id="line-182"></span><span>     </span><span class="hs-keyword">in</span><span> </span><span class="annot"><span class="annottext">String -&gt; Text
 </span><span class="hs-identifier hs-var">T.pack</span></span><span> </span><span class="annot"><span class="annottext">String
-</span><a href="#local-6989586621679223762"><span class="hs-identifier hs-var">formatted</span></a></span><span>
+</span><a href="#local-6989586621679223798"><span class="hs-identifier hs-var">formatted</span></a></span><span>
 </span><span id="line-183"></span><span>
 </span><span id="line-184"></span><span class="annot"><span class="hs-comment">{- | Escape special XML characters.
 Important: &amp; must be replaced FIRST to avoid double-escaping entities.
