@@ -107,6 +107,23 @@ data TestOptions = TestOptions
 
     Example: @--max-response-time 500@ fails if any response exceeds 500ms.
     -}
+    , testStateful :: !Bool
+    {- ^ Enable stateful testing mode.
+
+    When enabled, generates sequences of API operations where responses
+    from earlier operations inform subsequent requests. Tests CRUD patterns
+    like: POST /users -> GET /users/{id} -> DELETE /users/{id}
+
+    Default: 'False'
+    -}
+    , testMaxSequenceLength :: !Int
+    {- ^ Maximum number of operations per stateful sequence.
+
+    Controls how long generated sequences can be. Longer sequences test
+    more complex scenarios but take longer to run.
+
+    Default: 5
+    -}
     }
     deriving (Eq, Show)
 
@@ -172,4 +189,6 @@ defaultTestOptions =
         , testWorkdir = WorkdirTemp
         , testStreamingTimeout = Just 1000
         , testMaxResponseTime = Nothing
+        , testStateful = False
+        , testMaxSequenceLength = 5
         }

@@ -21,7 +21,7 @@ import Network.HTTP.Types (HeaderName)
 import Haskemathesis.CLI.Options (TestOptions (..))
 import Haskemathesis.Check.Standard (allChecks, maxResponseTime)
 import Haskemathesis.Check.Types (Check)
-import Haskemathesis.Config (TestConfig (..))
+import Haskemathesis.Config (TestConfig (..), defaultStatefulChecks)
 import Haskemathesis.OpenApi.Types (ResolvedOperation (..))
 
 -- | Check if an operation matches a pattern.
@@ -61,6 +61,10 @@ buildTestConfig opts =
         , tcOperationFilter = const True
         , tcHeaders = buildHeaders opts
         , tcStreamingTimeout = testStreamingTimeout opts
+        , tcStatefulTesting = testStateful opts
+        , tcStatefulChecks = defaultStatefulChecks
+        , tcMaxSequenceLength = testMaxSequenceLength opts
+        , tcCleanupOnFailure = True
         }
 
 -- | Build checks list from CLI options.

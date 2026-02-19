@@ -133,6 +133,7 @@ test-suite haskemathesis-test
     Haskemathesis.Test.Properties.Stateful.Generator
     Haskemathesis.Test.Properties.Stateful.Heuristics
     Haskemathesis.Test.Properties.Stateful.Links
+    Haskemathesis.Test.Properties.Stateful.Property
     Haskemathesis.Test.Properties.Stateful.Sequence
     Haskemathesis.Test.Properties.StatusCode
     Haskemathesis.Test.Properties.Streaming

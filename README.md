@@ -12,6 +12,8 @@ applies a configurable set of checks to the responses.
 - Schema-driven generators for JSON requests
 - WAI executor (no network) and HTTP executor
 - Built-in checks (status codes, content type, response schema, response headers, response time)
+- Negative testing (invalid inputs that should be rejected)
+- Stateful testing (CRUD sequences with automatic link inference)
 - Curl rendering for failure reproduction
 - Hspec and Tasty integration helpers
 - Standalone CLI for testing any HTTP API without writing Haskell
@@ -61,6 +63,8 @@ Options:
 - `-e, --exclude PATTERN` - Exclude matching operations (repeatable)
 - `-t, --tag TAG` - Filter by tag (repeatable)
 - `--negative` - Enable negative testing (invalid inputs)
+- `--stateful` - Enable stateful testing (CRUD sequences)
+- `--max-sequence-length N` - Max operations per stateful sequence (default: 5)
 - `--auth-header VALUE` - Authorization header value
 - `-o, --output FORMAT` - Output format: `text`, `json`, or `junit`
 - `--max-response-time MS` - Fail if response time exceeds threshold (ms)
@@ -242,6 +246,133 @@ import Haskemathesis.Integration.Hspec (specForAppNegative)
 let config = defaultTestConfig { tcNegativeTesting = True }
 hspec (specForAppNegative config spec app)
 ```
+
+## Stateful Testing
+
+Stateful testing goes beyond individual endpoint testing by generating sequences
+of related API operations. This is essential for testing CRUD workflows where
+operations depend on each other (e.g., you must create a resource before you can
+read, update, or delete it).
+
+### CLI Usage
+
+```bash
+# Enable stateful testing
+haskemathesis-cli test --spec api.yaml --url http://localhost:8080 --stateful
+
+# Control sequence length (default: 5)
+haskemathesis-cli test --spec api.yaml --url http://localhost:8080 --stateful --max-sequence-length 10
+
+# Combine with other options
+haskemathesis-cli test \
+  --spec api.yaml \
+  --url http://localhost:8080 \
+  --stateful \
+  --tag users \
+  --auth-header "Bearer TOKEN"
+```
+
+### How It Works
+
+Stateful testing automatically:
+
+1. **Identifies CRUD operations** - Finds POST (create), GET (read), PUT/PATCH
+   (update), and DELETE operations on the same resource path.
+
+1. **Infers operation links** - Detects that `POST /users` returns an `id` that
+   should be used as the `{id}` parameter in `GET /users/{id}`.
+
+1. **Generates operation sequences** - Creates realistic test sequences like:
+
+   ```
+   POST /users → GET /users/{id} → PUT /users/{id} → DELETE /users/{id}
+   ```
+
+1. **Tracks state across requests** - Extracts IDs and other values from
+   responses and uses them in subsequent requests.
+
+1. **Runs stateful checks** - Verifies invariants like:
+
+   - **Use-after-free**: Accessing a deleted resource should return 404
+   - **Resource availability**: Created resources should be retrievable
+   - **Modification persistence**: Updated data should be reflected in GET
+
+### Haskell Library Usage
+
+```haskell
+import Haskemathesis.Config (defaultTestConfig, defaultStatefulChecks)
+import Haskemathesis.Property (propertiesForSpecStateful)
+
+let config = defaultTestConfig
+      { tcStatefulTesting = True
+      , tcStatefulChecks = defaultStatefulChecks
+      , tcMaxSequenceLength = 5
+      , tcCleanupOnFailure = True
+      }
+```
+
+### OpenAPI Link Support
+
+Haskemathesis supports explicit [OpenAPI Links](https://swagger.io/docs/specification/links/)
+for defining relationships between operations:
+
+```yaml
+paths:
+  /users:
+    post:
+      operationId: createUser
+      responses:
+        '201':
+          description: User created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          links:
+            GetUser:
+              operationId: getUser
+              parameters:
+                id: '$response.body#/id'
+  /users/{id}:
+    get:
+      operationId: getUser
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+```
+
+When explicit links are defined, they take precedence over heuristic inference.
+
+### Heuristic Link Inference
+
+Even without explicit OpenAPI links, Haskemathesis infers relationships using:
+
+- **Path patterns**: `POST /users` links to `/users/{id}` operations
+- **Field name matching**: Response field `userId` matches path param `{userId}`
+- **Common ID conventions**: Fields named `id`, `*Id`, `*_id` are extracted
+
+### Configuration Options
+
+| Option | CLI Flag | Default | Description |
+|--------|----------|---------|-------------|
+| `tcStatefulTesting` | `--stateful` | `False` | Enable stateful testing |
+| `tcMaxSequenceLength` | `--max-sequence-length` | `5` | Max operations per sequence |
+| `tcStatefulChecks` | - | `defaultStatefulChecks` | Stateful invariant checks |
+| `tcCleanupOnFailure` | - | `True` | Run cleanup (DELETE) on failure |
+
+### Stateful Checks
+
+The default stateful checks (`defaultStatefulChecks`) include:
+
+- **use-after-free**: After DELETE, GET should return 404
+- **resource-availability**: After POST, GET should return 200
+
+Additional checks can be added:
+
+- **modification-persisted**: After PUT/PATCH, GET should reflect changes
 
 ## Examples
 

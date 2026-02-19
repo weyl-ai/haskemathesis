@@ -53,7 +53,7 @@ import Haskemathesis.Execute.Types (BaseUrl)
 import Haskemathesis.OpenApi.Loader (loadOpenApi)
 import Haskemathesis.OpenApi.Resolve (resolveOperations)
 import Haskemathesis.OpenApi.Types (ResolvedOperation (..))
-import Haskemathesis.Property (propertiesForSpecWithConfig)
+import Haskemathesis.Property (propertiesForSpecStateful, propertiesForSpecWithConfig)
 import Haskemathesis.Report.JUnit (TestCaseResult (..), renderJUnitXml)
 
 -- | Data structure for test results.
@@ -109,7 +109,17 @@ runTestCommand opts = do
                 -- Generate properties with timeout-aware executor
                 let baseUrl = testBaseUrl opts
                 let executor = executeHttpWithTimeout manager baseUrl
-                let props = propertiesForSpecWithConfig spec config executor filteredOps
+
+                -- Generate normal properties
+                let normalProps = propertiesForSpecWithConfig spec config executor filteredOps
+
+                -- Generate stateful properties if enabled
+                let statefulProps =
+                        if testStateful opts
+                            then propertiesForSpecStateful spec config executor filteredOps
+                            else []
+
+                let props = normalProps <> statefulProps
 
                 -- Run tests
                 results <- mapM (runProperty baseUrl) props

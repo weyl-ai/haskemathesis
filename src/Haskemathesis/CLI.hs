@@ -111,6 +111,8 @@ testCommand =
             <*> workdirOption
             <*> streamingTimeoutOption
             <*> maxResponseTimeOption
+            <*> statefulSwitch
+            <*> maxSequenceLengthOption
 
 -- | Parser for the 'validate' command.
 validateCommand :: Parser Command
@@ -312,3 +314,30 @@ workdirOption =
     parseWorkdir "temp" = Right WorkdirTemp
     parseWorkdir "current" = Right WorkdirCurrent
     parseWorkdir path = Right (WorkdirPath path)
+
+{- | Parser for stateful testing mode.
+
+When enabled, generates sequences of API operations where responses
+from earlier operations inform subsequent requests.
+-}
+statefulSwitch :: Parser Bool
+statefulSwitch =
+    switch
+        ( long "stateful"
+            <> help "Enable stateful testing (test operation sequences)"
+        )
+
+{- | Parser for max sequence length in stateful testing.
+
+Controls how many operations can be chained together in a single test.
+-}
+maxSequenceLengthOption :: Parser Int
+maxSequenceLengthOption =
+    option
+        auto
+        ( long "max-sequence-length"
+            <> metavar "N"
+            <> value 5
+            <> showDefault
+            <> help "Maximum operations per stateful sequence"
+        )

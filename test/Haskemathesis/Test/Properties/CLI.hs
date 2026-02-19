@@ -38,6 +38,8 @@ spec =
             itProp "parses multiple exclude patterns" prop_test_multiple_excludes
             itProp "parses seed option" prop_test_seed_option
             itProp "parses workers option" prop_test_workers_option
+            itProp "parses stateful flag" prop_test_stateful_flag
+            itProp "parses max sequence length" prop_test_max_sequence_length
         describe "validate command" $ do
             itProp "parses required options" prop_validate_required_options
             itProp "parses verbose flag" prop_validate_verbose_flag
@@ -183,6 +185,33 @@ prop_test_workers_option =
         let args = ["test", "--spec", specPath, "--url", T.unpack baseUrl, "--workers", show workers]
         case parseArgs args of
             Success (CLI.Test opts) -> testWorkers opts === workers
+            _parseError -> failure
+
+-- | Test command: parses stateful flag.
+prop_test_stateful_flag :: Property
+prop_test_stateful_flag =
+    property $ do
+        specPath <- forAll genFilePath
+        baseUrl <- forAll genUrl
+        let argsWithFlag = ["test", "--spec", specPath, "--url", T.unpack baseUrl, "--stateful"]
+        let argsWithoutFlag = ["test", "--spec", specPath, "--url", T.unpack baseUrl]
+        case parseArgs argsWithFlag of
+            Success (CLI.Test opts) -> assert (testStateful opts)
+            _parseError -> failure
+        case parseArgs argsWithoutFlag of
+            Success (CLI.Test opts) -> assert (not (testStateful opts))
+            _parseError -> failure
+
+-- | Test command: parses max sequence length option.
+prop_test_max_sequence_length :: Property
+prop_test_max_sequence_length =
+    property $ do
+        specPath <- forAll genFilePath
+        baseUrl <- forAll genUrl
+        maxLen <- forAll $ Gen.int (Range.linear 1 20)
+        let args = ["test", "--spec", specPath, "--url", T.unpack baseUrl, "--max-sequence-length", show maxLen]
+        case parseArgs args of
+            Success (CLI.Test opts) -> testMaxSequenceLength opts === maxLen
             _parseError -> failure
 
 -- | Validate command: parses required options.

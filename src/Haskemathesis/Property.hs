@@ -38,6 +38,17 @@ myConfig = defaultTestConfig
     , tcOperationFilter = filterByTag "public"
     }
 @
+
+=== Stateful Testing
+
+For stateful API testing that chains operations together:
+
+@
+import Haskemathesis.Property (propertyStateful)
+
+-- Run stateful CRUD sequences
+prop = propertyStateful spec config httpExecutor ops
+@
 -}
 module Haskemathesis.Property (
     -- * Single Operation Properties
@@ -50,11 +61,23 @@ module Haskemathesis.Property (
     propertiesForSpecWithConfig,
     propertiesForSpecNegative,
 
+    -- * Stateful Testing
+    propertyStateful,
+    propertiesForSpecStateful,
+    executeStatefulSequence,
+    executeStatefulStep,
+
+    -- * Stateful Testing Helpers (for testing)
+    runStatefulChecksProperty,
+    isStatefulFailure,
+    renderStatefulFailure,
+
     -- * Timeout Utilities
     effectiveTimeout,
 )
 where
 
+import Control.Monad (foldM)
 import Data.OpenApi (OpenApi)
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -64,11 +87,26 @@ import Haskemathesis.Check.Negative (negativeTestRejection)
 import Haskemathesis.Check.Standard.Helpers (operationLabel)
 import Haskemathesis.Check.Types (Check (..), CheckResult (..), FailureDetail)
 import Haskemathesis.Config (TestConfig (..))
-import Haskemathesis.Execute.Types (ApiRequest (..), ApiResponse, BaseUrl, ExecutorWithTimeout)
+import Haskemathesis.Execute.Types (ApiRequest (..), ApiResponse (..), BaseUrl, ExecutorWithTimeout)
 import Haskemathesis.Gen.Negative (genNegativeRequest, renderNegativeMutation)
 import Haskemathesis.Gen.Request (genApiRequest)
 import Haskemathesis.OpenApi.Types (ResolvedOperation (..))
 import Haskemathesis.Report.Render (renderFailureDetailAnsi)
+import Haskemathesis.Stateful.Checks (
+    StatefulCheckResult (..),
+    StatefulFailure (..),
+    runStatefulChecks,
+ )
+import Haskemathesis.Stateful.Generator (genStatefulRequest, updateState)
+import Haskemathesis.Stateful.Heuristics (inferLinks)
+import Haskemathesis.Stateful.Links (extractLinks)
+import Haskemathesis.Stateful.Sequence (findOperationByLabel, genOperationSequence)
+import Haskemathesis.Stateful.Types (
+    OperationSequence (..),
+    SequenceStep (..),
+    TestState (..),
+    emptyState,
+ )
 import Hedgehog (Gen, Property, evalIO, failure, forAll, property, success, withTests)
 import Hedgehog.Internal.Property (PropertyT, footnote)
 import System.Environment (lookupEnv)
@@ -415,3 +453,246 @@ while still showing the generated value.
 -}
 forAllNoLoc :: (Monad m, Show a) => Gen a -> PropertyT m a
 forAllNoLoc gen = withFrozenCallStack (forAll gen)
+
+-- ============================================================================
+-- Stateful Testing
+-- ============================================================================
+
+{- | Run a stateful test that chains multiple API operations together.
+
+Stateful testing generates sequences of API operations where responses
+from earlier operations inform requests of later operations. This enables
+testing realistic scenarios like:
+
+@
+POST /users         -- Create user, returns {id: 123}
+GET /users/123      -- Fetch using id from POST response
+PUT /users/123      -- Update using same id
+DELETE /users/123   -- Remove the resource
+GET /users/123      -- Should return 404 (use-after-free check)
+@
+
+=== How It Works
+
+1. Combines explicit OpenAPI links with heuristically-inferred links
+2. Generates a random valid operation sequence following these links
+3. Executes each operation, extracting values for subsequent requests
+4. Runs regular checks after each operation
+5. Runs stateful checks after the sequence completes (e.g., use-after-free)
+
+=== Parameters
+
+* @openApi@ - The full OpenAPI specification
+* @config@ - Test configuration (should have stateful options set)
+* @execute@ - Timeout-aware executor
+* @ops@ - List of resolved operations
+
+=== Example
+
+@
+config = defaultTestConfig
+    { tcStatefulTesting = True
+    , tcMaxSequenceLength = 5
+    }
+prop = propertyStateful spec config httpExecutor ops
+@
+-}
+propertyStateful ::
+    OpenApi ->
+    TestConfig ->
+    ExecutorWithTimeout ->
+    [ResolvedOperation] ->
+    Property
+propertyStateful openApi config execute ops =
+    withTests (fromIntegral (tcPropertyCount config)) $
+        property $ do
+            -- Combine explicit and inferred links
+            let explicitLinks = extractLinks openApi
+                inferredLinks = inferLinks ops
+                allLinks = explicitLinks <> inferredLinks
+                maxLen = tcMaxSequenceLength config
+
+            -- Generate a random valid sequence
+            sequence' <- forAllNoLoc (genOperationSequence maxLen ops allLinks)
+
+            -- Execute the sequence and accumulate state
+            finalState <- executeStatefulSequence openApi config execute ops sequence'
+
+            -- Run stateful checks on the final state
+            runStatefulChecksProperty config execute ops finalState
+
+{- | Generate stateful properties for all operations that can start sequences.
+
+Creates properties that test CRUD-like sequences starting from each
+"creator" operation (typically POSTs). Unlike 'propertiesForSpecWithConfig',
+these properties test multiple operations together in sequences.
+
+=== Parameters
+
+* @openApi@ - The full OpenAPI specification
+* @config@ - Test configuration with stateful options
+* @execute@ - Timeout-aware executor
+* @ops@ - List of resolved operations
+
+=== Return Value
+
+Returns a list of tuples where:
+* First element: "STATEFUL: " prefix + operation label
+* Second element: The stateful 'Property'
+
+=== Example
+
+@
+config = defaultTestConfig { tcMaxSequenceLength = 5 }
+props = propertiesForSpecStateful spec config httpExecutor ops
+-- Returns: [("STATEFUL: createUser", ...), ("STATEFUL: createPost", ...)]
+@
+-}
+propertiesForSpecStateful ::
+    OpenApi ->
+    TestConfig ->
+    ExecutorWithTimeout ->
+    [ResolvedOperation] ->
+    [(Text, Property)]
+propertiesForSpecStateful openApi config execute ops =
+    [("STATEFUL: API Sequences", propertyStateful openApi config execute filteredOps)]
+  where
+    filteredOps = filter (tcOperationFilter config) ops
+
+{- | Execute a complete stateful sequence and return the final state.
+
+This function executes each step in the sequence, updating state after
+each successful request. It also executes cleanup steps at the end.
+
+=== Parameters
+
+* @openApi@ - OpenAPI spec for auth resolution
+* @config@ - Test configuration
+* @execute@ - Timeout-aware executor
+* @ops@ - Available operations (for looking up by ID)
+* @sequence'@ - The sequence to execute
+
+=== Return Value
+
+Returns the final 'TestState' after executing all steps.
+
+=== Side Effects
+
+* Executes HTTP requests via the executor
+* May abort with a Hedgehog failure if checks fail
+-}
+executeStatefulSequence ::
+    OpenApi ->
+    TestConfig ->
+    ExecutorWithTimeout ->
+    [ResolvedOperation] ->
+    OperationSequence ->
+    PropertyT IO TestState
+executeStatefulSequence openApi config execute ops sequence' = do
+    -- Execute main steps
+    stateAfterMain <- foldM (executeStatefulStep openApi config execute ops) emptyState (osSteps sequence')
+
+    -- Execute cleanup steps (even if main steps failed, but we continue after failure)
+    -- For now, cleanup runs after main steps complete successfully
+    foldM (executeStatefulStep openApi config execute ops) stateAfterMain (osCleanup sequence')
+
+{- | Execute a single step in a stateful sequence.
+
+This function:
+
+1. Looks up the operation by ID
+2. Generates a request using state for bound parameters
+3. Applies auth and config headers
+4. Executes the request
+5. Runs standard checks
+6. Updates state with extracted values from response
+
+=== Parameters
+
+* @openApi@ - OpenAPI spec for auth resolution
+* @config@ - Test configuration
+* @execute@ - Timeout-aware executor
+* @ops@ - Available operations
+* @state@ - Current test state
+* @step@ - The step to execute
+
+=== Return Value
+
+Returns the updated 'TestState' after executing the step.
+
+=== Failures
+
+If the operation ID is not found, or if checks fail, the property fails.
+-}
+executeStatefulStep ::
+    OpenApi ->
+    TestConfig ->
+    ExecutorWithTimeout ->
+    [ResolvedOperation] ->
+    TestState ->
+    SequenceStep ->
+    PropertyT IO TestState
+executeStatefulStep openApi config execute ops state step = do
+    -- Look up the operation
+    let opLabel = ssOperationId step
+    case findOperationByLabel opLabel ops of
+        Nothing -> do
+            footnote $ "Operation not found: " <> T.unpack opLabel
+            withFrozenCallStack failure
+        Just op -> do
+            -- Generate request using state for bound parameters
+            req <- forAllNoLoc (genStatefulRequest state step op)
+
+            -- Apply auth and config headers
+            let req' = applyConfigToRequest openApi config op req
+
+            -- Execute the request
+            let timeout = effectiveTimeout config op
+            res <- evalIO (execute timeout req')
+
+            -- Run standard checks
+            runChecks (tcBaseUrl config) (tcChecks config) req' res op
+
+            -- Update state with extracted values
+            pure $ updateState opLabel op req' res state
+
+-- | Internal helper to run stateful checks and report failures.
+runStatefulChecksProperty ::
+    TestConfig ->
+    ExecutorWithTimeout ->
+    [ResolvedOperation] ->
+    TestState ->
+    PropertyT IO ()
+runStatefulChecksProperty config execute ops state = do
+    let checks = tcStatefulChecks config
+    results <- evalIO $ runStatefulChecks execute ops state checks
+    case filter isStatefulFailure results of
+        [] -> success
+        failures -> do
+            -- Report all failures
+            mapM_ reportStatefulFailure failures
+            withFrozenCallStack failure
+
+-- | Check if a stateful check result is a failure.
+isStatefulFailure :: StatefulCheckResult -> Bool
+isStatefulFailure (StatefulCheckFailed _) = True
+isStatefulFailure (StatefulCheckPassed _ _) = False
+
+-- | Report a stateful check failure.
+reportStatefulFailure :: StatefulCheckResult -> PropertyT IO ()
+reportStatefulFailure (StatefulCheckPassed _ _) = pure ()
+reportStatefulFailure (StatefulCheckFailed sf) =
+    footnote (T.unpack (renderStatefulFailure sf))
+
+-- | Render a stateful failure as human-readable text.
+renderStatefulFailure :: StatefulFailure -> Text
+renderStatefulFailure sf =
+    T.unlines
+        [ "Stateful Check Failed: " <> sfCheckName sf
+        , "Message: " <> sfMessage sf
+        , "Resource: " <> maybe "N/A" (T.pack . show) (sfVerificationRequest sf >>= Just . reqPath)
+        , case (sfExpectedStatus sf, sfActualStatus sf) of
+            (Just expected, Just actual) ->
+                "Expected status: " <> T.pack (show expected) <> ", Actual: " <> T.pack (show actual)
+            _ -> ""
+        ]

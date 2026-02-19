@@ -26,6 +26,7 @@ import qualified Haskemathesis.Test.Properties.Stateful.Extract as StatefulExtra
 import qualified Haskemathesis.Test.Properties.Stateful.Generator as StatefulGenerator
 import qualified Haskemathesis.Test.Properties.Stateful.Heuristics as StatefulHeuristics
 import qualified Haskemathesis.Test.Properties.Stateful.Links as StatefulLinks
+import qualified Haskemathesis.Test.Properties.Stateful.Property as StatefulProperty
 import qualified Haskemathesis.Test.Properties.Stateful.Sequence as StatefulSequence
 import qualified Haskemathesis.Test.Properties.StatusCode as StatusCode
 import qualified Haskemathesis.Test.Properties.Streaming as Streaming
@@ -63,6 +64,7 @@ spec =
         StatefulGenerator.tests
         StatefulHeuristics.tests
         StatefulLinks.tests
+        StatefulProperty.tests
         StatefulSequence.tests
         StatefulChecks.tests
         Validate.spec
