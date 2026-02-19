@@ -22,7 +22,7 @@ Curl :: !CurlOptions -> Command
 
 -- | Options for the <tt>test</tt> command.
 data TestOptions
-TestOptions :: !FilePath -> !Text -> !Int -> ![Text] -> ![Text] -> ![Text] -> !Bool -> !Maybe Text -> !OutputFormat -> !Maybe Int -> !Maybe Int -> !Int -> !WorkdirOption -> TestOptions
+TestOptions :: !FilePath -> !Text -> !Int -> ![Text] -> ![Text] -> ![Text] -> !Bool -> !Maybe Text -> !OutputFormat -> !Maybe Int -> !Maybe Int -> !Int -> !WorkdirOption -> !Maybe Int -> TestOptions
 
 -- | Path to the OpenAPI specification file (YAML or JSON)
 [testSpecPath] :: TestOptions -> !FilePath
@@ -55,7 +55,7 @@ TestOptions :: !FilePath -> !Text -> !Int -> ![Text] -> ![Text] -> ![Text] -> !B
 -- | Random seed for reproducible tests
 [testSeed] :: TestOptions -> !Maybe Int
 
--- | Request timeout in seconds
+-- | Request timeout in seconds (unused, kept for compatibility)
 [testTimeout] :: TestOptions -> !Maybe Int
 
 -- | Number of parallel workers (default: 1)
@@ -63,6 +63,19 @@ TestOptions :: !FilePath -> !Text -> !Int -> ![Text] -> ![Text] -> ![Text] -> !B
 
 -- | Working directory for tests (to isolate side effects)
 [testWorkdir] :: TestOptions -> !WorkdirOption
+
+-- | Default timeout in milliseconds for streaming endpoints (SSE, NDJSON).
+--   
+--   Streaming endpoints never complete normally, so a timeout is required
+--   to prevent tests from hanging. This is the default timeout applied to
+--   operations detected as streaming (by content-type) that don't have an
+--   explicit <tt>x-timeout</tt> set in the OpenAPI spec.
+--   
+--   Default: 1000ms (1 second)
+--   
+--   Set to <a>Nothing</a> to disable timeout (may cause hangs with
+--   streaming APIs).
+[testStreamingTimeout] :: TestOptions -> !Maybe Int
 
 -- | Options for the <tt>validate</tt> command.
 data ValidateOptions
@@ -216,6 +229,23 @@ type MediaType = Text
 --   "<a>http://localhost:8080")</a>.
 type BaseUrl = Text
 
+-- | Simple executor type for backward compatibility.
+type Executor = ApiRequest -> IO ApiResponse
+
+-- | Executor type that supports request timeouts.
+--   
+--   This executor accepts an optional timeout in milliseconds. The timeout
+--   controls how long to wait for a response before aborting the request.
+--   
+--   <pre>
+--   myExecutor :: ExecutorWithTimeout
+--   myExecutor mTimeout req = ...
+--   </pre>
+--   
+--   Use this type when you need to support streaming endpoints or
+--   operations with custom <tt>x-timeout</tt> values.
+type ExecutorWithTimeout = Maybe Int -> ApiRequest -> IO ApiResponse
+
 -- | Extract Content-Type header from request body if present.
 contentTypeHeaders :: ApiRequest -> [(HeaderName, ByteString)]
 
@@ -290,6 +320,49 @@ module Haskemathesis.Execute.Http
 --   </pre>
 executeHttp :: Manager -> BaseUrl -> ApiRequest -> IO ApiResponse
 
+-- | Execute an HTTP request with a configurable timeout.
+--   
+--   Like <a>executeHttp</a>, but allows specifying a timeout in
+--   milliseconds. This is essential for testing streaming endpoints (SSE,
+--   NDJSON) that never complete - the timeout ensures tests don't hang
+--   indefinitely.
+--   
+--   <h3>Timeout Behavior</h3>
+--   
+--   When the timeout is reached:
+--   
+--   <ul>
+--   <li>The connection is terminated</li>
+--   <li>Any partial response data received is returned</li>
+--   <li>For streaming endpoints, this is expected behavior - you get
+--   whatever data arrived before the timeout</li>
+--   </ul>
+--   
+--   <h3>Parameters</h3>
+--   
+--   <ul>
+--   <li><tt>manager</tt> - HTTP connection manager</li>
+--   <li><tt>baseUrl</tt> - Base URL of the API</li>
+--   <li><tt>timeoutMs</tt> - Optional timeout in milliseconds.
+--   <a>Nothing</a> uses default.</li>
+--   <li><tt>req</tt> - The request to execute</li>
+--   </ul>
+--   
+--   <h3>Example</h3>
+--   
+--   <pre>
+--   -- Test a streaming endpoint with 2 second timeout
+--   response &lt;- executeHttpWithTimeout manager baseUrl (Just 2000) request
+--   -- response contains whatever data arrived in 2 seconds
+--   </pre>
+--   
+--   <h3>Relationship to x-timeout</h3>
+--   
+--   This function is used internally when an operation has
+--   <tt>roTimeout</tt> set (parsed from the <tt>x-timeout</tt> OpenAPI
+--   extension) or when testing streaming endpoints with a default timeout.
+executeHttpWithTimeout :: Manager -> BaseUrl -> Maybe Int -> ApiRequest -> IO ApiResponse
+
 
 -- | WAI executor for running requests directly against an Application.
 --   
@@ -356,6 +429,25 @@ module Haskemathesis.Execute.Wai
 --       putStrLn $ "Status: " ++ show (resStatusCode response)
 --   </pre>
 executeWai :: Application -> ApiRequest -> IO ApiResponse
+
+-- | Execute a request against a WAI application (timeout-aware interface).
+--   
+--   This is a wrapper around <a>executeWai</a> that conforms to the
+--   <a>ExecutorWithTimeout</a> type. The timeout parameter is
+--   <b>ignored</b> because WAI testing is synchronous and in-memory -
+--   there's no network to timeout.
+--   
+--   Use this when you need to test a WAI application with functions that
+--   expect an <a>ExecutorWithTimeout</a>.
+--   
+--   <h3>Parameters</h3>
+--   
+--   <ul>
+--   <li><tt>app</tt> - The WAI <a>Application</a> to test</li>
+--   <li><tt>_timeout</tt> - Ignored (WAI is synchronous)</li>
+--   <li><tt>req</tt> - The <a>ApiRequest</a> to execute</li>
+--   </ul>
+executeWaiWithTimeout :: Application -> Maybe Int -> ApiRequest -> IO ApiResponse
 
 
 -- | Built-in format generators and registry helpers.
@@ -630,6 +722,64 @@ module Haskemathesis.OpenApi.Loader
 --   </pre>
 loadOpenApiFile :: FilePath -> IO (Either Text OpenApi)
 
+-- | Load an OpenAPI spec along with vendor extensions.
+--   
+--   This function returns both the parsed OpenAPI spec and a map of vendor
+--   extensions for each operation, keyed by (path, method).
+--   
+--   <h3>Example</h3>
+--   
+--   <pre>
+--   result &lt;- loadOpenApiFileWithExtensions "api.yaml"
+--   case result of
+--       Left err -&gt; putStrLn $ "Error: " ++ T.unpack err
+--       Right (spec, extensions) -&gt; do
+--           -- Look up timeout for GET /events
+--           let key = ("/events", <a>GET</a>)
+--           case Map.lookup key extensions of
+--               Just ext -&gt; print (oeTimeout ext)
+--               Nothing -&gt; putStrLn "No extensions"
+--   </pre>
+loadOpenApiFileWithExtensions :: FilePath -> IO (Either Text (OpenApi, Map OperationKey OperationExtensions))
+
+-- | Vendor extensions extracted from an OpenAPI operation.
+--   
+--   These extensions are non-standard fields (prefixed with <tt>x-</tt>)
+--   that Haskemathesis recognizes for controlling test behavior.
+--   
+--   <h3>Supported Extensions</h3>
+--   
+--   <ul>
+--   <li><i><tt>x-timeout</tt></i> Request timeout in milliseconds. Useful
+--   for:<ul><li>Streaming endpoints (SSE, NDJSON) that never
+--   complete</li><li>Slow endpoints that need longer than default
+--   timeout</li><li>Fast endpoints where you want to fail
+--   quickly</li></ul>Example in OpenAPI spec:<pre>/events: get: x-timeout:
+--   2000 # 2 second timeout responses: "200": content: text/event-stream:
+--   {} </pre></li>
+--   </ul>
+--   
+--   <h3>Why Use Extensions?</h3>
+--   
+--   OpenAPI 3.x doesn't have a standard way to specify:
+--   
+--   <ul>
+--   <li>Request timeouts</li>
+--   <li>Streaming behavior hints</li>
+--   <li>Test-specific configuration</li>
+--   </ul>
+--   
+--   Vendor extensions (x-* fields) are the OpenAPI-sanctioned way to add
+--   such metadata while remaining spec-compliant.
+newtype OperationExtensions
+OperationExtensions :: Maybe Int -> OperationExtensions
+
+-- | Request timeout in milliseconds from <tt>x-timeout</tt>
+[oeTimeout] :: OperationExtensions -> Maybe Int
+
+-- | Key for looking up operation extensions: (path, method)
+type OperationKey = (Text, Text)
+
 -- | Transform OpenAPI 3.1 JSON Schema constructs to OpenAPI 3.0
 --   equivalents.
 --   
@@ -648,6 +798,18 @@ loadOpenApiFile :: FilePath -> IO (Either Text OpenApi)
 --   semantics) to be parsed by libraries that only support OpenAPI 3.0
 --   (JSON Schema draft-04).
 transformOpenApi31To30 :: Value -> Value
+
+-- | Extract vendor extensions from all operations in a raw OpenAPI JSON
+--   value.
+--   
+--   This function walks the paths and operations in the raw JSON to
+--   extract x-* fields before they are discarded by the openapi3 library
+--   parser.
+--   
+--   Returns a map from (path, method) to the extracted extensions.
+extractOperationExtensions :: Value -> Map OperationKey OperationExtensions
+instance GHC.Classes.Eq Haskemathesis.OpenApi.Loader.OperationExtensions
+instance GHC.Internal.Show.Show Haskemathesis.OpenApi.Loader.OperationExtensions
 
 
 -- | Render API requests as reproducible curl commands.
@@ -1045,9 +1207,13 @@ ResponseSpec :: Map Text Schema -> Map Text Schema -> [Text] -> ResponseSpec
 --   <li><a>roDefaultResponse</a> - Optional default response
 --   specification</li>
 --   <li><a>roSecurity</a> - Security requirements for this operation</li>
+--   <li><a>roIsStreaming</a> - Whether this operation returns a streaming
+--   response</li>
+--   <li><a>roTimeout</a> - Optional request timeout in milliseconds (from
+--   <tt>x-timeout</tt>)</li>
 --   </ul>
 data ResolvedOperation
-ResolvedOperation :: Text -> Text -> Maybe Text -> [Text] -> [ResolvedParam] -> Maybe ResolvedRequestBody -> Map Int ResponseSpec -> Maybe ResponseSpec -> [SecurityRequirement] -> ResolvedOperation
+ResolvedOperation :: Text -> Text -> Maybe Text -> [Text] -> [ResolvedParam] -> Maybe ResolvedRequestBody -> Map Int ResponseSpec -> Maybe ResponseSpec -> [SecurityRequirement] -> Bool -> Maybe Int -> ResolvedOperation
 
 -- | HTTP method (e.g., <a>GET</a>, <a>POST</a>, <a>PUT</a>,
 --   <a>DELETE</a>).
@@ -1080,6 +1246,94 @@ ResolvedOperation :: Text -> Text -> Maybe Text -> [Text] -> [ResolvedParam] -> 
 -- | Security requirements for this operation. If empty, the operation
 --   requires no authentication.
 [roSecurity] :: ResolvedOperation -> [SecurityRequirement]
+
+-- | Whether this operation returns a streaming response.
+--   
+--   An operation is considered streaming if any of its success responses
+--   (2xx status codes) include one of these content types:
+--   
+--   <ul>
+--   <li><tt>text/event-stream</tt> - Server-Sent Events (SSE)</li>
+--   <li><tt>application/x-ndjson</tt> - Newline-delimited JSON</li>
+--   </ul>
+--   
+--   Streaming operations are tested with a timeout to prevent tests from
+--   hanging indefinitely. See <a>roTimeout</a> for timeout configuration.
+[roIsStreaming] :: ResolvedOperation -> Bool
+
+-- | Optional request timeout in milliseconds.
+--   
+--   This value is parsed from the <tt>x-timeout</tt> OpenAPI extension,
+--   which is a <b>non-standard vendor extension</b> that Haskemathesis
+--   recognizes:
+--   
+--   <pre>
+--   /events:
+--     get:
+--       x-timeout: 2000  # Timeout in milliseconds
+--       responses:
+--         "200":
+--           content:
+--             text/event-stream: {}
+--   
+--   </pre>
+--   
+--   <b>Timeout behavior:</b>
+--   
+--   <ul>
+--   <li>If <tt>x-timeout</tt> is specified, that value is used</li>
+--   <li>If the operation is streaming (<a>roIsStreaming</a> is
+--   <a>True</a>) and no <tt>x-timeout</tt> is set, a default streaming
+--   timeout is applied (configurable via <tt>tcStreamingTimeout</tt> in
+--   <tt>TestConfig</tt>)</li>
+--   <li>For non-streaming operations without <tt>x-timeout</tt>, no
+--   timeout is applied (or the HTTP client's default timeout is used)</li>
+--   </ul>
+--   
+--   <b>Why milliseconds?</b>
+--   
+--   Milliseconds provide fine-grained control needed for streaming
+--   endpoints where you want to capture "some" data quickly (e.g., 500ms)
+--   without waiting for the stream to complete (which may never happen).
+[roTimeout] :: ResolvedOperation -> Maybe Int
+
+-- | Check if a content type indicates a streaming response.
+--   
+--   Performs case-insensitive matching and ignores parameters (charset,
+--   etc.):
+--   
+--   <pre>
+--   &gt;&gt;&gt; isStreamingContentType "text/event-stream"
+--   True
+--   </pre>
+--   
+--   <pre>
+--   &gt;&gt;&gt; isStreamingContentType "TEXT/EVENT-STREAM; charset=utf-8"
+--   True
+--   </pre>
+--   
+--   <pre>
+--   &gt;&gt;&gt; isStreamingContentType "application/json"
+--   False
+--   </pre>
+isStreamingContentType :: Text -> Bool
+
+-- | List of content types that indicate streaming responses.
+--   
+--   These content types are used to automatically detect streaming
+--   operations:
+--   
+--   <ul>
+--   <li><tt>text/event-stream</tt> - Server-Sent Events (SSE), used for
+--   real-time updates</li>
+--   <li><tt>application/x-ndjson</tt> - Newline-delimited JSON, used for
+--   streaming JSON records</li>
+--   </ul>
+--   
+--   When an operation's success responses include any of these content
+--   types, the operation is marked as streaming (<a>roIsStreaming</a> =
+--   <a>True</a>).
+streamingContentTypes :: [Text]
 instance GHC.Classes.Eq Haskemathesis.OpenApi.Types.ParamLocation
 instance GHC.Classes.Eq Haskemathesis.OpenApi.Types.ResolvedOperation
 instance GHC.Classes.Eq Haskemathesis.OpenApi.Types.ResolvedParam
@@ -1525,6 +1779,26 @@ module Haskemathesis.OpenApi.Resolve
 --   userOps = filter (\op -&gt; "users" `elem` roTags op) operations
 --   </pre>
 resolveOperations :: OpenApi -> [ResolvedOperation]
+
+-- | Resolve operations with vendor extension support.
+--   
+--   Like <a>resolveOperations</a>, but also incorporates vendor extensions
+--   (e.g., <tt>x-timeout</tt>) extracted from the raw OpenAPI JSON.
+--   
+--   Use <tt>loadOpenApiFileWithExtensions</tt> to obtain the extensions
+--   map.
+--   
+--   <h4>Example</h4>
+--   
+--   <pre>
+--   result &lt;- loadOpenApiFileWithExtensions "api.yaml"
+--   case result of
+--       Right (spec, extensions) -&gt; do
+--           let ops = resolveOperationsWithExtensions spec extensions
+--           -- ops now have roTimeout populated from x-timeout
+--       Left err -&gt; ...
+--   </pre>
+resolveOperationsWithExtensions :: OpenApi -> Map OperationKey OperationExtensions -> [ResolvedOperation]
 
 
 -- | Primitive generators for schema leaf types.
@@ -2597,9 +2871,11 @@ module Haskemathesis.Config
 --   <li><a>tcOperationFilter</a> - Predicate to filter which operations to
 --   test</li>
 --   <li><a>tcHeaders</a> - Global headers to include in every request</li>
+--   <li><a>tcStreamingTimeout</a> - Default timeout for streaming
+--   endpoints (milliseconds)</li>
 --   </ul>
 data TestConfig
-TestConfig :: ![Check] -> !Maybe AuthConfig -> !Maybe BaseUrl -> !Int -> !Bool -> !ResolvedOperation -> Bool -> ![(HeaderName, ByteString)] -> TestConfig
+TestConfig :: ![Check] -> !Maybe AuthConfig -> !Maybe BaseUrl -> !Int -> !Bool -> !ResolvedOperation -> Bool -> ![(HeaderName, ByteString)] -> !Maybe Int -> TestConfig
 [tcChecks] :: TestConfig -> ![Check]
 [tcAuthConfig] :: TestConfig -> !Maybe AuthConfig
 [tcBaseUrl] :: TestConfig -> !Maybe BaseUrl
@@ -2607,6 +2883,33 @@ TestConfig :: ![Check] -> !Maybe AuthConfig -> !Maybe BaseUrl -> !Int -> !Bool -
 [tcNegativeTesting] :: TestConfig -> !Bool
 [tcOperationFilter] :: TestConfig -> !ResolvedOperation -> Bool
 [tcHeaders] :: TestConfig -> ![(HeaderName, ByteString)]
+
+-- | Default timeout in milliseconds for streaming endpoints.
+--   
+--   This timeout applies to operations that are detected as streaming
+--   (have <tt>text/event-stream</tt> or <tt>application/x-ndjson</tt>
+--   content types) and don't have an explicit <tt>x-timeout</tt> set in
+--   the OpenAPI spec.
+--   
+--   <b>Timeout precedence:</b>
+--   
+--   <ol>
+--   <li>Operation's <tt>x-timeout</tt> extension (if set)</li>
+--   <li><a>tcStreamingTimeout</a> (if operation is streaming)</li>
+--   <li>No timeout (use HTTP client default)</li>
+--   </ol>
+--   
+--   <b>Recommended values:</b>
+--   
+--   <ul>
+--   <li>500-2000ms for quick test suites</li>
+--   <li>5000ms or more if you need to capture meaningful streaming
+--   data</li>
+--   </ul>
+--   
+--   Set to <a>Nothing</a> to use the HTTP client's default timeout for
+--   streaming endpoints (which may cause tests to hang).
+[tcStreamingTimeout] :: TestConfig -> !Maybe Int
 
 -- | Sensible defaults for <a>TestConfig</a>.
 --   
@@ -2621,6 +2924,7 @@ TestConfig :: ![Check] -> !Maybe AuthConfig -> !Maybe BaseUrl -> !Int -> !Bool -
 --   <li>Negative testing disabled</li>
 --   <li>All operations included (filter always returns <a>True</a>)</li>
 --   <li>No global headers</li>
+--   <li>1 second (1000ms) streaming timeout</li>
 --   </ul>
 defaultTestConfig :: TestConfig
 
@@ -2725,7 +3029,7 @@ module Haskemathesis.Property
 --   <pre>
 --   let prop = propertyForOperation (Just "<a>http://localhost:8080")</a> checks httpExecutor myOperation
 --   </pre>
-propertyForOperation :: Maybe BaseUrl -> [Check] -> (ApiRequest -> IO ApiResponse) -> ResolvedOperation -> Property
+propertyForOperation :: Maybe BaseUrl -> [Check] -> ExecutorWithTimeout -> ResolvedOperation -> Property
 
 -- | Generate a property with full configuration support including
 --   authentication.
@@ -2737,6 +3041,7 @@ propertyForOperation :: Maybe BaseUrl -> [Check] -> (ApiRequest -> IO ApiRespons
 --   <li>Authentication via <a>tcAuthConfig</a></li>
 --   <li>Custom property counts via <a>tcPropertyCount</a></li>
 --   <li>Operation filtering via <a>tcOperationFilter</a></li>
+--   <li>Automatic timeout handling for streaming endpoints</li>
 --   </ul>
 --   
 --   <h3>Parameters</h3>
@@ -2746,7 +3051,8 @@ propertyForOperation :: Maybe BaseUrl -> [Check] -> (ApiRequest -> IO ApiRespons
 --   resolution)</li>
 --   <li><tt>config</tt> - The <a>TestConfig</a> controlling test
 --   generation</li>
---   <li><tt>execute</tt> - Function to execute requests</li>
+--   <li><tt>execute</tt> - Timeout-aware executor (see
+--   <a>ExecutorWithTimeout</a>)</li>
 --   <li><tt>op</tt> - The operation to test</li>
 --   </ul>
 --   
@@ -2756,7 +3062,7 @@ propertyForOperation :: Maybe BaseUrl -> [Check] -> (ApiRequest -> IO ApiRespons
 --   config = defaultTestConfig { tcPropertyCount = 200 }
 --   prop = propertyForOperationWithConfig spec config httpExecutor myOperation
 --   </pre>
-propertyForOperationWithConfig :: OpenApi -> TestConfig -> (ApiRequest -> IO ApiResponse) -> ResolvedOperation -> Property
+propertyForOperationWithConfig :: OpenApi -> TestConfig -> ExecutorWithTimeout -> ResolvedOperation -> Property
 
 -- | Generate a negative testing property for an operation.
 --   
@@ -2778,7 +3084,7 @@ propertyForOperationWithConfig :: OpenApi -> TestConfig -> (ApiRequest -> IO Api
 --   <li><tt>openApi</tt> - The full OpenAPI specification</li>
 --   <li><tt>config</tt> - The <a>TestConfig</a> (negative testing is
 --   enabled separately)</li>
---   <li><tt>execute</tt> - Function to execute requests</li>
+--   <li><tt>execute</tt> - Timeout-aware executor</li>
 --   <li><tt>op</tt> - The operation to test</li>
 --   </ul>
 --   
@@ -2788,7 +3094,7 @@ propertyForOperationWithConfig :: OpenApi -> TestConfig -> (ApiRequest -> IO Api
 --   config = defaultTestConfig { tcPropertyCount = 50 }
 --   negProp = propertyForOperationNegative spec config httpExecutor myOperation
 --   </pre>
-propertyForOperationNegative :: OpenApi -> TestConfig -> (ApiRequest -> IO ApiResponse) -> ResolvedOperation -> Property
+propertyForOperationNegative :: OpenApi -> TestConfig -> ExecutorWithTimeout -> ResolvedOperation -> Property
 
 -- | Generate properties for all operations in a spec using basic
 --   configuration.
@@ -2825,13 +3131,14 @@ propertyForOperationNegative :: OpenApi -> TestConfig -> (ApiRequest -> IO ApiRe
 --           props = propertiesForSpec Nothing defaultChecks httpExecutor ops
 --       -- Run with your test framework
 --   </pre>
-propertiesForSpec :: Maybe BaseUrl -> [Check] -> (ApiRequest -> IO ApiResponse) -> [ResolvedOperation] -> [(Text, Property)]
+propertiesForSpec :: Maybe BaseUrl -> [Check] -> ExecutorWithTimeout -> [ResolvedOperation] -> [(Text, Property)]
 
 -- | Generate properties with full configuration support.
 --   
 --   This function provides the most flexibility for generating properties.
 --   It supports authentication, operation filtering, custom check sets,
---   and can generate both positive and negative test cases.
+--   automatic timeout handling for streaming endpoints, and can generate
+--   both positive and negative test cases.
 --   
 --   <h3>Negative Testing</h3>
 --   
@@ -2845,6 +3152,21 @@ propertiesForSpec :: Maybe BaseUrl -> [Check] -> (ApiRequest -> IO ApiResponse) 
 --   Only operations that satisfy <a>tcOperationFilter</a> will have
 --   properties generated. This is useful for testing subsets of your API.
 --   
+--   <h3>Timeout Handling</h3>
+--   
+--   Streaming endpoints (SSE, NDJSON) are automatically detected and
+--   tested with timeouts to prevent tests from hanging. The timeout is
+--   determined by (in order of precedence):
+--   
+--   <ol>
+--   <li>Operation's <tt>x-timeout</tt> extension (if set in OpenAPI
+--   spec)</li>
+--   <li><a>tcStreamingTimeout</a> from config (if operation is
+--   streaming)</li>
+--   <li>No timeout (for non-streaming operations without
+--   <tt>x-timeout</tt>)</li>
+--   </ol>
+--   
 --   <h3>Parameters</h3>
 --   
 --   <ul>
@@ -2852,7 +3174,8 @@ propertiesForSpec :: Maybe BaseUrl -> [Check] -> (ApiRequest -> IO ApiResponse) 
 --   resolution)</li>
 --   <li><tt>config</tt> - The <a>TestConfig</a> controlling all aspects of
 --   generation</li>
---   <li><tt>execute</tt> - Function to execute requests</li>
+--   <li><tt>execute</tt> - Timeout-aware executor (see
+--   <a>ExecutorWithTimeout</a>)</li>
 --   <li><tt>ops</tt> - List of resolved operations</li>
 --   </ul>
 --   
@@ -2866,7 +3189,7 @@ propertiesForSpec :: Maybe BaseUrl -> [Check] -> (ApiRequest -> IO ApiResponse) 
 --       }
 --   props = propertiesForSpecWithConfig spec config httpExecutor ops
 --   </pre>
-propertiesForSpecWithConfig :: OpenApi -> TestConfig -> (ApiRequest -> IO ApiResponse) -> [ResolvedOperation] -> [(Text, Property)]
+propertiesForSpecWithConfig :: OpenApi -> TestConfig -> ExecutorWithTimeout -> [ResolvedOperation] -> [(Text, Property)]
 
 -- | Generate only negative testing properties.
 --   
@@ -2889,7 +3212,7 @@ propertiesForSpecWithConfig :: OpenApi -> TestConfig -> (ApiRequest -> IO ApiRes
 --   <li><tt>openApi</tt> - The full OpenAPI specification</li>
 --   <li><tt>config</tt> - The <a>TestConfig</a> (negative testing flag is
 --   ignored, always enabled)</li>
---   <li><tt>execute</tt> - Function to execute requests</li>
+--   <li><tt>execute</tt> - Timeout-aware executor</li>
 --   <li><tt>ops</tt> - List of resolved operations</li>
 --   </ul>
 --   
@@ -2899,7 +3222,35 @@ propertiesForSpecWithConfig :: OpenApi -> TestConfig -> (ApiRequest -> IO ApiRes
 --   -- Dedicated negative testing suite
 --   negativeProps = propertiesForSpecNegative spec defaultConfig httpExecutor ops
 --   </pre>
-propertiesForSpecNegative :: OpenApi -> TestConfig -> (ApiRequest -> IO ApiResponse) -> [ResolvedOperation] -> [(Text, Property)]
+propertiesForSpecNegative :: OpenApi -> TestConfig -> ExecutorWithTimeout -> [ResolvedOperation] -> [(Text, Property)]
+
+-- | Compute the effective timeout for an operation.
+--   
+--   This function determines the appropriate timeout to use for an
+--   operation based on the following precedence:
+--   
+--   <ol>
+--   <li><b>Operation's <tt>x-timeout</tt></b>: If the OpenAPI spec has
+--   <tt>x-timeout</tt> set on the operation, that value is used (in
+--   milliseconds).</li>
+--   <li><b>Config's streaming timeout</b>: If the operation is detected as
+--   streaming (has <tt>text/event-stream</tt> or
+--   <tt>application/x-ndjson</tt> content types), the
+--   <a>tcStreamingTimeout</a> from config is used.</li>
+--   <li><b>No timeout</b>: For non-streaming operations without
+--   <tt>x-timeout</tt>, <a>Nothing</a> is returned (use HTTP client
+--   default).</li>
+--   </ol>
+--   
+--   <h3>Example</h3>
+--   
+--   <pre>
+--   let timeout = effectiveTimeout config operation
+--   -- timeout is Just 2000 if x-timeout: 2000 in spec
+--   -- timeout is Just 1000 if streaming with default config
+--   -- timeout is Nothing for normal operations
+--   </pre>
+effectiveTimeout :: TestConfig -> ResolvedOperation -> Maybe Int
 
 
 -- | Tasty integration helpers for generated properties.
@@ -2961,7 +3312,7 @@ module Haskemathesis.Integration.Tasty
 -- | Create a Tasty <a>TestTree</a> from a custom executor.
 --   
 --   This is the most flexible way to create tests, allowing you to provide
---   any function that can execute <a>ApiRequest</a> values.
+--   any function that can execute <tt>ApiRequest</tt> values.
 --   
 --   <h3>Parameters</h3>
 --   
@@ -2982,7 +3333,7 @@ module Haskemathesis.Integration.Tasty
 --   
 --   tests = testTreeForExecutor Nothing defaultChecks myExecutor ops
 --   </pre>
-testTreeForExecutor :: Maybe BaseUrl -> [Check] -> (ApiRequest -> IO ApiResponse) -> [ResolvedOperation] -> TestTree
+testTreeForExecutor :: Maybe BaseUrl -> [Check] -> ExecutorWithTimeout -> [ResolvedOperation] -> TestTree
 
 -- | Create a Tasty <a>TestTree</a> from a WAI <a>Application</a>.
 --   
@@ -3042,12 +3393,12 @@ testTreeForApp :: Maybe BaseUrl -> [Check] -> OpenApi -> Application -> TestTree
 --   
 --   tests = testTreeForExecutorWithConfig spec config executor ops
 --   </pre>
-testTreeForExecutorWithConfig :: OpenApi -> TestConfig -> (ApiRequest -> IO ApiResponse) -> [ResolvedOperation] -> TestTree
+testTreeForExecutorWithConfig :: OpenApi -> TestConfig -> ExecutorWithTimeout -> [ResolvedOperation] -> TestTree
 
 -- | Create a Tasty <a>TestTree</a> from a WAI <a>Application</a> with
 --   configuration.
 --   
---   Combines <a>testTreeForExecutorWithConfig</a> with <a>executeWai</a>
+--   Combines <a>testTreeForExecutorWithConfig</a> with <tt>executeWai</tt>
 --   for convenient testing of WAI applications.
 --   
 --   <h3>Parameters</h3>
@@ -3119,13 +3470,13 @@ testTreeForUrl :: TestConfig -> OpenApi -> Manager -> BaseUrl -> TestTree
 --   -- Test that invalid requests are properly rejected
 --   negTests = testTreeForExecutorNegative spec config executor ops
 --   </pre>
-testTreeForExecutorNegative :: OpenApi -> TestConfig -> (ApiRequest -> IO ApiResponse) -> [ResolvedOperation] -> TestTree
+testTreeForExecutorNegative :: OpenApi -> TestConfig -> ExecutorWithTimeout -> [ResolvedOperation] -> TestTree
 
 -- | Create a Tasty <a>TestTree</a> for negative testing with a WAI
 --   application.
 --   
 --   Convenience function that combines <a>testTreeForExecutorNegative</a>
---   with <a>executeWai</a> for testing WAI applications.
+--   with <tt>executeWai</tt> for testing WAI applications.
 --   
 --   <h3>Parameters</h3>
 --   
@@ -3260,7 +3611,7 @@ specForAppWithConfig :: TestConfig -> OpenApi -> Application -> Spec
 --   spec :: Spec
 --   spec = specForExecutor (Just "<a>http://localhost:8080")</a> checks myExecutor ops
 --   </pre>
-specForExecutor :: Maybe BaseUrl -> [Check] -> (ApiRequest -> IO ApiResponse) -> [ResolvedOperation] -> Spec
+specForExecutor :: Maybe BaseUrl -> [Check] -> ExecutorWithTimeout -> [ResolvedOperation] -> Spec
 
 -- | Create an Hspec <a>Spec</a> with full configuration and custom
 --   executor.
@@ -3285,7 +3636,7 @@ specForExecutor :: Maybe BaseUrl -> [Check] -> (ApiRequest -> IO ApiResponse) ->
 --   let config = defaultConfig { tcTestCount = 50 }
 --   spec = specForExecutorWithConfig openApiSpec config myExecutor ops
 --   </pre>
-specForExecutorWithConfig :: OpenApi -> TestConfig -> (ApiRequest -> IO ApiResponse) -> [ResolvedOperation] -> Spec
+specForExecutorWithConfig :: OpenApi -> TestConfig -> ExecutorWithTimeout -> [ResolvedOperation] -> Spec
 
 -- | Create an Hspec <a>Spec</a> for testing a remote HTTP server.
 --   
@@ -3339,7 +3690,7 @@ specForUrl :: TestConfig -> OpenApi -> Manager -> BaseUrl -> Spec
 --   <li>Invalid request bodies</li>
 --   <li>Wrong content types</li>
 --   </ul>
-specForExecutorNegative :: OpenApi -> TestConfig -> (ApiRequest -> IO ApiResponse) -> [ResolvedOperation] -> Spec
+specForExecutorNegative :: OpenApi -> TestConfig -> ExecutorWithTimeout -> [ResolvedOperation] -> Spec
 
 -- | Create an Hspec <a>Spec</a> for negative testing of a WAI
 --   <a>Application</a>.
@@ -3580,7 +3931,7 @@ Curl :: !CurlOptions -> Command
 
 -- | Options for the <tt>test</tt> command.
 data TestOptions
-TestOptions :: !FilePath -> !Text -> !Int -> ![Text] -> ![Text] -> ![Text] -> !Bool -> !Maybe Text -> !OutputFormat -> !Maybe Int -> !Maybe Int -> !Int -> !WorkdirOption -> TestOptions
+TestOptions :: !FilePath -> !Text -> !Int -> ![Text] -> ![Text] -> ![Text] -> !Bool -> !Maybe Text -> !OutputFormat -> !Maybe Int -> !Maybe Int -> !Int -> !WorkdirOption -> !Maybe Int -> TestOptions
 
 -- | Path to the OpenAPI specification file (YAML or JSON)
 [testSpecPath] :: TestOptions -> !FilePath
@@ -3613,7 +3964,7 @@ TestOptions :: !FilePath -> !Text -> !Int -> ![Text] -> ![Text] -> ![Text] -> !B
 -- | Random seed for reproducible tests
 [testSeed] :: TestOptions -> !Maybe Int
 
--- | Request timeout in seconds
+-- | Request timeout in seconds (unused, kept for compatibility)
 [testTimeout] :: TestOptions -> !Maybe Int
 
 -- | Number of parallel workers (default: 1)
@@ -3621,6 +3972,19 @@ TestOptions :: !FilePath -> !Text -> !Int -> ![Text] -> ![Text] -> ![Text] -> !B
 
 -- | Working directory for tests (to isolate side effects)
 [testWorkdir] :: TestOptions -> !WorkdirOption
+
+-- | Default timeout in milliseconds for streaming endpoints (SSE, NDJSON).
+--   
+--   Streaming endpoints never complete normally, so a timeout is required
+--   to prevent tests from hanging. This is the default timeout applied to
+--   operations detected as streaming (by content-type) that don't have an
+--   explicit <tt>x-timeout</tt> set in the OpenAPI spec.
+--   
+--   Default: 1000ms (1 second)
+--   
+--   Set to <a>Nothing</a> to disable timeout (may cause hangs with
+--   streaming APIs).
+[testStreamingTimeout] :: TestOptions -> !Maybe Int
 
 -- | Options for the <tt>validate</tt> command.
 data ValidateOptions

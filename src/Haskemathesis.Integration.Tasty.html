@@ -77,9 +77,9 @@ main = do
 </span><span id="line-77"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Haskemathesis.Check.Standard.Helpers.html"><span class="hs-identifier">Haskemathesis.Check.Standard.Helpers</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Haskemathesis.Check.Standard.Helpers.html#operationLabel"><span class="hs-identifier">operationLabel</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-78"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Haskemathesis.Check.Types.html"><span class="hs-identifier">Haskemathesis.Check.Types</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Haskemathesis.Check.Types.html#Check"><span class="hs-identifier">Check</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-79"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Haskemathesis.Config.html"><span class="hs-identifier">Haskemathesis.Config</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Haskemathesis.Config.html#TestConfig"><span class="hs-identifier">TestConfig</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
-</span><span id="line-80"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Haskemathesis.Execute.Http.html"><span class="hs-identifier">Haskemathesis.Execute.Http</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Haskemathesis.Execute.Http.html#executeHttp"><span class="hs-identifier">executeHttp</span></a></span><span class="hs-special">)</span><span>
-</span><span id="line-81"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Haskemathesis.Execute.Types.html"><span class="hs-identifier">Haskemathesis.Execute.Types</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Haskemathesis.Execute.Types.html#ApiRequest"><span class="hs-identifier">ApiRequest</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Haskemathesis.Execute.Types.html#ApiResponse"><span class="hs-identifier">ApiResponse</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Haskemathesis.Execute.Types.html#BaseUrl"><span class="hs-identifier">BaseUrl</span></a></span><span class="hs-special">)</span><span>
-</span><span id="line-82"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Haskemathesis.Execute.Wai.html"><span class="hs-identifier">Haskemathesis.Execute.Wai</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Haskemathesis.Execute.Wai.html#executeWai"><span class="hs-identifier">executeWai</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-80"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Haskemathesis.Execute.Http.html"><span class="hs-identifier">Haskemathesis.Execute.Http</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Haskemathesis.Execute.Http.html#executeHttpWithTimeout"><span class="hs-identifier">executeHttpWithTimeout</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-81"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Haskemathesis.Execute.Types.html"><span class="hs-identifier">Haskemathesis.Execute.Types</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Haskemathesis.Execute.Types.html#BaseUrl"><span class="hs-identifier">BaseUrl</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Haskemathesis.Execute.Types.html#ExecutorWithTimeout"><span class="hs-identifier">ExecutorWithTimeout</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-82"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Haskemathesis.Execute.Wai.html"><span class="hs-identifier">Haskemathesis.Execute.Wai</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Haskemathesis.Execute.Wai.html#executeWaiWithTimeout"><span class="hs-identifier">executeWaiWithTimeout</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-83"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Haskemathesis.OpenApi.Resolve.html"><span class="hs-identifier">Haskemathesis.OpenApi.Resolve</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Haskemathesis.OpenApi.Resolve.html#resolveOperations"><span class="hs-identifier">resolveOperations</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-84"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Haskemathesis.OpenApi.Types.html"><span class="hs-identifier">Haskemathesis.OpenApi.Types</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Haskemathesis.OpenApi.Types.html#ResolvedOperation"><span class="hs-identifier">ResolvedOperation</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
 </span><span id="line-85"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Haskemathesis.Property.html"><span class="hs-identifier">Haskemathesis.Property</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Haskemathesis.Property.html#propertyForOperation"><span class="hs-identifier">propertyForOperation</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Haskemathesis.Property.html#propertyForOperationWithConfig"><span class="hs-identifier">propertyForOperationWithConfig</span></a></span><span class="hs-special">)</span><span>
@@ -113,45 +113,42 @@ tests = testTreeForExecutor Nothing defaultChecks myExecutor ops
 </span><span id="line-113"></span><span class="annot"><a href="Haskemathesis.Integration.Tasty.html#testTreeForExecutor"><span class="hs-identifier hs-type">testTreeForExecutor</span></a></span><span> </span><span class="hs-glyph">::</span><span>
 </span><span id="line-114"></span><span>    </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="Haskemathesis.Execute.Types.html#BaseUrl"><span class="hs-identifier hs-type">BaseUrl</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
 </span><span id="line-115"></span><span>    </span><span class="hs-special">[</span><span class="annot"><a href="Haskemathesis.Check.Types.html#Check"><span class="hs-identifier hs-type">Check</span></a></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span>
-</span><span id="line-116"></span><span>    </span><span class="hs-special">(</span><span class="annot"><a href="Haskemathesis.Execute.Types.html#ApiRequest"><span class="hs-identifier hs-type">ApiRequest</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="annot"><a href="Haskemathesis.Execute.Types.html#ApiResponse"><span class="hs-identifier hs-type">ApiResponse</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-116"></span><span>    </span><span class="annot"><a href="Haskemathesis.Execute.Types.html#ExecutorWithTimeout"><span class="hs-identifier hs-type">ExecutorWithTimeout</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
 </span><span id="line-117"></span><span>    </span><span class="hs-special">[</span><span class="annot"><a href="Haskemathesis.OpenApi.Types.html#ResolvedOperation"><span class="hs-identifier hs-type">ResolvedOperation</span></a></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span>
 </span><span id="line-118"></span><span>    </span><span class="annot"><a href="file:///nix/store/qahl5ay6qsq5m45cbaj95c5jx7861423-tasty-1.5.3-doc/share/doc/tasty-1.5.3/html/src/Test.Tasty.Core.html#TestTree"><span class="hs-identifier hs-type">TestTree</span></a></span><span>
 </span><span id="line-119"></span><span id="testTreeForExecutor"><span class="annot"><span class="annottext">testTreeForExecutor :: Maybe BaseUrl
 -&gt; [Check]
--&gt; (ApiRequest -&gt; IO ApiResponse)
+-&gt; ExecutorWithTimeout
 -&gt; [ResolvedOperation]
 -&gt; TestTree
-</span><a href="Haskemathesis.Integration.Tasty.html#testTreeForExecutor"><span class="hs-identifier hs-var hs-var">testTreeForExecutor</span></a></span></span><span> </span><span id="local-6989586621679222504"><span class="annot"><span class="annottext">Maybe BaseUrl
-</span><a href="#local-6989586621679222504"><span class="hs-identifier hs-var">mBase</span></a></span></span><span> </span><span id="local-6989586621679222505"><span class="annot"><span class="annottext">[Check]
-</span><a href="#local-6989586621679222505"><span class="hs-identifier hs-var">checks</span></a></span></span><span> </span><span id="local-6989586621679222506"><span class="annot"><span class="annottext">ApiRequest -&gt; IO ApiResponse
-</span><a href="#local-6989586621679222506"><span class="hs-identifier hs-var">execute</span></a></span></span><span> </span><span id="local-6989586621679222507"><span class="annot"><span class="annottext">[ResolvedOperation]
-</span><a href="#local-6989586621679222507"><span class="hs-identifier hs-var">ops</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><a href="Haskemathesis.Integration.Tasty.html#testTreeForExecutor"><span class="hs-identifier hs-var hs-var">testTreeForExecutor</span></a></span></span><span> </span><span id="local-6989586621679224259"><span class="annot"><span class="annottext">Maybe BaseUrl
+</span><a href="#local-6989586621679224259"><span class="hs-identifier hs-var">mBase</span></a></span></span><span> </span><span id="local-6989586621679224260"><span class="annot"><span class="annottext">[Check]
+</span><a href="#local-6989586621679224260"><span class="hs-identifier hs-var">checks</span></a></span></span><span> </span><span id="local-6989586621679224261"><span class="annot"><span class="annottext">ExecutorWithTimeout
+</span><a href="#local-6989586621679224261"><span class="hs-identifier hs-var">execute</span></a></span></span><span> </span><span id="local-6989586621679224262"><span class="annot"><span class="annottext">[ResolvedOperation]
+</span><a href="#local-6989586621679224262"><span class="hs-identifier hs-var">ops</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
 </span><span id="line-120"></span><span>    </span><span class="annot"><span class="annottext">TestName -&gt; [TestTree] -&gt; TestTree
 </span><a href="file:///nix/store/qahl5ay6qsq5m45cbaj95c5jx7861423-tasty-1.5.3-doc/share/doc/tasty-1.5.3/html/src/Test.Tasty.Core.html#testGroup"><span class="hs-identifier hs-var">testGroup</span></a></span><span>
 </span><span id="line-121"></span><span>        </span><span class="annot"><span class="annottext">TestName
 </span><span class="hs-string">&quot;OpenAPI Conformance&quot;</span></span><span>
 </span><span id="line-122"></span><span>        </span><span class="hs-special">[</span><span> </span><span class="annot"><span class="annottext">TestName -&gt; PropertyName -&gt; Property -&gt; TestTree
 </span><a href="file:///nix/store/lvny4gcc5n9wz81pxl3la2n2lhjd119x-tasty-hedgehog-1.4.0.2-doc/share/doc/tasty-hedgehog-1.4.0.2/html/src/Test.Tasty.Hedgehog.html#testPropertyNamed"><span class="hs-identifier hs-var">testPropertyNamed</span></a></span><span> </span><span class="annot"><span class="annottext">TestName
-</span><a href="#local-6989586621679222508"><span class="hs-identifier hs-var">name</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">TestName -&gt; PropertyName
+</span><a href="#local-6989586621679224263"><span class="hs-identifier hs-var">name</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">TestName -&gt; PropertyName
 </span><a href="file:///nix/store/4n4z2liv1a3rcrl66a6rrlxnr1azv1dp-hedgehog-1.5-doc/share/doc/hedgehog-1.5/html/src/Hedgehog.Internal.Property.html#PropertyName"><span class="hs-identifier hs-var">PropertyName</span></a></span><span> </span><span class="annot"><span class="annottext">TestName
-</span><a href="#local-6989586621679222508"><span class="hs-identifier hs-var">name</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Maybe BaseUrl
--&gt; [Check]
--&gt; (ApiRequest -&gt; IO ApiResponse)
--&gt; ResolvedOperation
--&gt; Property
+</span><a href="#local-6989586621679224263"><span class="hs-identifier hs-var">name</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Maybe BaseUrl
+-&gt; [Check] -&gt; ExecutorWithTimeout -&gt; ResolvedOperation -&gt; Property
 </span><a href="Haskemathesis.Property.html#propertyForOperation"><span class="hs-identifier hs-var">propertyForOperation</span></a></span><span> </span><span class="annot"><span class="annottext">Maybe BaseUrl
-</span><a href="#local-6989586621679222504"><span class="hs-identifier hs-var">mBase</span></a></span><span> </span><span class="annot"><span class="annottext">[Check]
-</span><a href="#local-6989586621679222505"><span class="hs-identifier hs-var">checks</span></a></span><span> </span><span class="annot"><span class="annottext">ApiRequest -&gt; IO ApiResponse
-</span><a href="#local-6989586621679222506"><span class="hs-identifier hs-var">execute</span></a></span><span> </span><span class="annot"><span class="annottext">ResolvedOperation
-</span><a href="#local-6989586621679222510"><span class="hs-identifier hs-var">op</span></a></span><span class="hs-special">)</span><span>
-</span><span id="line-123"></span><span>        </span><span class="hs-glyph">|</span><span> </span><span id="local-6989586621679222510"><span class="annot"><span class="annottext">ResolvedOperation
-</span><a href="#local-6989586621679222510"><span class="hs-identifier hs-var">op</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">[ResolvedOperation]
-</span><a href="#local-6989586621679222507"><span class="hs-identifier hs-var">ops</span></a></span><span>
-</span><span id="line-124"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621679222508"><span class="annot"><span class="annottext">name :: TestName
-</span><a href="#local-6989586621679222508"><span class="hs-identifier hs-var hs-var">name</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">BaseUrl -&gt; TestName
+</span><a href="#local-6989586621679224259"><span class="hs-identifier hs-var">mBase</span></a></span><span> </span><span class="annot"><span class="annottext">[Check]
+</span><a href="#local-6989586621679224260"><span class="hs-identifier hs-var">checks</span></a></span><span> </span><span class="annot"><span class="annottext">ExecutorWithTimeout
+</span><a href="#local-6989586621679224261"><span class="hs-identifier hs-var">execute</span></a></span><span> </span><span class="annot"><span class="annottext">ResolvedOperation
+</span><a href="#local-6989586621679224265"><span class="hs-identifier hs-var">op</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-123"></span><span>        </span><span class="hs-glyph">|</span><span> </span><span id="local-6989586621679224265"><span class="annot"><span class="annottext">ResolvedOperation
+</span><a href="#local-6989586621679224265"><span class="hs-identifier hs-var">op</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">[ResolvedOperation]
+</span><a href="#local-6989586621679224262"><span class="hs-identifier hs-var">ops</span></a></span><span>
+</span><span id="line-124"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621679224263"><span class="annot"><span class="annottext">name :: TestName
+</span><a href="#local-6989586621679224263"><span class="hs-identifier hs-var hs-var">name</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">BaseUrl -&gt; TestName
 </span><span class="hs-identifier hs-var">T.unpack</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">ResolvedOperation -&gt; BaseUrl
 </span><a href="Haskemathesis.Check.Standard.Helpers.html#operationLabel"><span class="hs-identifier hs-var">operationLabel</span></a></span><span> </span><span class="annot"><span class="annottext">ResolvedOperation
-</span><a href="#local-6989586621679222510"><span class="hs-identifier hs-var">op</span></a></span><span class="hs-special">)</span><span>
+</span><a href="#local-6989586621679224265"><span class="hs-identifier hs-var">op</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-125"></span><span>        </span><span class="hs-special">]</span><span>
 </span><span id="line-126"></span><span>
 </span><span id="line-127"></span><span class="annot"><span class="hs-comment">{- | Create a Tasty 'TestTree' from a WAI 'Application'.
@@ -189,23 +186,23 @@ main = do
 </span><span id="line-159"></span><span>    </span><span class="annot"><a href="file:///nix/store/lwc9snjq2izyxa0840h8rp6r9f5za4cc-wai-3.2.4-doc/share/doc/wai-3.2.4/html/src/Network.Wai.html#Application"><span class="hs-identifier hs-type">Application</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
 </span><span id="line-160"></span><span>    </span><span class="annot"><a href="file:///nix/store/qahl5ay6qsq5m45cbaj95c5jx7861423-tasty-1.5.3-doc/share/doc/tasty-1.5.3/html/src/Test.Tasty.Core.html#TestTree"><span class="hs-identifier hs-type">TestTree</span></a></span><span>
 </span><span id="line-161"></span><span id="testTreeForApp"><span class="annot"><span class="annottext">testTreeForApp :: Maybe BaseUrl -&gt; [Check] -&gt; OpenApi -&gt; Application -&gt; TestTree
-</span><a href="Haskemathesis.Integration.Tasty.html#testTreeForApp"><span class="hs-identifier hs-var hs-var">testTreeForApp</span></a></span></span><span> </span><span id="local-6989586621679222512"><span class="annot"><span class="annottext">Maybe BaseUrl
-</span><a href="#local-6989586621679222512"><span class="hs-identifier hs-var">mBase</span></a></span></span><span> </span><span id="local-6989586621679222513"><span class="annot"><span class="annottext">[Check]
-</span><a href="#local-6989586621679222513"><span class="hs-identifier hs-var">checks</span></a></span></span><span> </span><span id="local-6989586621679222514"><span class="annot"><span class="annottext">OpenApi
-</span><a href="#local-6989586621679222514"><span class="hs-identifier hs-var">openApi</span></a></span></span><span> </span><span id="local-6989586621679222515"><span class="annot"><span class="annottext">Application
-</span><a href="#local-6989586621679222515"><span class="hs-identifier hs-var">app</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><a href="Haskemathesis.Integration.Tasty.html#testTreeForApp"><span class="hs-identifier hs-var hs-var">testTreeForApp</span></a></span></span><span> </span><span id="local-6989586621679224267"><span class="annot"><span class="annottext">Maybe BaseUrl
+</span><a href="#local-6989586621679224267"><span class="hs-identifier hs-var">mBase</span></a></span></span><span> </span><span id="local-6989586621679224268"><span class="annot"><span class="annottext">[Check]
+</span><a href="#local-6989586621679224268"><span class="hs-identifier hs-var">checks</span></a></span></span><span> </span><span id="local-6989586621679224269"><span class="annot"><span class="annottext">OpenApi
+</span><a href="#local-6989586621679224269"><span class="hs-identifier hs-var">openApi</span></a></span></span><span> </span><span id="local-6989586621679224270"><span class="annot"><span class="annottext">Application
+</span><a href="#local-6989586621679224270"><span class="hs-identifier hs-var">app</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
 </span><span id="line-162"></span><span>    </span><span class="annot"><span class="annottext">Maybe BaseUrl
 -&gt; [Check]
--&gt; (ApiRequest -&gt; IO ApiResponse)
+-&gt; ExecutorWithTimeout
 -&gt; [ResolvedOperation]
 -&gt; TestTree
 </span><a href="Haskemathesis.Integration.Tasty.html#testTreeForExecutor"><span class="hs-identifier hs-var">testTreeForExecutor</span></a></span><span> </span><span class="annot"><span class="annottext">Maybe BaseUrl
-</span><a href="#local-6989586621679222512"><span class="hs-identifier hs-var">mBase</span></a></span><span> </span><span class="annot"><span class="annottext">[Check]
-</span><a href="#local-6989586621679222513"><span class="hs-identifier hs-var">checks</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Application -&gt; ApiRequest -&gt; IO ApiResponse
-</span><a href="Haskemathesis.Execute.Wai.html#executeWai"><span class="hs-identifier hs-var">executeWai</span></a></span><span> </span><span class="annot"><span class="annottext">Application
-</span><a href="#local-6989586621679222515"><span class="hs-identifier hs-var">app</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">OpenApi -&gt; [ResolvedOperation]
+</span><a href="#local-6989586621679224267"><span class="hs-identifier hs-var">mBase</span></a></span><span> </span><span class="annot"><span class="annottext">[Check]
+</span><a href="#local-6989586621679224268"><span class="hs-identifier hs-var">checks</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Application -&gt; ExecutorWithTimeout
+</span><a href="Haskemathesis.Execute.Wai.html#executeWaiWithTimeout"><span class="hs-identifier hs-var">executeWaiWithTimeout</span></a></span><span> </span><span class="annot"><span class="annottext">Application
+</span><a href="#local-6989586621679224270"><span class="hs-identifier hs-var">app</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">OpenApi -&gt; [ResolvedOperation]
 </span><a href="Haskemathesis.OpenApi.Resolve.html#resolveOperations"><span class="hs-identifier hs-var">resolveOperations</span></a></span><span> </span><span class="annot"><span class="annottext">OpenApi
-</span><a href="#local-6989586621679222514"><span class="hs-identifier hs-var">openApi</span></a></span><span class="hs-special">)</span><span>
+</span><a href="#local-6989586621679224269"><span class="hs-identifier hs-var">openApi</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-163"></span><span>
 </span><span id="line-164"></span><span class="annot"><span class="hs-comment">{- | Create a Tasty 'TestTree' with full configuration support.
 
@@ -234,49 +231,49 @@ tests = testTreeForExecutorWithConfig spec config executor ops
 </span><span id="line-188"></span><span class="annot"><a href="Haskemathesis.Integration.Tasty.html#testTreeForExecutorWithConfig"><span class="hs-identifier hs-type">testTreeForExecutorWithConfig</span></a></span><span> </span><span class="hs-glyph">::</span><span>
 </span><span id="line-189"></span><span>    </span><span class="annot"><a href="file:///nix/store/n9bq8nyqbcrs9rhllk8bh2xqlhba601s-openapi3-3.2.4-doc/share/doc/openapi3-3.2.4/html/src/Data.OpenApi.Internal.html#OpenApi"><span class="hs-identifier hs-type">OpenApi</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
 </span><span id="line-190"></span><span>    </span><span class="annot"><a href="Haskemathesis.Config.html#TestConfig"><span class="hs-identifier hs-type">TestConfig</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
-</span><span id="line-191"></span><span>    </span><span class="hs-special">(</span><span class="annot"><a href="Haskemathesis.Execute.Types.html#ApiRequest"><span class="hs-identifier hs-type">ApiRequest</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="annot"><a href="Haskemathesis.Execute.Types.html#ApiResponse"><span class="hs-identifier hs-type">ApiResponse</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-191"></span><span>    </span><span class="annot"><a href="Haskemathesis.Execute.Types.html#ExecutorWithTimeout"><span class="hs-identifier hs-type">ExecutorWithTimeout</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
 </span><span id="line-192"></span><span>    </span><span class="hs-special">[</span><span class="annot"><a href="Haskemathesis.OpenApi.Types.html#ResolvedOperation"><span class="hs-identifier hs-type">ResolvedOperation</span></a></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span>
 </span><span id="line-193"></span><span>    </span><span class="annot"><a href="file:///nix/store/qahl5ay6qsq5m45cbaj95c5jx7861423-tasty-1.5.3-doc/share/doc/tasty-1.5.3/html/src/Test.Tasty.Core.html#TestTree"><span class="hs-identifier hs-type">TestTree</span></a></span><span>
 </span><span id="line-194"></span><span id="testTreeForExecutorWithConfig"><span class="annot"><span class="annottext">testTreeForExecutorWithConfig :: OpenApi
 -&gt; TestConfig
--&gt; (ApiRequest -&gt; IO ApiResponse)
+-&gt; ExecutorWithTimeout
 -&gt; [ResolvedOperation]
 -&gt; TestTree
-</span><a href="Haskemathesis.Integration.Tasty.html#testTreeForExecutorWithConfig"><span class="hs-identifier hs-var hs-var">testTreeForExecutorWithConfig</span></a></span></span><span> </span><span id="local-6989586621679222517"><span class="annot"><span class="annottext">OpenApi
-</span><a href="#local-6989586621679222517"><span class="hs-identifier hs-var">openApi</span></a></span></span><span> </span><span id="local-6989586621679222518"><span class="annot"><span class="annottext">TestConfig
-</span><a href="#local-6989586621679222518"><span class="hs-identifier hs-var">config</span></a></span></span><span> </span><span id="local-6989586621679222519"><span class="annot"><span class="annottext">ApiRequest -&gt; IO ApiResponse
-</span><a href="#local-6989586621679222519"><span class="hs-identifier hs-var">execute</span></a></span></span><span> </span><span id="local-6989586621679222520"><span class="annot"><span class="annottext">[ResolvedOperation]
-</span><a href="#local-6989586621679222520"><span class="hs-identifier hs-var">ops</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><a href="Haskemathesis.Integration.Tasty.html#testTreeForExecutorWithConfig"><span class="hs-identifier hs-var hs-var">testTreeForExecutorWithConfig</span></a></span></span><span> </span><span id="local-6989586621679224272"><span class="annot"><span class="annottext">OpenApi
+</span><a href="#local-6989586621679224272"><span class="hs-identifier hs-var">openApi</span></a></span></span><span> </span><span id="local-6989586621679224273"><span class="annot"><span class="annottext">TestConfig
+</span><a href="#local-6989586621679224273"><span class="hs-identifier hs-var">config</span></a></span></span><span> </span><span id="local-6989586621679224274"><span class="annot"><span class="annottext">ExecutorWithTimeout
+</span><a href="#local-6989586621679224274"><span class="hs-identifier hs-var">execute</span></a></span></span><span> </span><span id="local-6989586621679224275"><span class="annot"><span class="annottext">[ResolvedOperation]
+</span><a href="#local-6989586621679224275"><span class="hs-identifier hs-var">ops</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
 </span><span id="line-195"></span><span>    </span><span class="annot"><span class="annottext">TestName -&gt; [TestTree] -&gt; TestTree
 </span><a href="file:///nix/store/qahl5ay6qsq5m45cbaj95c5jx7861423-tasty-1.5.3-doc/share/doc/tasty-1.5.3/html/src/Test.Tasty.Core.html#testGroup"><span class="hs-identifier hs-var">testGroup</span></a></span><span>
 </span><span id="line-196"></span><span>        </span><span class="annot"><span class="annottext">TestName
 </span><span class="hs-string">&quot;OpenAPI Conformance&quot;</span></span><span>
 </span><span id="line-197"></span><span>        </span><span class="hs-special">[</span><span> </span><span class="annot"><span class="annottext">TestName -&gt; PropertyName -&gt; Property -&gt; TestTree
 </span><a href="file:///nix/store/lvny4gcc5n9wz81pxl3la2n2lhjd119x-tasty-hedgehog-1.4.0.2-doc/share/doc/tasty-hedgehog-1.4.0.2/html/src/Test.Tasty.Hedgehog.html#testPropertyNamed"><span class="hs-identifier hs-var">testPropertyNamed</span></a></span><span> </span><span class="annot"><span class="annottext">TestName
-</span><a href="#local-6989586621679222521"><span class="hs-identifier hs-var">name</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">TestName -&gt; PropertyName
+</span><a href="#local-6989586621679224276"><span class="hs-identifier hs-var">name</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">TestName -&gt; PropertyName
 </span><a href="file:///nix/store/4n4z2liv1a3rcrl66a6rrlxnr1azv1dp-hedgehog-1.5-doc/share/doc/hedgehog-1.5/html/src/Hedgehog.Internal.Property.html#PropertyName"><span class="hs-identifier hs-var">PropertyName</span></a></span><span> </span><span class="annot"><span class="annottext">TestName
-</span><a href="#local-6989586621679222521"><span class="hs-identifier hs-var">name</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">OpenApi
+</span><a href="#local-6989586621679224276"><span class="hs-identifier hs-var">name</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">OpenApi
 -&gt; TestConfig
--&gt; (ApiRequest -&gt; IO ApiResponse)
+-&gt; ExecutorWithTimeout
 -&gt; ResolvedOperation
 -&gt; Property
 </span><a href="Haskemathesis.Property.html#propertyForOperationWithConfig"><span class="hs-identifier hs-var">propertyForOperationWithConfig</span></a></span><span> </span><span class="annot"><span class="annottext">OpenApi
-</span><a href="#local-6989586621679222517"><span class="hs-identifier hs-var">openApi</span></a></span><span> </span><span class="annot"><span class="annottext">TestConfig
-</span><a href="#local-6989586621679222518"><span class="hs-identifier hs-var">config</span></a></span><span> </span><span class="annot"><span class="annottext">ApiRequest -&gt; IO ApiResponse
-</span><a href="#local-6989586621679222519"><span class="hs-identifier hs-var">execute</span></a></span><span> </span><span class="annot"><span class="annottext">ResolvedOperation
-</span><a href="#local-6989586621679222522"><span class="hs-identifier hs-var">op</span></a></span><span class="hs-special">)</span><span>
-</span><span id="line-198"></span><span>        </span><span class="hs-glyph">|</span><span> </span><span id="local-6989586621679222522"><span class="annot"><span class="annottext">ResolvedOperation
-</span><a href="#local-6989586621679222522"><span class="hs-identifier hs-var">op</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">[ResolvedOperation]
-</span><a href="#local-6989586621679222520"><span class="hs-identifier hs-var">ops</span></a></span><span>
+</span><a href="#local-6989586621679224272"><span class="hs-identifier hs-var">openApi</span></a></span><span> </span><span class="annot"><span class="annottext">TestConfig
+</span><a href="#local-6989586621679224273"><span class="hs-identifier hs-var">config</span></a></span><span> </span><span class="annot"><span class="annottext">ExecutorWithTimeout
+</span><a href="#local-6989586621679224274"><span class="hs-identifier hs-var">execute</span></a></span><span> </span><span class="annot"><span class="annottext">ResolvedOperation
+</span><a href="#local-6989586621679224277"><span class="hs-identifier hs-var">op</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-198"></span><span>        </span><span class="hs-glyph">|</span><span> </span><span id="local-6989586621679224277"><span class="annot"><span class="annottext">ResolvedOperation
+</span><a href="#local-6989586621679224277"><span class="hs-identifier hs-var">op</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">[ResolvedOperation]
+</span><a href="#local-6989586621679224275"><span class="hs-identifier hs-var">ops</span></a></span><span>
 </span><span id="line-199"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">TestConfig -&gt; ResolvedOperation -&gt; Bool
 </span><a href="Haskemathesis.Config.html#tcOperationFilter"><span class="hs-identifier hs-var">tcOperationFilter</span></a></span><span> </span><span class="annot"><span class="annottext">TestConfig
-</span><a href="#local-6989586621679222518"><span class="hs-identifier hs-var">config</span></a></span><span> </span><span class="annot"><span class="annottext">ResolvedOperation
-</span><a href="#local-6989586621679222522"><span class="hs-identifier hs-var">op</span></a></span><span>
-</span><span id="line-200"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621679222521"><span class="annot"><span class="annottext">name :: TestName
-</span><a href="#local-6989586621679222521"><span class="hs-identifier hs-var hs-var">name</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">BaseUrl -&gt; TestName
+</span><a href="#local-6989586621679224273"><span class="hs-identifier hs-var">config</span></a></span><span> </span><span class="annot"><span class="annottext">ResolvedOperation
+</span><a href="#local-6989586621679224277"><span class="hs-identifier hs-var">op</span></a></span><span>
+</span><span id="line-200"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621679224276"><span class="annot"><span class="annottext">name :: TestName
+</span><a href="#local-6989586621679224276"><span class="hs-identifier hs-var hs-var">name</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">BaseUrl -&gt; TestName
 </span><span class="hs-identifier hs-var">T.unpack</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">ResolvedOperation -&gt; BaseUrl
 </span><a href="Haskemathesis.Check.Standard.Helpers.html#operationLabel"><span class="hs-identifier hs-var">operationLabel</span></a></span><span> </span><span class="annot"><span class="annottext">ResolvedOperation
-</span><a href="#local-6989586621679222522"><span class="hs-identifier hs-var">op</span></a></span><span class="hs-special">)</span><span>
+</span><a href="#local-6989586621679224277"><span class="hs-identifier hs-var">op</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-201"></span><span>        </span><span class="hs-special">]</span><span>
 </span><span id="line-202"></span><span>
 </span><span id="line-203"></span><span class="annot"><span class="hs-comment">{- | Create a Tasty 'TestTree' from a WAI 'Application' with configuration.
@@ -303,22 +300,22 @@ tests = testTreeForAppWithConfig config spec myApp
 </span><span id="line-224"></span><span>    </span><span class="annot"><a href="file:///nix/store/lwc9snjq2izyxa0840h8rp6r9f5za4cc-wai-3.2.4-doc/share/doc/wai-3.2.4/html/src/Network.Wai.html#Application"><span class="hs-identifier hs-type">Application</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
 </span><span id="line-225"></span><span>    </span><span class="annot"><a href="file:///nix/store/qahl5ay6qsq5m45cbaj95c5jx7861423-tasty-1.5.3-doc/share/doc/tasty-1.5.3/html/src/Test.Tasty.Core.html#TestTree"><span class="hs-identifier hs-type">TestTree</span></a></span><span>
 </span><span id="line-226"></span><span id="testTreeForAppWithConfig"><span class="annot"><span class="annottext">testTreeForAppWithConfig :: TestConfig -&gt; OpenApi -&gt; Application -&gt; TestTree
-</span><a href="Haskemathesis.Integration.Tasty.html#testTreeForAppWithConfig"><span class="hs-identifier hs-var hs-var">testTreeForAppWithConfig</span></a></span></span><span> </span><span id="local-6989586621679222524"><span class="annot"><span class="annottext">TestConfig
-</span><a href="#local-6989586621679222524"><span class="hs-identifier hs-var">config</span></a></span></span><span> </span><span id="local-6989586621679222525"><span class="annot"><span class="annottext">OpenApi
-</span><a href="#local-6989586621679222525"><span class="hs-identifier hs-var">openApi</span></a></span></span><span> </span><span id="local-6989586621679222526"><span class="annot"><span class="annottext">Application
-</span><a href="#local-6989586621679222526"><span class="hs-identifier hs-var">app</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><a href="Haskemathesis.Integration.Tasty.html#testTreeForAppWithConfig"><span class="hs-identifier hs-var hs-var">testTreeForAppWithConfig</span></a></span></span><span> </span><span id="local-6989586621679224279"><span class="annot"><span class="annottext">TestConfig
+</span><a href="#local-6989586621679224279"><span class="hs-identifier hs-var">config</span></a></span></span><span> </span><span id="local-6989586621679224280"><span class="annot"><span class="annottext">OpenApi
+</span><a href="#local-6989586621679224280"><span class="hs-identifier hs-var">openApi</span></a></span></span><span> </span><span id="local-6989586621679224281"><span class="annot"><span class="annottext">Application
+</span><a href="#local-6989586621679224281"><span class="hs-identifier hs-var">app</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
 </span><span id="line-227"></span><span>    </span><span class="annot"><span class="annottext">OpenApi
 -&gt; TestConfig
--&gt; (ApiRequest -&gt; IO ApiResponse)
+-&gt; ExecutorWithTimeout
 -&gt; [ResolvedOperation]
 -&gt; TestTree
 </span><a href="Haskemathesis.Integration.Tasty.html#testTreeForExecutorWithConfig"><span class="hs-identifier hs-var">testTreeForExecutorWithConfig</span></a></span><span> </span><span class="annot"><span class="annottext">OpenApi
-</span><a href="#local-6989586621679222525"><span class="hs-identifier hs-var">openApi</span></a></span><span> </span><span class="annot"><span class="annottext">TestConfig
-</span><a href="#local-6989586621679222524"><span class="hs-identifier hs-var">config</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Application -&gt; ApiRequest -&gt; IO ApiResponse
-</span><a href="Haskemathesis.Execute.Wai.html#executeWai"><span class="hs-identifier hs-var">executeWai</span></a></span><span> </span><span class="annot"><span class="annottext">Application
-</span><a href="#local-6989586621679222526"><span class="hs-identifier hs-var">app</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">OpenApi -&gt; [ResolvedOperation]
+</span><a href="#local-6989586621679224280"><span class="hs-identifier hs-var">openApi</span></a></span><span> </span><span class="annot"><span class="annottext">TestConfig
+</span><a href="#local-6989586621679224279"><span class="hs-identifier hs-var">config</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Application -&gt; ExecutorWithTimeout
+</span><a href="Haskemathesis.Execute.Wai.html#executeWaiWithTimeout"><span class="hs-identifier hs-var">executeWaiWithTimeout</span></a></span><span> </span><span class="annot"><span class="annottext">Application
+</span><a href="#local-6989586621679224281"><span class="hs-identifier hs-var">app</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">OpenApi -&gt; [ResolvedOperation]
 </span><a href="Haskemathesis.OpenApi.Resolve.html#resolveOperations"><span class="hs-identifier hs-var">resolveOperations</span></a></span><span> </span><span class="annot"><span class="annottext">OpenApi
-</span><a href="#local-6989586621679222525"><span class="hs-identifier hs-var">openApi</span></a></span><span class="hs-special">)</span><span>
+</span><a href="#local-6989586621679224280"><span class="hs-identifier hs-var">openApi</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-228"></span><span>
 </span><span id="line-229"></span><span class="annot"><span class="hs-comment">{- | Create a Tasty 'TestTree' for testing a running HTTP server.
 
@@ -352,27 +349,27 @@ main = do
 </span><span id="line-258"></span><span>    </span><span class="annot"><a href="Haskemathesis.Execute.Types.html#BaseUrl"><span class="hs-identifier hs-type">BaseUrl</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
 </span><span id="line-259"></span><span>    </span><span class="annot"><a href="file:///nix/store/qahl5ay6qsq5m45cbaj95c5jx7861423-tasty-1.5.3-doc/share/doc/tasty-1.5.3/html/src/Test.Tasty.Core.html#TestTree"><span class="hs-identifier hs-type">TestTree</span></a></span><span>
 </span><span id="line-260"></span><span id="testTreeForUrl"><span class="annot"><span class="annottext">testTreeForUrl :: TestConfig -&gt; OpenApi -&gt; Manager -&gt; BaseUrl -&gt; TestTree
-</span><a href="Haskemathesis.Integration.Tasty.html#testTreeForUrl"><span class="hs-identifier hs-var hs-var">testTreeForUrl</span></a></span></span><span> </span><span id="local-6989586621679222527"><span class="annot"><span class="annottext">TestConfig
-</span><a href="#local-6989586621679222527"><span class="hs-identifier hs-var">config</span></a></span></span><span> </span><span id="local-6989586621679222528"><span class="annot"><span class="annottext">OpenApi
-</span><a href="#local-6989586621679222528"><span class="hs-identifier hs-var">openApi</span></a></span></span><span> </span><span id="local-6989586621679222529"><span class="annot"><span class="annottext">Manager
-</span><a href="#local-6989586621679222529"><span class="hs-identifier hs-var">manager</span></a></span></span><span> </span><span id="local-6989586621679222530"><span class="annot"><span class="annottext">BaseUrl
-</span><a href="#local-6989586621679222530"><span class="hs-identifier hs-var">baseUrl</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
-</span><span id="line-261"></span><span>    </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621679222531"><span class="annot"><span class="annottext">config' :: TestConfig
-</span><a href="#local-6989586621679222531"><span class="hs-identifier hs-var hs-var">config'</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">TestConfig
-</span><a href="#local-6989586621679222527"><span class="hs-identifier hs-var">config</span></a></span><span class="hs-special">{</span><span class="annot"><a href="Haskemathesis.Config.html#tcBaseUrl"><span class="hs-identifier hs-var">tcBaseUrl</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span class="annot"><a href="#local-6989586621679222530"><span class="hs-identifier hs-type">baseUrl</span></a></span><span class="hs-special">}</span><span>
+</span><a href="Haskemathesis.Integration.Tasty.html#testTreeForUrl"><span class="hs-identifier hs-var hs-var">testTreeForUrl</span></a></span></span><span> </span><span id="local-6989586621679224282"><span class="annot"><span class="annottext">TestConfig
+</span><a href="#local-6989586621679224282"><span class="hs-identifier hs-var">config</span></a></span></span><span> </span><span id="local-6989586621679224283"><span class="annot"><span class="annottext">OpenApi
+</span><a href="#local-6989586621679224283"><span class="hs-identifier hs-var">openApi</span></a></span></span><span> </span><span id="local-6989586621679224284"><span class="annot"><span class="annottext">Manager
+</span><a href="#local-6989586621679224284"><span class="hs-identifier hs-var">manager</span></a></span></span><span> </span><span id="local-6989586621679224285"><span class="annot"><span class="annottext">BaseUrl
+</span><a href="#local-6989586621679224285"><span class="hs-identifier hs-var">baseUrl</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-261"></span><span>    </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621679224286"><span class="annot"><span class="annottext">config' :: TestConfig
+</span><a href="#local-6989586621679224286"><span class="hs-identifier hs-var hs-var">config'</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">TestConfig
+</span><a href="#local-6989586621679224282"><span class="hs-identifier hs-var">config</span></a></span><span class="hs-special">{</span><span class="annot"><a href="Haskemathesis.Config.html#tcBaseUrl"><span class="hs-identifier hs-var">tcBaseUrl</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span class="annot"><a href="#local-6989586621679224285"><span class="hs-identifier hs-type">baseUrl</span></a></span><span class="hs-special">}</span><span>
 </span><span id="line-262"></span><span>     </span><span class="hs-keyword">in</span><span> </span><span class="annot"><span class="annottext">OpenApi
 -&gt; TestConfig
--&gt; (ApiRequest -&gt; IO ApiResponse)
+-&gt; ExecutorWithTimeout
 -&gt; [ResolvedOperation]
 -&gt; TestTree
 </span><a href="Haskemathesis.Integration.Tasty.html#testTreeForExecutorWithConfig"><span class="hs-identifier hs-var">testTreeForExecutorWithConfig</span></a></span><span> </span><span class="annot"><span class="annottext">OpenApi
-</span><a href="#local-6989586621679222528"><span class="hs-identifier hs-var">openApi</span></a></span><span> </span><span class="annot"><span class="annottext">TestConfig
-</span><a href="#local-6989586621679222531"><span class="hs-identifier hs-var">config'</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Manager -&gt; BaseUrl -&gt; ApiRequest -&gt; IO ApiResponse
-</span><a href="Haskemathesis.Execute.Http.html#executeHttp"><span class="hs-identifier hs-var">executeHttp</span></a></span><span> </span><span class="annot"><span class="annottext">Manager
-</span><a href="#local-6989586621679222529"><span class="hs-identifier hs-var">manager</span></a></span><span> </span><span class="annot"><span class="annottext">BaseUrl
-</span><a href="#local-6989586621679222530"><span class="hs-identifier hs-var">baseUrl</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">OpenApi -&gt; [ResolvedOperation]
+</span><a href="#local-6989586621679224283"><span class="hs-identifier hs-var">openApi</span></a></span><span> </span><span class="annot"><span class="annottext">TestConfig
+</span><a href="#local-6989586621679224286"><span class="hs-identifier hs-var">config'</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Manager -&gt; BaseUrl -&gt; ExecutorWithTimeout
+</span><a href="Haskemathesis.Execute.Http.html#executeHttpWithTimeout"><span class="hs-identifier hs-var">executeHttpWithTimeout</span></a></span><span> </span><span class="annot"><span class="annottext">Manager
+</span><a href="#local-6989586621679224284"><span class="hs-identifier hs-var">manager</span></a></span><span> </span><span class="annot"><span class="annottext">BaseUrl
+</span><a href="#local-6989586621679224285"><span class="hs-identifier hs-var">baseUrl</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">OpenApi -&gt; [ResolvedOperation]
 </span><a href="Haskemathesis.OpenApi.Resolve.html#resolveOperations"><span class="hs-identifier hs-var">resolveOperations</span></a></span><span> </span><span class="annot"><span class="annottext">OpenApi
-</span><a href="#local-6989586621679222528"><span class="hs-identifier hs-var">openApi</span></a></span><span class="hs-special">)</span><span>
+</span><a href="#local-6989586621679224283"><span class="hs-identifier hs-var">openApi</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-263"></span><span>
 </span><span id="line-264"></span><span class="annot"><span class="hs-comment">{- | Create a Tasty 'TestTree' for negative testing with a custom executor.
 
@@ -396,32 +393,32 @@ negTests = testTreeForExecutorNegative spec config executor ops
 </span><span id="line-283"></span><span class="annot"><a href="Haskemathesis.Integration.Tasty.html#testTreeForExecutorNegative"><span class="hs-identifier hs-type">testTreeForExecutorNegative</span></a></span><span> </span><span class="hs-glyph">::</span><span>
 </span><span id="line-284"></span><span>    </span><span class="annot"><a href="file:///nix/store/n9bq8nyqbcrs9rhllk8bh2xqlhba601s-openapi3-3.2.4-doc/share/doc/openapi3-3.2.4/html/src/Data.OpenApi.Internal.html#OpenApi"><span class="hs-identifier hs-type">OpenApi</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
 </span><span id="line-285"></span><span>    </span><span class="annot"><a href="Haskemathesis.Config.html#TestConfig"><span class="hs-identifier hs-type">TestConfig</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
-</span><span id="line-286"></span><span>    </span><span class="hs-special">(</span><span class="annot"><a href="Haskemathesis.Execute.Types.html#ApiRequest"><span class="hs-identifier hs-type">ApiRequest</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="annot"><a href="Haskemathesis.Execute.Types.html#ApiResponse"><span class="hs-identifier hs-type">ApiResponse</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-286"></span><span>    </span><span class="annot"><a href="Haskemathesis.Execute.Types.html#ExecutorWithTimeout"><span class="hs-identifier hs-type">ExecutorWithTimeout</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
 </span><span id="line-287"></span><span>    </span><span class="hs-special">[</span><span class="annot"><a href="Haskemathesis.OpenApi.Types.html#ResolvedOperation"><span class="hs-identifier hs-type">ResolvedOperation</span></a></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span>
 </span><span id="line-288"></span><span>    </span><span class="annot"><a href="file:///nix/store/qahl5ay6qsq5m45cbaj95c5jx7861423-tasty-1.5.3-doc/share/doc/tasty-1.5.3/html/src/Test.Tasty.Core.html#TestTree"><span class="hs-identifier hs-type">TestTree</span></a></span><span>
 </span><span id="line-289"></span><span id="testTreeForExecutorNegative"><span class="annot"><span class="annottext">testTreeForExecutorNegative :: OpenApi
 -&gt; TestConfig
--&gt; (ApiRequest -&gt; IO ApiResponse)
+-&gt; ExecutorWithTimeout
 -&gt; [ResolvedOperation]
 -&gt; TestTree
-</span><a href="Haskemathesis.Integration.Tasty.html#testTreeForExecutorNegative"><span class="hs-identifier hs-var hs-var">testTreeForExecutorNegative</span></a></span></span><span> </span><span id="local-6989586621679222533"><span class="annot"><span class="annottext">OpenApi
-</span><a href="#local-6989586621679222533"><span class="hs-identifier hs-var">openApi</span></a></span></span><span> </span><span id="local-6989586621679222534"><span class="annot"><span class="annottext">TestConfig
-</span><a href="#local-6989586621679222534"><span class="hs-identifier hs-var">config</span></a></span></span><span> </span><span id="local-6989586621679222535"><span class="annot"><span class="annottext">ApiRequest -&gt; IO ApiResponse
-</span><a href="#local-6989586621679222535"><span class="hs-identifier hs-var">execute</span></a></span></span><span> </span><span id="local-6989586621679222536"><span class="annot"><span class="annottext">[ResolvedOperation]
-</span><a href="#local-6989586621679222536"><span class="hs-identifier hs-var">ops</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
-</span><span id="line-290"></span><span>    </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621679222537"><span class="annot"><span class="annottext">config' :: TestConfig
-</span><a href="#local-6989586621679222537"><span class="hs-identifier hs-var hs-var">config'</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">TestConfig
-</span><a href="#local-6989586621679222534"><span class="hs-identifier hs-var">config</span></a></span><span class="hs-special">{</span><span class="annot"><a href="Haskemathesis.Config.html#tcNegativeTesting"><span class="hs-identifier hs-var">tcNegativeTesting</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="hs-identifier hs-type">True</span></span><span class="hs-special">}</span><span>
+</span><a href="Haskemathesis.Integration.Tasty.html#testTreeForExecutorNegative"><span class="hs-identifier hs-var hs-var">testTreeForExecutorNegative</span></a></span></span><span> </span><span id="local-6989586621679224288"><span class="annot"><span class="annottext">OpenApi
+</span><a href="#local-6989586621679224288"><span class="hs-identifier hs-var">openApi</span></a></span></span><span> </span><span id="local-6989586621679224289"><span class="annot"><span class="annottext">TestConfig
+</span><a href="#local-6989586621679224289"><span class="hs-identifier hs-var">config</span></a></span></span><span> </span><span id="local-6989586621679224290"><span class="annot"><span class="annottext">ExecutorWithTimeout
+</span><a href="#local-6989586621679224290"><span class="hs-identifier hs-var">execute</span></a></span></span><span> </span><span id="local-6989586621679224291"><span class="annot"><span class="annottext">[ResolvedOperation]
+</span><a href="#local-6989586621679224291"><span class="hs-identifier hs-var">ops</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-290"></span><span>    </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621679224292"><span class="annot"><span class="annottext">config' :: TestConfig
+</span><a href="#local-6989586621679224292"><span class="hs-identifier hs-var hs-var">config'</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">TestConfig
+</span><a href="#local-6989586621679224289"><span class="hs-identifier hs-var">config</span></a></span><span class="hs-special">{</span><span class="annot"><a href="Haskemathesis.Config.html#tcNegativeTesting"><span class="hs-identifier hs-var">tcNegativeTesting</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="hs-identifier hs-type">True</span></span><span class="hs-special">}</span><span>
 </span><span id="line-291"></span><span>     </span><span class="hs-keyword">in</span><span> </span><span class="annot"><span class="annottext">OpenApi
 -&gt; TestConfig
--&gt; (ApiRequest -&gt; IO ApiResponse)
+-&gt; ExecutorWithTimeout
 -&gt; [ResolvedOperation]
 -&gt; TestTree
 </span><a href="Haskemathesis.Integration.Tasty.html#testTreeForExecutorWithConfig"><span class="hs-identifier hs-var">testTreeForExecutorWithConfig</span></a></span><span> </span><span class="annot"><span class="annottext">OpenApi
-</span><a href="#local-6989586621679222533"><span class="hs-identifier hs-var">openApi</span></a></span><span> </span><span class="annot"><span class="annottext">TestConfig
-</span><a href="#local-6989586621679222537"><span class="hs-identifier hs-var">config'</span></a></span><span> </span><span class="annot"><span class="annottext">ApiRequest -&gt; IO ApiResponse
-</span><a href="#local-6989586621679222535"><span class="hs-identifier hs-var">execute</span></a></span><span> </span><span class="annot"><span class="annottext">[ResolvedOperation]
-</span><a href="#local-6989586621679222536"><span class="hs-identifier hs-var">ops</span></a></span><span>
+</span><a href="#local-6989586621679224288"><span class="hs-identifier hs-var">openApi</span></a></span><span> </span><span class="annot"><span class="annottext">TestConfig
+</span><a href="#local-6989586621679224292"><span class="hs-identifier hs-var">config'</span></a></span><span> </span><span class="annot"><span class="annottext">ExecutorWithTimeout
+</span><a href="#local-6989586621679224290"><span class="hs-identifier hs-var">execute</span></a></span><span> </span><span class="annot"><span class="annottext">[ResolvedOperation]
+</span><a href="#local-6989586621679224291"><span class="hs-identifier hs-var">ops</span></a></span><span>
 </span><span id="line-292"></span><span>
 </span><span id="line-293"></span><span class="annot"><span class="hs-comment">{- | Create a Tasty 'TestTree' for negative testing with a WAI application.
 
@@ -446,22 +443,22 @@ negTests = testTreeForAppNegative defaultTestConfig spec myApp
 </span><span id="line-313"></span><span>    </span><span class="annot"><a href="file:///nix/store/lwc9snjq2izyxa0840h8rp6r9f5za4cc-wai-3.2.4-doc/share/doc/wai-3.2.4/html/src/Network.Wai.html#Application"><span class="hs-identifier hs-type">Application</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
 </span><span id="line-314"></span><span>    </span><span class="annot"><a href="file:///nix/store/qahl5ay6qsq5m45cbaj95c5jx7861423-tasty-1.5.3-doc/share/doc/tasty-1.5.3/html/src/Test.Tasty.Core.html#TestTree"><span class="hs-identifier hs-type">TestTree</span></a></span><span>
 </span><span id="line-315"></span><span id="testTreeForAppNegative"><span class="annot"><span class="annottext">testTreeForAppNegative :: TestConfig -&gt; OpenApi -&gt; Application -&gt; TestTree
-</span><a href="Haskemathesis.Integration.Tasty.html#testTreeForAppNegative"><span class="hs-identifier hs-var hs-var">testTreeForAppNegative</span></a></span></span><span> </span><span id="local-6989586621679222539"><span class="annot"><span class="annottext">TestConfig
-</span><a href="#local-6989586621679222539"><span class="hs-identifier hs-var">config</span></a></span></span><span> </span><span id="local-6989586621679222540"><span class="annot"><span class="annottext">OpenApi
-</span><a href="#local-6989586621679222540"><span class="hs-identifier hs-var">openApi</span></a></span></span><span> </span><span id="local-6989586621679222541"><span class="annot"><span class="annottext">Application
-</span><a href="#local-6989586621679222541"><span class="hs-identifier hs-var">app</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><a href="Haskemathesis.Integration.Tasty.html#testTreeForAppNegative"><span class="hs-identifier hs-var hs-var">testTreeForAppNegative</span></a></span></span><span> </span><span id="local-6989586621679224294"><span class="annot"><span class="annottext">TestConfig
+</span><a href="#local-6989586621679224294"><span class="hs-identifier hs-var">config</span></a></span></span><span> </span><span id="local-6989586621679224295"><span class="annot"><span class="annottext">OpenApi
+</span><a href="#local-6989586621679224295"><span class="hs-identifier hs-var">openApi</span></a></span></span><span> </span><span id="local-6989586621679224296"><span class="annot"><span class="annottext">Application
+</span><a href="#local-6989586621679224296"><span class="hs-identifier hs-var">app</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
 </span><span id="line-316"></span><span>    </span><span class="annot"><span class="annottext">OpenApi
 -&gt; TestConfig
--&gt; (ApiRequest -&gt; IO ApiResponse)
+-&gt; ExecutorWithTimeout
 -&gt; [ResolvedOperation]
 -&gt; TestTree
 </span><a href="Haskemathesis.Integration.Tasty.html#testTreeForExecutorNegative"><span class="hs-identifier hs-var">testTreeForExecutorNegative</span></a></span><span> </span><span class="annot"><span class="annottext">OpenApi
-</span><a href="#local-6989586621679222540"><span class="hs-identifier hs-var">openApi</span></a></span><span> </span><span class="annot"><span class="annottext">TestConfig
-</span><a href="#local-6989586621679222539"><span class="hs-identifier hs-var">config</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Application -&gt; ApiRequest -&gt; IO ApiResponse
-</span><a href="Haskemathesis.Execute.Wai.html#executeWai"><span class="hs-identifier hs-var">executeWai</span></a></span><span> </span><span class="annot"><span class="annottext">Application
-</span><a href="#local-6989586621679222541"><span class="hs-identifier hs-var">app</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">OpenApi -&gt; [ResolvedOperation]
+</span><a href="#local-6989586621679224295"><span class="hs-identifier hs-var">openApi</span></a></span><span> </span><span class="annot"><span class="annottext">TestConfig
+</span><a href="#local-6989586621679224294"><span class="hs-identifier hs-var">config</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Application -&gt; ExecutorWithTimeout
+</span><a href="Haskemathesis.Execute.Wai.html#executeWaiWithTimeout"><span class="hs-identifier hs-var">executeWaiWithTimeout</span></a></span><span> </span><span class="annot"><span class="annottext">Application
+</span><a href="#local-6989586621679224296"><span class="hs-identifier hs-var">app</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">OpenApi -&gt; [ResolvedOperation]
 </span><a href="Haskemathesis.OpenApi.Resolve.html#resolveOperations"><span class="hs-identifier hs-var">resolveOperations</span></a></span><span> </span><span class="annot"><span class="annottext">OpenApi
-</span><a href="#local-6989586621679222540"><span class="hs-identifier hs-var">openApi</span></a></span><span class="hs-special">)</span><span>
+</span><a href="#local-6989586621679224295"><span class="hs-identifier hs-var">openApi</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-317"></span><span>
 </span><span id="line-318"></span><span class="annot"><span class="hs-comment">{- | Create a Tasty 'TestTree' for negative testing against a live server.
 
@@ -495,22 +492,22 @@ main = do
 </span><span id="line-347"></span><span>    </span><span class="annot"><a href="Haskemathesis.Execute.Types.html#BaseUrl"><span class="hs-identifier hs-type">BaseUrl</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
 </span><span id="line-348"></span><span>    </span><span class="annot"><a href="file:///nix/store/qahl5ay6qsq5m45cbaj95c5jx7861423-tasty-1.5.3-doc/share/doc/tasty-1.5.3/html/src/Test.Tasty.Core.html#TestTree"><span class="hs-identifier hs-type">TestTree</span></a></span><span>
 </span><span id="line-349"></span><span id="testTreeForUrlNegative"><span class="annot"><span class="annottext">testTreeForUrlNegative :: TestConfig -&gt; OpenApi -&gt; Manager -&gt; BaseUrl -&gt; TestTree
-</span><a href="Haskemathesis.Integration.Tasty.html#testTreeForUrlNegative"><span class="hs-identifier hs-var hs-var">testTreeForUrlNegative</span></a></span></span><span> </span><span id="local-6989586621679222542"><span class="annot"><span class="annottext">TestConfig
-</span><a href="#local-6989586621679222542"><span class="hs-identifier hs-var">config</span></a></span></span><span> </span><span id="local-6989586621679222543"><span class="annot"><span class="annottext">OpenApi
-</span><a href="#local-6989586621679222543"><span class="hs-identifier hs-var">openApi</span></a></span></span><span> </span><span id="local-6989586621679222544"><span class="annot"><span class="annottext">Manager
-</span><a href="#local-6989586621679222544"><span class="hs-identifier hs-var">manager</span></a></span></span><span> </span><span id="local-6989586621679222545"><span class="annot"><span class="annottext">BaseUrl
-</span><a href="#local-6989586621679222545"><span class="hs-identifier hs-var">baseUrl</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><a href="Haskemathesis.Integration.Tasty.html#testTreeForUrlNegative"><span class="hs-identifier hs-var hs-var">testTreeForUrlNegative</span></a></span></span><span> </span><span id="local-6989586621679224297"><span class="annot"><span class="annottext">TestConfig
+</span><a href="#local-6989586621679224297"><span class="hs-identifier hs-var">config</span></a></span></span><span> </span><span id="local-6989586621679224298"><span class="annot"><span class="annottext">OpenApi
+</span><a href="#local-6989586621679224298"><span class="hs-identifier hs-var">openApi</span></a></span></span><span> </span><span id="local-6989586621679224299"><span class="annot"><span class="annottext">Manager
+</span><a href="#local-6989586621679224299"><span class="hs-identifier hs-var">manager</span></a></span></span><span> </span><span id="local-6989586621679224300"><span class="annot"><span class="annottext">BaseUrl
+</span><a href="#local-6989586621679224300"><span class="hs-identifier hs-var">baseUrl</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
 </span><span id="line-350"></span><span>    </span><span class="annot"><span class="annottext">OpenApi
 -&gt; TestConfig
--&gt; (ApiRequest -&gt; IO ApiResponse)
+-&gt; ExecutorWithTimeout
 -&gt; [ResolvedOperation]
 -&gt; TestTree
 </span><a href="Haskemathesis.Integration.Tasty.html#testTreeForExecutorNegative"><span class="hs-identifier hs-var">testTreeForExecutorNegative</span></a></span><span> </span><span class="annot"><span class="annottext">OpenApi
-</span><a href="#local-6989586621679222543"><span class="hs-identifier hs-var">openApi</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">TestConfig
-</span><a href="#local-6989586621679222542"><span class="hs-identifier hs-var">config</span></a></span><span class="hs-special">{</span><span class="annot"><a href="Haskemathesis.Config.html#tcBaseUrl"><span class="hs-identifier hs-var">tcBaseUrl</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span class="annot"><a href="#local-6989586621679222545"><span class="hs-identifier hs-type">baseUrl</span></a></span><span class="hs-special">}</span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Manager -&gt; BaseUrl -&gt; ApiRequest -&gt; IO ApiResponse
-</span><a href="Haskemathesis.Execute.Http.html#executeHttp"><span class="hs-identifier hs-var">executeHttp</span></a></span><span> </span><span class="annot"><span class="annottext">Manager
-</span><a href="#local-6989586621679222544"><span class="hs-identifier hs-var">manager</span></a></span><span> </span><span class="annot"><span class="annottext">BaseUrl
-</span><a href="#local-6989586621679222545"><span class="hs-identifier hs-var">baseUrl</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">OpenApi -&gt; [ResolvedOperation]
+</span><a href="#local-6989586621679224298"><span class="hs-identifier hs-var">openApi</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">TestConfig
+</span><a href="#local-6989586621679224297"><span class="hs-identifier hs-var">config</span></a></span><span class="hs-special">{</span><span class="annot"><a href="Haskemathesis.Config.html#tcBaseUrl"><span class="hs-identifier hs-var">tcBaseUrl</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span class="annot"><a href="#local-6989586621679224300"><span class="hs-identifier hs-type">baseUrl</span></a></span><span class="hs-special">}</span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Manager -&gt; BaseUrl -&gt; ExecutorWithTimeout
+</span><a href="Haskemathesis.Execute.Http.html#executeHttpWithTimeout"><span class="hs-identifier hs-var">executeHttpWithTimeout</span></a></span><span> </span><span class="annot"><span class="annottext">Manager
+</span><a href="#local-6989586621679224299"><span class="hs-identifier hs-var">manager</span></a></span><span> </span><span class="annot"><span class="annottext">BaseUrl
+</span><a href="#local-6989586621679224300"><span class="hs-identifier hs-var">baseUrl</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">OpenApi -&gt; [ResolvedOperation]
 </span><a href="Haskemathesis.OpenApi.Resolve.html#resolveOperations"><span class="hs-identifier hs-var">resolveOperations</span></a></span><span> </span><span class="annot"><span class="annottext">OpenApi
-</span><a href="#local-6989586621679222543"><span class="hs-identifier hs-var">openApi</span></a></span><span class="hs-special">)</span><span>
+</span><a href="#local-6989586621679224298"><span class="hs-identifier hs-var">openApi</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-351"></span></pre></body></html>

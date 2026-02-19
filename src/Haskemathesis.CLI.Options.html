@@ -23,7 +23,7 @@ cyclic dependencies.
 </span><span id="line-23"></span><span>    </span><span class="hs-glyph">=</span><span> </span><span id="Test"><span class="annot"><a href="Haskemathesis.CLI.Options.html#Test"><span class="hs-identifier hs-var">Test</span></a></span></span><span> </span><span class="hs-glyph">!</span><span class="annot"><a href="Haskemathesis.CLI.Options.html#TestOptions"><span class="hs-identifier hs-type">TestOptions</span></a></span><span>
 </span><span id="line-24"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span id="Validate"><span class="annot"><a href="Haskemathesis.CLI.Options.html#Validate"><span class="hs-identifier hs-var">Validate</span></a></span></span><span> </span><span class="hs-glyph">!</span><span class="annot"><a href="Haskemathesis.CLI.Options.html#ValidateOptions"><span class="hs-identifier hs-type">ValidateOptions</span></a></span><span>
 </span><span id="line-25"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span id="Curl"><span class="annot"><a href="Haskemathesis.CLI.Options.html#Curl"><span class="hs-identifier hs-var">Curl</span></a></span></span><span> </span><span class="hs-glyph">!</span><span class="annot"><a href="Haskemathesis.CLI.Options.html#CurlOptions"><span class="hs-identifier hs-type">CurlOptions</span></a></span><span>
-</span><span id="line-26"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679217725"><span id="local-6989586621679217736"><span class="annot"><span class="annottext">Command -&gt; Command -&gt; Bool
+</span><span id="line-26"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679219191"><span id="local-6989586621679219202"><span class="annot"><span class="annottext">Command -&gt; Command -&gt; Bool
 (Command -&gt; Command -&gt; Bool)
 -&gt; (Command -&gt; Command -&gt; Bool) -&gt; Eq Command
 forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
@@ -31,7 +31,7 @@ $c== :: Command -&gt; Command -&gt; Bool
 == :: Command -&gt; Command -&gt; Bool
 $c/= :: Command -&gt; Command -&gt; Bool
 /= :: Command -&gt; Command -&gt; Bool
-</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679217741"><span id="local-6989586621679217753"><span id="local-6989586621679217757"><span class="annot"><span class="annottext">Int -&gt; Command -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679219207"><span id="local-6989586621679219219"><span id="local-6989586621679219223"><span class="annot"><span class="annottext">Int -&gt; Command -&gt; ShowS
 [Command] -&gt; ShowS
 Command -&gt; String
 (Int -&gt; Command -&gt; ShowS)
@@ -80,15 +80,28 @@ showList :: [Command] -&gt; ShowS
 </span><span id="line-49"></span><span>    </span><span class="annot"><span class="hs-comment">-- ^ Random seed for reproducible tests</span></span><span>
 </span><span id="line-50"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="testTimeout"><span class="annot"><span class="annottext">TestOptions -&gt; Maybe Int
 </span><a href="Haskemathesis.CLI.Options.html#testTimeout"><span class="hs-identifier hs-var hs-var">testTimeout</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-glyph">!</span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span class="hs-special">)</span><span>
-</span><span id="line-51"></span><span>    </span><span class="annot"><span class="hs-comment">-- ^ Request timeout in seconds</span></span><span>
+</span><span id="line-51"></span><span>    </span><span class="annot"><span class="hs-comment">-- ^ Request timeout in seconds (unused, kept for compatibility)</span></span><span>
 </span><span id="line-52"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="testWorkers"><span class="annot"><span class="annottext">TestOptions -&gt; Int
 </span><a href="Haskemathesis.CLI.Options.html#testWorkers"><span class="hs-identifier hs-var hs-var">testWorkers</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-glyph">!</span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span>
 </span><span id="line-53"></span><span>    </span><span class="annot"><span class="hs-comment">-- ^ Number of parallel workers (default: 1)</span></span><span>
 </span><span id="line-54"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="testWorkdir"><span class="annot"><span class="annottext">TestOptions -&gt; WorkdirOption
 </span><a href="Haskemathesis.CLI.Options.html#testWorkdir"><span class="hs-identifier hs-var hs-var">testWorkdir</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-glyph">!</span><span class="annot"><a href="Haskemathesis.CLI.Options.html#WorkdirOption"><span class="hs-identifier hs-type">WorkdirOption</span></a></span><span>
 </span><span id="line-55"></span><span>    </span><span class="annot"><span class="hs-comment">-- ^ Working directory for tests (to isolate side effects)</span></span><span>
-</span><span id="line-56"></span><span>    </span><span class="hs-special">}</span><span>
-</span><span id="line-57"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679217777"><span id="local-6989586621679217800"><span class="annot"><span class="annottext">TestOptions -&gt; TestOptions -&gt; Bool
+</span><span id="line-56"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="testStreamingTimeout"><span class="annot"><span class="annottext">TestOptions -&gt; Maybe Int
+</span><a href="Haskemathesis.CLI.Options.html#testStreamingTimeout"><span class="hs-identifier hs-var hs-var">testStreamingTimeout</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-glyph">!</span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span class="hs-special">)</span><span>
+</span><span id="line-57"></span><span>    </span><span class="annot"><span class="hs-comment">{- ^ Default timeout in milliseconds for streaming endpoints (SSE, NDJSON).
+
+    Streaming endpoints never complete normally, so a timeout is required
+    to prevent tests from hanging. This is the default timeout applied to
+    operations detected as streaming (by content-type) that don't have an
+    explicit @x-timeout@ set in the OpenAPI spec.
+
+    Default: 1000ms (1 second)
+
+    Set to 'Nothing' to disable timeout (may cause hangs with streaming APIs).
+    -}</span></span><span>
+</span><span id="line-68"></span><span>    </span><span class="hs-special">}</span><span>
+</span><span id="line-69"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679219244"><span id="local-6989586621679219268"><span class="annot"><span class="annottext">TestOptions -&gt; TestOptions -&gt; Bool
 (TestOptions -&gt; TestOptions -&gt; Bool)
 -&gt; (TestOptions -&gt; TestOptions -&gt; Bool) -&gt; Eq TestOptions
 forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
@@ -96,7 +109,7 @@ $c== :: TestOptions -&gt; TestOptions -&gt; Bool
 == :: TestOptions -&gt; TestOptions -&gt; Bool
 $c/= :: TestOptions -&gt; TestOptions -&gt; Bool
 /= :: TestOptions -&gt; TestOptions -&gt; Bool
-</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679217804"><span id="local-6989586621679217828"><span id="local-6989586621679217831"><span class="annot"><span class="annottext">Int -&gt; TestOptions -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679219272"><span id="local-6989586621679219297"><span id="local-6989586621679219300"><span class="annot"><span class="annottext">Int -&gt; TestOptions -&gt; ShowS
 [TestOptions] -&gt; ShowS
 TestOptions -&gt; String
 (Int -&gt; TestOptions -&gt; ShowS)
@@ -112,16 +125,16 @@ show :: TestOptions -&gt; String
 $cshowList :: [TestOptions] -&gt; ShowS
 showList :: [TestOptions] -&gt; ShowS
 </span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">)</span><span>
-</span><span id="line-58"></span><span>
-</span><span id="line-59"></span><span class="annot"><span class="hs-comment">-- | Working directory option for tests.</span></span><span>
-</span><span id="line-60"></span><span class="hs-keyword">data</span><span> </span><span id="WorkdirOption"><span class="annot"><a href="Haskemathesis.CLI.Options.html#WorkdirOption"><span class="hs-identifier hs-var">WorkdirOption</span></a></span></span><span>
-</span><span id="line-61"></span><span>    </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="hs-comment">-- | Run in current directory (default)</span></span><span>
-</span><span id="line-62"></span><span>      </span><span id="WorkdirCurrent"><span class="annot"><a href="Haskemathesis.CLI.Options.html#WorkdirCurrent"><span class="hs-identifier hs-var">WorkdirCurrent</span></a></span></span><span>
-</span><span id="line-63"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="hs-comment">-- | Run in a temporary directory (cleaned up after tests)</span></span><span>
-</span><span id="line-64"></span><span>      </span><span id="WorkdirTemp"><span class="annot"><a href="Haskemathesis.CLI.Options.html#WorkdirTemp"><span class="hs-identifier hs-var">WorkdirTemp</span></a></span></span><span>
-</span><span id="line-65"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="hs-comment">-- | Run in a specific directory</span></span><span>
-</span><span id="line-66"></span><span>      </span><span id="WorkdirPath"><span class="annot"><a href="Haskemathesis.CLI.Options.html#WorkdirPath"><span class="hs-identifier hs-var">WorkdirPath</span></a></span></span><span> </span><span class="hs-glyph">!</span><span class="annot"><span class="hs-identifier hs-type">FilePath</span></span><span>
-</span><span id="line-67"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679217838"><span id="local-6989586621679217844"><span class="annot"><span class="annottext">WorkdirOption -&gt; WorkdirOption -&gt; Bool
+</span><span id="line-70"></span><span>
+</span><span id="line-71"></span><span class="annot"><span class="hs-comment">-- | Working directory option for tests.</span></span><span>
+</span><span id="line-72"></span><span class="hs-keyword">data</span><span> </span><span id="WorkdirOption"><span class="annot"><a href="Haskemathesis.CLI.Options.html#WorkdirOption"><span class="hs-identifier hs-var">WorkdirOption</span></a></span></span><span>
+</span><span id="line-73"></span><span>    </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="hs-comment">-- | Run in current directory (default)</span></span><span>
+</span><span id="line-74"></span><span>      </span><span id="WorkdirCurrent"><span class="annot"><a href="Haskemathesis.CLI.Options.html#WorkdirCurrent"><span class="hs-identifier hs-var">WorkdirCurrent</span></a></span></span><span>
+</span><span id="line-75"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="hs-comment">-- | Run in a temporary directory (cleaned up after tests)</span></span><span>
+</span><span id="line-76"></span><span>      </span><span id="WorkdirTemp"><span class="annot"><a href="Haskemathesis.CLI.Options.html#WorkdirTemp"><span class="hs-identifier hs-var">WorkdirTemp</span></a></span></span><span>
+</span><span id="line-77"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="hs-comment">-- | Run in a specific directory</span></span><span>
+</span><span id="line-78"></span><span>      </span><span id="WorkdirPath"><span class="annot"><a href="Haskemathesis.CLI.Options.html#WorkdirPath"><span class="hs-identifier hs-var">WorkdirPath</span></a></span></span><span> </span><span class="hs-glyph">!</span><span class="annot"><span class="hs-identifier hs-type">FilePath</span></span><span>
+</span><span id="line-79"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679219307"><span id="local-6989586621679219313"><span class="annot"><span class="annottext">WorkdirOption -&gt; WorkdirOption -&gt; Bool
 (WorkdirOption -&gt; WorkdirOption -&gt; Bool)
 -&gt; (WorkdirOption -&gt; WorkdirOption -&gt; Bool) -&gt; Eq WorkdirOption
 forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
@@ -129,7 +142,7 @@ $c== :: WorkdirOption -&gt; WorkdirOption -&gt; Bool
 == :: WorkdirOption -&gt; WorkdirOption -&gt; Bool
 $c/= :: WorkdirOption -&gt; WorkdirOption -&gt; Bool
 /= :: WorkdirOption -&gt; WorkdirOption -&gt; Bool
-</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679217847"><span id="local-6989586621679217852"><span id="local-6989586621679217855"><span class="annot"><span class="annottext">Int -&gt; WorkdirOption -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679219316"><span id="local-6989586621679219321"><span id="local-6989586621679219324"><span class="annot"><span class="annottext">Int -&gt; WorkdirOption -&gt; ShowS
 [WorkdirOption] -&gt; ShowS
 WorkdirOption -&gt; String
 (Int -&gt; WorkdirOption -&gt; ShowS)
@@ -145,17 +158,17 @@ show :: WorkdirOption -&gt; String
 $cshowList :: [WorkdirOption] -&gt; ShowS
 showList :: [WorkdirOption] -&gt; ShowS
 </span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">)</span><span>
-</span><span id="line-68"></span><span>
-</span><span id="line-69"></span><span class="annot"><span class="hs-comment">-- | Options for the 'validate' command.</span></span><span>
-</span><span id="line-70"></span><span class="hs-keyword">data</span><span> </span><span id="ValidateOptions"><span class="annot"><a href="Haskemathesis.CLI.Options.html#ValidateOptions"><span class="hs-identifier hs-var">ValidateOptions</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="ValidateOptions"><span class="annot"><a href="Haskemathesis.CLI.Options.html#ValidateOptions"><span class="hs-identifier hs-var">ValidateOptions</span></a></span></span><span>
-</span><span id="line-71"></span><span>    </span><span class="hs-special">{</span><span> </span><span id="validateSpecPath"><span class="annot"><span class="annottext">ValidateOptions -&gt; String
+</span><span id="line-80"></span><span>
+</span><span id="line-81"></span><span class="annot"><span class="hs-comment">-- | Options for the 'validate' command.</span></span><span>
+</span><span id="line-82"></span><span class="hs-keyword">data</span><span> </span><span id="ValidateOptions"><span class="annot"><a href="Haskemathesis.CLI.Options.html#ValidateOptions"><span class="hs-identifier hs-var">ValidateOptions</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="ValidateOptions"><span class="annot"><a href="Haskemathesis.CLI.Options.html#ValidateOptions"><span class="hs-identifier hs-var">ValidateOptions</span></a></span></span><span>
+</span><span id="line-83"></span><span>    </span><span class="hs-special">{</span><span> </span><span id="validateSpecPath"><span class="annot"><span class="annottext">ValidateOptions -&gt; String
 </span><a href="Haskemathesis.CLI.Options.html#validateSpecPath"><span class="hs-identifier hs-var hs-var">validateSpecPath</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-glyph">!</span><span class="annot"><span class="hs-identifier hs-type">FilePath</span></span><span>
-</span><span id="line-72"></span><span>    </span><span class="annot"><span class="hs-comment">-- ^ Path to the OpenAPI specification file</span></span><span>
-</span><span id="line-73"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="validateVerbose"><span class="annot"><span class="annottext">ValidateOptions -&gt; Bool
+</span><span id="line-84"></span><span>    </span><span class="annot"><span class="hs-comment">-- ^ Path to the OpenAPI specification file</span></span><span>
+</span><span id="line-85"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="validateVerbose"><span class="annot"><span class="annottext">ValidateOptions -&gt; Bool
 </span><a href="Haskemathesis.CLI.Options.html#validateVerbose"><span class="hs-identifier hs-var hs-var">validateVerbose</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-glyph">!</span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span>
-</span><span id="line-74"></span><span>    </span><span class="annot"><span class="hs-comment">-- ^ Show detailed validation information</span></span><span>
-</span><span id="line-75"></span><span>    </span><span class="hs-special">}</span><span>
-</span><span id="line-76"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679217861"><span id="local-6989586621679217866"><span class="annot"><span class="annottext">ValidateOptions -&gt; ValidateOptions -&gt; Bool
+</span><span id="line-86"></span><span>    </span><span class="annot"><span class="hs-comment">-- ^ Show detailed validation information</span></span><span>
+</span><span id="line-87"></span><span>    </span><span class="hs-special">}</span><span>
+</span><span id="line-88"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679219330"><span id="local-6989586621679219335"><span class="annot"><span class="annottext">ValidateOptions -&gt; ValidateOptions -&gt; Bool
 (ValidateOptions -&gt; ValidateOptions -&gt; Bool)
 -&gt; (ValidateOptions -&gt; ValidateOptions -&gt; Bool)
 -&gt; Eq ValidateOptions
@@ -164,7 +177,7 @@ $c== :: ValidateOptions -&gt; ValidateOptions -&gt; Bool
 == :: ValidateOptions -&gt; ValidateOptions -&gt; Bool
 $c/= :: ValidateOptions -&gt; ValidateOptions -&gt; Bool
 /= :: ValidateOptions -&gt; ValidateOptions -&gt; Bool
-</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679217869"><span id="local-6989586621679217875"><span id="local-6989586621679217878"><span class="annot"><span class="annottext">Int -&gt; ValidateOptions -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679219338"><span id="local-6989586621679219344"><span id="local-6989586621679219347"><span class="annot"><span class="annottext">Int -&gt; ValidateOptions -&gt; ShowS
 [ValidateOptions] -&gt; ShowS
 ValidateOptions -&gt; String
 (Int -&gt; ValidateOptions -&gt; ShowS)
@@ -180,29 +193,29 @@ show :: ValidateOptions -&gt; String
 $cshowList :: [ValidateOptions] -&gt; ShowS
 showList :: [ValidateOptions] -&gt; ShowS
 </span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">)</span><span>
-</span><span id="line-77"></span><span>
-</span><span id="line-78"></span><span class="annot"><span class="hs-comment">-- | Options for the 'curl' command.</span></span><span>
-</span><span id="line-79"></span><span class="hs-keyword">data</span><span> </span><span id="CurlOptions"><span class="annot"><a href="Haskemathesis.CLI.Options.html#CurlOptions"><span class="hs-identifier hs-var">CurlOptions</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="CurlOptions"><span class="annot"><a href="Haskemathesis.CLI.Options.html#CurlOptions"><span class="hs-identifier hs-var">CurlOptions</span></a></span></span><span>
-</span><span id="line-80"></span><span>    </span><span class="hs-special">{</span><span> </span><span id="curlSpecPath"><span class="annot"><span class="annottext">CurlOptions -&gt; String
+</span><span id="line-89"></span><span>
+</span><span id="line-90"></span><span class="annot"><span class="hs-comment">-- | Options for the 'curl' command.</span></span><span>
+</span><span id="line-91"></span><span class="hs-keyword">data</span><span> </span><span id="CurlOptions"><span class="annot"><a href="Haskemathesis.CLI.Options.html#CurlOptions"><span class="hs-identifier hs-var">CurlOptions</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="CurlOptions"><span class="annot"><a href="Haskemathesis.CLI.Options.html#CurlOptions"><span class="hs-identifier hs-var">CurlOptions</span></a></span></span><span>
+</span><span id="line-92"></span><span>    </span><span class="hs-special">{</span><span> </span><span id="curlSpecPath"><span class="annot"><span class="annottext">CurlOptions -&gt; String
 </span><a href="Haskemathesis.CLI.Options.html#curlSpecPath"><span class="hs-identifier hs-var hs-var">curlSpecPath</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-glyph">!</span><span class="annot"><span class="hs-identifier hs-type">FilePath</span></span><span>
-</span><span id="line-81"></span><span>    </span><span class="annot"><span class="hs-comment">-- ^ Path to the OpenAPI specification file</span></span><span>
-</span><span id="line-82"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="curlBaseUrl"><span class="annot"><span class="annottext">CurlOptions -&gt; Text
+</span><span id="line-93"></span><span>    </span><span class="annot"><span class="hs-comment">-- ^ Path to the OpenAPI specification file</span></span><span>
+</span><span id="line-94"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="curlBaseUrl"><span class="annot"><span class="annottext">CurlOptions -&gt; Text
 </span><a href="Haskemathesis.CLI.Options.html#curlBaseUrl"><span class="hs-identifier hs-var hs-var">curlBaseUrl</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-glyph">!</span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
-</span><span id="line-83"></span><span>    </span><span class="annot"><span class="hs-comment">-- ^ Base URL for the generated curl commands</span></span><span>
-</span><span id="line-84"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="curlCount"><span class="annot"><span class="annottext">CurlOptions -&gt; Int
+</span><span id="line-95"></span><span>    </span><span class="annot"><span class="hs-comment">-- ^ Base URL for the generated curl commands</span></span><span>
+</span><span id="line-96"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="curlCount"><span class="annot"><span class="annottext">CurlOptions -&gt; Int
 </span><a href="Haskemathesis.CLI.Options.html#curlCount"><span class="hs-identifier hs-var hs-var">curlCount</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-glyph">!</span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span>
-</span><span id="line-85"></span><span>    </span><span class="annot"><span class="hs-comment">-- ^ Number of example requests to generate per operation</span></span><span>
-</span><span id="line-86"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="curlInclude"><span class="annot"><span class="annottext">CurlOptions -&gt; [Text]
+</span><span id="line-97"></span><span>    </span><span class="annot"><span class="hs-comment">-- ^ Number of example requests to generate per operation</span></span><span>
+</span><span id="line-98"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="curlInclude"><span class="annot"><span class="annottext">CurlOptions -&gt; [Text]
 </span><a href="Haskemathesis.CLI.Options.html#curlInclude"><span class="hs-identifier hs-var hs-var">curlInclude</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-glyph">!</span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span class="hs-special">]</span><span>
-</span><span id="line-87"></span><span>    </span><span class="annot"><span class="hs-comment">-- ^ Include only operations matching these patterns</span></span><span>
-</span><span id="line-88"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="curlExclude"><span class="annot"><span class="annottext">CurlOptions -&gt; [Text]
+</span><span id="line-99"></span><span>    </span><span class="annot"><span class="hs-comment">-- ^ Include only operations matching these patterns</span></span><span>
+</span><span id="line-100"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="curlExclude"><span class="annot"><span class="annottext">CurlOptions -&gt; [Text]
 </span><a href="Haskemathesis.CLI.Options.html#curlExclude"><span class="hs-identifier hs-var hs-var">curlExclude</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-glyph">!</span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span class="hs-special">]</span><span>
-</span><span id="line-89"></span><span>    </span><span class="annot"><span class="hs-comment">-- ^ Exclude operations matching these patterns</span></span><span>
-</span><span id="line-90"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="curlTags"><span class="annot"><span class="annottext">CurlOptions -&gt; [Text]
+</span><span id="line-101"></span><span>    </span><span class="annot"><span class="hs-comment">-- ^ Exclude operations matching these patterns</span></span><span>
+</span><span id="line-102"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="curlTags"><span class="annot"><span class="annottext">CurlOptions -&gt; [Text]
 </span><a href="Haskemathesis.CLI.Options.html#curlTags"><span class="hs-identifier hs-var hs-var">curlTags</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-glyph">!</span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span class="hs-special">]</span><span>
-</span><span id="line-91"></span><span>    </span><span class="annot"><span class="hs-comment">-- ^ Filter operations by tags</span></span><span>
-</span><span id="line-92"></span><span>    </span><span class="hs-special">}</span><span>
-</span><span id="line-93"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679217888"><span id="local-6989586621679217897"><span class="annot"><span class="annottext">CurlOptions -&gt; CurlOptions -&gt; Bool
+</span><span id="line-103"></span><span>    </span><span class="annot"><span class="hs-comment">-- ^ Filter operations by tags</span></span><span>
+</span><span id="line-104"></span><span>    </span><span class="hs-special">}</span><span>
+</span><span id="line-105"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679219357"><span id="local-6989586621679219366"><span class="annot"><span class="annottext">CurlOptions -&gt; CurlOptions -&gt; Bool
 (CurlOptions -&gt; CurlOptions -&gt; Bool)
 -&gt; (CurlOptions -&gt; CurlOptions -&gt; Bool) -&gt; Eq CurlOptions
 forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
@@ -210,7 +223,7 @@ $c== :: CurlOptions -&gt; CurlOptions -&gt; Bool
 == :: CurlOptions -&gt; CurlOptions -&gt; Bool
 $c/= :: CurlOptions -&gt; CurlOptions -&gt; Bool
 /= :: CurlOptions -&gt; CurlOptions -&gt; Bool
-</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679217900"><span id="local-6989586621679217910"><span id="local-6989586621679217913"><span class="annot"><span class="annottext">Int -&gt; CurlOptions -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679219369"><span id="local-6989586621679219379"><span id="local-6989586621679219382"><span class="annot"><span class="annottext">Int -&gt; CurlOptions -&gt; ShowS
 [CurlOptions] -&gt; ShowS
 CurlOptions -&gt; String
 (Int -&gt; CurlOptions -&gt; ShowS)
@@ -226,12 +239,12 @@ show :: CurlOptions -&gt; String
 $cshowList :: [CurlOptions] -&gt; ShowS
 showList :: [CurlOptions] -&gt; ShowS
 </span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">)</span><span>
-</span><span id="line-94"></span><span>
-</span><span id="line-95"></span><span class="annot"><span class="hs-comment">-- | Output format for test results.</span></span><span>
-</span><span id="line-96"></span><span class="hs-keyword">data</span><span> </span><span id="OutputFormat"><span class="annot"><a href="Haskemathesis.CLI.Options.html#OutputFormat"><span class="hs-identifier hs-var">OutputFormat</span></a></span></span><span>
-</span><span id="line-97"></span><span>    </span><span class="hs-glyph">=</span><span> </span><span id="OutputText"><span class="annot"><a href="Haskemathesis.CLI.Options.html#OutputText"><span class="hs-identifier hs-var">OutputText</span></a></span></span><span>
-</span><span id="line-98"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span id="OutputJson"><span class="annot"><a href="Haskemathesis.CLI.Options.html#OutputJson"><span class="hs-identifier hs-var">OutputJson</span></a></span></span><span>
-</span><span id="line-99"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679217918"><span id="local-6989586621679217922"><span class="annot"><span class="annottext">OutputFormat -&gt; OutputFormat -&gt; Bool
+</span><span id="line-106"></span><span>
+</span><span id="line-107"></span><span class="annot"><span class="hs-comment">-- | Output format for test results.</span></span><span>
+</span><span id="line-108"></span><span class="hs-keyword">data</span><span> </span><span id="OutputFormat"><span class="annot"><a href="Haskemathesis.CLI.Options.html#OutputFormat"><span class="hs-identifier hs-var">OutputFormat</span></a></span></span><span>
+</span><span id="line-109"></span><span>    </span><span class="hs-glyph">=</span><span> </span><span id="OutputText"><span class="annot"><a href="Haskemathesis.CLI.Options.html#OutputText"><span class="hs-identifier hs-var">OutputText</span></a></span></span><span>
+</span><span id="line-110"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span id="OutputJson"><span class="annot"><a href="Haskemathesis.CLI.Options.html#OutputJson"><span class="hs-identifier hs-var">OutputJson</span></a></span></span><span>
+</span><span id="line-111"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679219387"><span id="local-6989586621679219391"><span class="annot"><span class="annottext">OutputFormat -&gt; OutputFormat -&gt; Bool
 (OutputFormat -&gt; OutputFormat -&gt; Bool)
 -&gt; (OutputFormat -&gt; OutputFormat -&gt; Bool) -&gt; Eq OutputFormat
 forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
@@ -239,7 +252,7 @@ $c== :: OutputFormat -&gt; OutputFormat -&gt; Bool
 == :: OutputFormat -&gt; OutputFormat -&gt; Bool
 $c/= :: OutputFormat -&gt; OutputFormat -&gt; Bool
 /= :: OutputFormat -&gt; OutputFormat -&gt; Bool
-</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679217925"><span id="local-6989586621679217927"><span id="local-6989586621679217930"><span class="annot"><span class="annottext">Int -&gt; OutputFormat -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679219394"><span id="local-6989586621679219396"><span id="local-6989586621679219399"><span class="annot"><span class="annottext">Int -&gt; OutputFormat -&gt; ShowS
 [OutputFormat] -&gt; ShowS
 OutputFormat -&gt; String
 (Int -&gt; OutputFormat -&gt; ShowS)
@@ -255,50 +268,55 @@ show :: OutputFormat -&gt; String
 $cshowList :: [OutputFormat] -&gt; ShowS
 showList :: [OutputFormat] -&gt; ShowS
 </span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">)</span><span>
-</span><span id="line-100"></span><span>
-</span><span id="line-101"></span><span class="annot"><span class="hs-comment">-- | Default test options.</span></span><span>
-</span><span id="line-102"></span><span class="annot"><a href="Haskemathesis.CLI.Options.html#defaultTestOptions"><span class="hs-identifier hs-type">defaultTestOptions</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Haskemathesis.CLI.Options.html#TestOptions"><span class="hs-identifier hs-type">TestOptions</span></a></span><span>
-</span><span id="line-103"></span><span id="defaultTestOptions"><span class="annot"><span class="annottext">defaultTestOptions :: TestOptions
+</span><span id="line-112"></span><span>
+</span><span id="line-113"></span><span class="annot"><span class="hs-comment">-- | Default test options.</span></span><span>
+</span><span id="line-114"></span><span class="annot"><a href="Haskemathesis.CLI.Options.html#defaultTestOptions"><span class="hs-identifier hs-type">defaultTestOptions</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Haskemathesis.CLI.Options.html#TestOptions"><span class="hs-identifier hs-type">TestOptions</span></a></span><span>
+</span><span id="line-115"></span><span id="defaultTestOptions"><span class="annot"><span class="annottext">defaultTestOptions :: TestOptions
 </span><a href="Haskemathesis.CLI.Options.html#defaultTestOptions"><span class="hs-identifier hs-var hs-var">defaultTestOptions</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
-</span><span id="line-104"></span><span>    </span><span class="annot"><a href="Haskemathesis.CLI.Options.html#TestOptions"><span class="hs-identifier hs-type">TestOptions</span></a></span><span>
-</span><span id="line-105"></span><span>        </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">testSpecPath :: String
+</span><span id="line-116"></span><span>    </span><span class="annot"><a href="Haskemathesis.CLI.Options.html#TestOptions"><span class="hs-identifier hs-type">TestOptions</span></a></span><span>
+</span><span id="line-117"></span><span>        </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">testSpecPath :: String
 </span><a href="Haskemathesis.CLI.Options.html#testSpecPath"><span class="hs-identifier hs-var">testSpecPath</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">String
 </span><span class="hs-string">&quot;&quot;</span></span><span>
-</span><span id="line-106"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">testBaseUrl :: Text
+</span><span id="line-118"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">testBaseUrl :: Text
 </span><a href="Haskemathesis.CLI.Options.html#testBaseUrl"><span class="hs-identifier hs-var">testBaseUrl</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Text
 </span><span class="hs-string">&quot;&quot;</span></span><span>
-</span><span id="line-107"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">testCount :: Int
+</span><span id="line-119"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">testCount :: Int
 </span><a href="Haskemathesis.CLI.Options.html#testCount"><span class="hs-identifier hs-var">testCount</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Int
 </span><span class="hs-number">100</span></span><span>
-</span><span id="line-108"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">testInclude :: [Text]
+</span><span id="line-120"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">testInclude :: [Text]
 </span><a href="Haskemathesis.CLI.Options.html#testInclude"><span class="hs-identifier hs-var">testInclude</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>
-</span><span id="line-109"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">testExclude :: [Text]
+</span><span id="line-121"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">testExclude :: [Text]
 </span><a href="Haskemathesis.CLI.Options.html#testExclude"><span class="hs-identifier hs-var">testExclude</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>
-</span><span id="line-110"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">testTags :: [Text]
+</span><span id="line-122"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">testTags :: [Text]
 </span><a href="Haskemathesis.CLI.Options.html#testTags"><span class="hs-identifier hs-var">testTags</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>
-</span><span id="line-111"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">testNegative :: Bool
+</span><span id="line-123"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">testNegative :: Bool
 </span><a href="Haskemathesis.CLI.Options.html#testNegative"><span class="hs-identifier hs-var">testNegative</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Bool
 </span><span class="hs-identifier hs-var">False</span></span><span>
-</span><span id="line-112"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">testAuthHeader :: Maybe Text
+</span><span id="line-124"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">testAuthHeader :: Maybe Text
 </span><a href="Haskemathesis.CLI.Options.html#testAuthHeader"><span class="hs-identifier hs-var">testAuthHeader</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe Text
 forall a. Maybe a
 </span><span class="hs-identifier hs-var">Nothing</span></span><span>
-</span><span id="line-113"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">testOutputFormat :: OutputFormat
+</span><span id="line-125"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">testOutputFormat :: OutputFormat
 </span><a href="Haskemathesis.CLI.Options.html#testOutputFormat"><span class="hs-identifier hs-var">testOutputFormat</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">OutputFormat
 </span><a href="Haskemathesis.CLI.Options.html#OutputText"><span class="hs-identifier hs-var">OutputText</span></a></span><span>
-</span><span id="line-114"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">testSeed :: Maybe Int
+</span><span id="line-126"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">testSeed :: Maybe Int
 </span><a href="Haskemathesis.CLI.Options.html#testSeed"><span class="hs-identifier hs-var">testSeed</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe Int
 forall a. Maybe a
 </span><span class="hs-identifier hs-var">Nothing</span></span><span>
-</span><span id="line-115"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">testTimeout :: Maybe Int
+</span><span id="line-127"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">testTimeout :: Maybe Int
 </span><a href="Haskemathesis.CLI.Options.html#testTimeout"><span class="hs-identifier hs-var">testTimeout</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe Int
 forall a. Maybe a
 </span><span class="hs-identifier hs-var">Nothing</span></span><span>
-</span><span id="line-116"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">testWorkers :: Int
+</span><span id="line-128"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">testWorkers :: Int
 </span><a href="Haskemathesis.CLI.Options.html#testWorkers"><span class="hs-identifier hs-var">testWorkers</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Int
 </span><span class="hs-number">1</span></span><span>
-</span><span id="line-117"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">testWorkdir :: WorkdirOption
+</span><span id="line-129"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">testWorkdir :: WorkdirOption
 </span><a href="Haskemathesis.CLI.Options.html#testWorkdir"><span class="hs-identifier hs-var">testWorkdir</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">WorkdirOption
 </span><a href="Haskemathesis.CLI.Options.html#WorkdirTemp"><span class="hs-identifier hs-var">WorkdirTemp</span></a></span><span>
-</span><span id="line-118"></span><span>        </span><span class="hs-special">}</span><span>
-</span><span id="line-119"></span></pre></body></html>
+</span><span id="line-130"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">testStreamingTimeout :: Maybe Int
+</span><a href="Haskemathesis.CLI.Options.html#testStreamingTimeout"><span class="hs-identifier hs-var">testStreamingTimeout</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Int -&gt; Maybe Int
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">1000</span></span><span>
+</span><span id="line-131"></span><span>        </span><span class="hs-special">}</span><span>
+</span><span id="line-132"></span></pre></body></html>
