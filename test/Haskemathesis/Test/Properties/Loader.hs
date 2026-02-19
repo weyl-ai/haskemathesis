@@ -6,7 +6,7 @@ import Data.Aeson (Value (..))
 import qualified Data.Aeson.KeyMap as KM
 import qualified Data.Text as T
 import qualified Data.Vector as V
-import Haskemathesis.OpenApi.Loader (transformOpenApi31To30)
+import Haskemathesis.OpenApi.Loader (isUrl, transformOpenApi31To30)
 import Haskemathesis.Test.Support (itProp)
 import Hedgehog (Property, forAll, property, (===))
 import qualified Hedgehog.Gen as Gen
@@ -26,6 +26,11 @@ spec = describe "OpenApi.Loader" $ do
         itProp "transforms arrays of schemas" propArrayTransform
         itProp "preserves non-schema objects unchanged" propNonSchemaUnchanged
         itProp "handles both exclusiveMinimum and exclusiveMaximum together" propBothExclusivesTransform
+
+    describe "isUrl" $ do
+        itProp "detects http URLs" propDetectsHttp
+        itProp "detects https URLs" propDetectsHttps
+        itProp "rejects file paths" propRejectsFilePaths
 
 -- | OpenAPI version 3.1.x should be transformed to 3.0.3
 propVersionTransform :: Property
@@ -225,3 +230,23 @@ propBothExclusivesTransform = property $ do
                     , ("exclusiveMaximum", Bool True)
                     ]
     transformOpenApi31To30 input === expected
+
+-- | http:// URLs are detected
+propDetectsHttp :: Property
+propDetectsHttp = property $ do
+    path <- forAll $ Gen.text (Range.linear 1 50) Gen.alphaNum
+    let url = "http://example.com/" <> T.unpack path
+    isUrl url === True
+
+-- | https:// URLs are detected
+propDetectsHttps :: Property
+propDetectsHttps = property $ do
+    path <- forAll $ Gen.text (Range.linear 1 50) Gen.alphaNum
+    let url = "https://example.com/" <> T.unpack path
+    isUrl url === True
+
+-- | File paths are not detected as URLs
+propRejectsFilePaths :: Property
+propRejectsFilePaths = property $ do
+    path <- forAll $ Gen.element ["api.yaml", "./spec.json", "/path/to/spec.yaml", "specs/api.json"]
+    isUrl path === False

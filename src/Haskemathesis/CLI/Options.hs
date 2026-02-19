@@ -5,6 +5,38 @@
 This module defines the data types used for command-line argument parsing
 and configuration. It is separate from the main CLI module to avoid
 cyclic dependencies.
+
+=== Output Formats
+
+The 'OutputFormat' type supports three formats:
+
+* 'OutputText' - Human-readable text output (default)
+* 'OutputJson' - JSON summary for programmatic consumption
+* 'OutputJUnit' - JUnit XML for CI integration (Jenkins, GitLab CI, GitHub Actions)
+
+=== Response Time Validation
+
+Use 'testMaxResponseTime' to enforce response time limits:
+
+@
+opts = defaultTestOptions
+    { testSpecPath = "api.yaml"
+    , testBaseUrl = "http://localhost:8080"
+    , testMaxResponseTime = Just 500  -- Fail if >500ms
+    }
+@
+
+=== URL-based Spec Loading
+
+'testSpecPath' can be a file path or an HTTP/HTTPS URL:
+
+@
+-- File path
+opts1 = defaultTestOptions { testSpecPath = "openapi.yaml" }
+
+-- URL
+opts2 = defaultTestOptions { testSpecPath = "https://api.example.com/openapi.json" }
+@
 -}
 module Haskemathesis.CLI.Options (
     Command (..),
@@ -65,6 +97,16 @@ data TestOptions = TestOptions
 
     Set to 'Nothing' to disable timeout (may cause hangs with streaming APIs).
     -}
+    , testMaxResponseTime :: !(Maybe Int)
+    {- ^ Maximum allowed response time in milliseconds.
+
+    If set, tests will fail if any API response takes longer than this
+    threshold. Useful for performance testing and SLA compliance.
+
+    Default: 'Nothing' (no response time limit)
+
+    Example: @--max-response-time 500@ fails if any response exceeds 500ms.
+    -}
     }
     deriving (Eq, Show)
 
@@ -108,6 +150,7 @@ data CurlOptions = CurlOptions
 data OutputFormat
     = OutputText
     | OutputJson
+    | OutputJUnit
     deriving (Eq, Show)
 
 -- | Default test options.
@@ -128,4 +171,5 @@ defaultTestOptions =
         , testWorkers = 1
         , testWorkdir = WorkdirTemp
         , testStreamingTimeout = Just 1000
+        , testMaxResponseTime = Nothing
         }

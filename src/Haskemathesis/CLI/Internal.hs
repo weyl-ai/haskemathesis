@@ -10,6 +10,7 @@ module Haskemathesis.CLI.Internal (
     buildOperationFilter,
     buildTestConfig,
     buildHeaders,
+    buildChecks,
 ) where
 
 import qualified Data.ByteString as BS
@@ -18,7 +19,8 @@ import Data.Text.Encoding (encodeUtf8)
 import Network.HTTP.Types (HeaderName)
 
 import Haskemathesis.CLI.Options (TestOptions (..))
-import Haskemathesis.Check.Standard (allChecks)
+import Haskemathesis.Check.Standard (allChecks, maxResponseTime)
+import Haskemathesis.Check.Types (Check)
 import Haskemathesis.Config (TestConfig (..))
 import Haskemathesis.OpenApi.Types (ResolvedOperation (..))
 
@@ -51,7 +53,7 @@ buildOperationFilter opts =
 buildTestConfig :: TestOptions -> TestConfig
 buildTestConfig opts =
     TestConfig
-        { tcChecks = allChecks
+        { tcChecks = buildChecks opts
         , tcAuthConfig = Nothing
         , tcBaseUrl = Just (testBaseUrl opts)
         , tcPropertyCount = testCount opts
@@ -60,6 +62,15 @@ buildTestConfig opts =
         , tcHeaders = buildHeaders opts
         , tcStreamingTimeout = testStreamingTimeout opts
         }
+
+-- | Build checks list from CLI options.
+buildChecks :: TestOptions -> [Check]
+buildChecks opts =
+    allChecks ++ responseTimeCheck
+  where
+    responseTimeCheck = case testMaxResponseTime opts of
+        Just maxMs -> [maxResponseTime maxMs]
+        Nothing -> []
 
 -- | Build global headers from CLI options.
 buildHeaders :: TestOptions -> [(HeaderName, BS.ByteString)]

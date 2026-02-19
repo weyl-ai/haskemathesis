@@ -3,7 +3,7 @@
 This module provides a collection of standard checks for validating
 API responses against OpenAPI specifications. These checks cover
 common validation scenarios like status codes, response schemas,
-content types, and headers.
+content types, headers, and response times.
 
 === Using Default Check Sets
 
@@ -33,6 +33,17 @@ myChecks =
     , statusCodeConformance
     ]
 @
+
+=== Performance Testing
+
+Add response time limits to your checks:
+
+@
+import Haskemathesis.Check.Standard (defaultChecks, maxResponseTime)
+
+-- Fail if any response takes longer than 500ms
+performanceChecks = defaultChecks ++ [maxResponseTime 500]
+@
 -}
 module Haskemathesis.Check.Standard (
     -- * Check Sets
@@ -45,12 +56,16 @@ module Haskemathesis.Check.Standard (
     statusCodeConformance,
     contentTypeConformance,
     responseHeadersConformance,
+
+    -- * Performance Checks
+    maxResponseTime,
 )
 where
 
 import Haskemathesis.Check.Standard.ContentType (contentTypeConformance)
 import Haskemathesis.Check.Standard.Headers (responseHeadersConformance)
 import Haskemathesis.Check.Standard.ResponseSchema (responseSchemaConformance)
+import Haskemathesis.Check.Standard.ResponseTime (maxResponseTime)
 import Haskemathesis.Check.Standard.Status (notAServerError, statusCodeConformance)
 import Haskemathesis.Check.Types
 

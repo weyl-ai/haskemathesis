@@ -11,10 +11,12 @@ applies a configurable set of checks to the responses.
 - OpenAPI 3.0 and 3.1 schema parsing and operation resolution
 - Schema-driven generators for JSON requests
 - WAI executor (no network) and HTTP executor
-- Built-in checks (status codes, content type, response schema, response headers)
+- Built-in checks (status codes, content type, response schema, response headers, response time)
 - Curl rendering for failure reproduction
 - Hspec and Tasty integration helpers
 - Standalone CLI for testing any HTTP API without writing Haskell
+- Load specs from file paths or URLs
+- JUnit XML output for CI integration (Jenkins, GitLab CI, GitHub Actions)
 
 ## CLI
 
@@ -52,7 +54,7 @@ haskemathesis-cli test \
 
 Options:
 
-- `-s, --spec FILE` - Path to OpenAPI spec (required)
+- `-s, --spec FILE|URL` - Path or URL to OpenAPI spec (required)
 - `-u, --url URL` - Base URL of the API (required)
 - `-n, --count N` - Test cases per operation (default: 100)
 - `-i, --include PATTERN` - Include only matching operations (repeatable)
@@ -60,7 +62,8 @@ Options:
 - `-t, --tag TAG` - Filter by tag (repeatable)
 - `--negative` - Enable negative testing (invalid inputs)
 - `--auth-header VALUE` - Authorization header value
-- `-o, --output FORMAT` - Output format: `text` or `json`
+- `-o, --output FORMAT` - Output format: `text`, `json`, or `junit`
+- `--max-response-time MS` - Fail if response time exceeds threshold (ms)
 - `--seed INT` - Random seed for reproducibility
 - `--timeout SECONDS` - Request timeout
 - `-w, --workers N` - Parallel workers (default: 1)
@@ -80,7 +83,89 @@ haskemathesis-cli curl --spec openapi.yaml --url http://localhost:8080
 haskemathesis-cli curl --spec openapi.yaml --url http://localhost:8080 --count 5
 ```
 
+### Loading Specs from URLs
+
+The CLI can load OpenAPI specifications directly from HTTP/HTTPS URLs:
+
+```bash
+# Load spec from Swagger Petstore
+haskemathesis-cli test \
+  --spec https://petstore.swagger.io/v2/swagger.json \
+  --url http://localhost:8080
+
+# Load from private endpoint with auth
+haskemathesis-cli test \
+  --spec https://api.example.com/docs/openapi.yaml \
+  --url https://api.example.com
+```
+
+### JUnit XML Output
+
+Generate JUnit XML reports for CI integration:
+
+```bash
+# Output JUnit XML to stdout
+haskemathesis-cli test --spec api.yaml --url http://localhost:8080 --output junit
+
+# Save to file for CI artifacts
+haskemathesis-cli test --spec api.yaml --url http://localhost:8080 --output junit > test-results.xml
+```
+
+Example CI configurations:
+
+**GitHub Actions:**
+
+```yaml
+- run: haskemathesis-cli test --spec api.yaml --url $API_URL --output junit > results.xml
+- uses: dorny/test-reporter@v1
+  with:
+    name: API Tests
+    path: results.xml
+    reporter: java-junit
+```
+
+**GitLab CI:**
+
+```yaml
+test:
+  script:
+    - haskemathesis-cli test --spec api.yaml --url $API_URL --output junit > results.xml
+  artifacts:
+    reports:
+      junit: results.xml
+```
+
+### Response Time Validation
+
+Fail tests if API response times exceed a threshold:
+
+```bash
+# Fail if any response takes longer than 500ms
+haskemathesis-cli test --spec api.yaml --url http://localhost:8080 --max-response-time 500
+
+# Strict SLA: 100ms limit
+haskemathesis-cli test --spec api.yaml --url http://localhost:8080 --max-response-time 100
+```
+
 ## Quick Start (Haskell Library)
+
+### Loading OpenAPI Specs
+
+Load specs from files or URLs using `loadOpenApi`:
+
+```haskell
+import Haskemathesis.OpenApi.Loader (loadOpenApi, loadOpenApiFile, loadOpenApiUrl)
+
+-- Auto-detect file path or URL
+spec1 <- loadOpenApi "openapi.yaml"
+spec2 <- loadOpenApi "https://api.example.com/openapi.json"
+
+-- Explicitly load from file
+spec3 <- loadOpenApiFile "/path/to/api.yaml"
+
+-- Explicitly load from URL
+spec4 <- loadOpenApiUrl "https://petstore.swagger.io/v2/swagger.json"
+```
 
 ### WAI
 
@@ -188,6 +273,51 @@ The default check set includes:
 - not-a-server-error (5xx guard)
 
 Use `Haskemathesis.Check.Standard.allChecks` or `defaultChecks`.
+
+### Response Time Check
+
+Add a response time limit to your checks:
+
+```haskell
+import Haskemathesis.Check.Standard (defaultChecks)
+import Haskemathesis.Check.Standard.ResponseTime (maxResponseTime)
+
+-- Fail if any response exceeds 500ms
+checks = defaultChecks ++ [maxResponseTime 500]
+
+-- Strict SLA: 100ms limit
+strictChecks = defaultChecks ++ [maxResponseTime 100]
+```
+
+## Streaming Endpoints
+
+WAI-based tests (in-memory, synchronous) cannot handle streaming endpoints
+like Server-Sent Events (SSE) or NDJSON streams. These operations are
+automatically filtered out when using WAI executor functions.
+
+To see which operations were skipped, use the `*IO` variants:
+
+```haskell
+import Haskemathesis.Integration.Tasty (testTreeForAppIO)
+import System.IO (hPutStrLn, stderr)
+
+main :: IO ()
+main = do
+    spec <- loadOpenApiFile "api.yaml"
+    (tests, skipped) <- testTreeForAppIO defaultTestConfig spec myApp
+    unless (null skipped) $
+        hPutStrLn stderr $ "Skipped streaming operations: " ++ show skipped
+    defaultMain tests
+```
+
+Streaming endpoints are detected by their content types:
+
+- `text/event-stream` (Server-Sent Events)
+- `application/x-ndjson` (Newline-delimited JSON)
+- `application/stream+json`
+
+For streaming endpoints, use `testTreeForUrl` with a running HTTP server
+which properly handles timeouts.
 
 ## Development
 

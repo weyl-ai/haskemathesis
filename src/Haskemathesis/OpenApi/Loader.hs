@@ -1,11 +1,11 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE StrictData #-}
 
-{- | Load OpenAPI specs from YAML or JSON files.
+{- | Load OpenAPI specs from YAML or JSON files or URLs.
 
 This module provides functions for loading OpenAPI specifications
-from disk. It supports both YAML and JSON formats, automatically
-detecting the format based on file extension and content.
+from disk or remote URLs. It supports both YAML and JSON formats,
+automatically detecting the format based on file extension and content.
 
 === Basic Usage
 
@@ -22,6 +22,21 @@ main = do
         Right spec -> putStrLn "Loaded successfully!"
 @
 
+=== Loading from URLs
+
+You can also load specifications from URLs:
+
+@
+import Haskemathesis.OpenApi.Loader (loadOpenApi)
+
+main :: IO ()
+main = do
+    result <- loadOpenApi "https://api.example.com/openapi.yaml"
+    case result of
+        Left err -> putStrLn $ "Failed to load: " ++ show err
+        Right spec -> putStrLn "Loaded from URL!"
+@
+
 === Error Handling
 
 The loader returns 'Either Text OpenApi', where the Left case
@@ -29,6 +44,7 @@ contains a descriptive error message if parsing fails. This
 can happen due to:
 
 * File not found or unreadable
+* Network error when fetching from URL
 * Invalid YAML/JSON syntax
 * Invalid OpenAPI structure (validation errors)
 
@@ -37,6 +53,7 @@ can happen due to:
 * YAML files (.yaml, .yml extension)
 * JSON files (.json extension)
 * Files without extension (auto-detected by content)
+* HTTP/HTTPS URLs
 
 === OpenAPI 3.1 Support
 
@@ -50,10 +67,16 @@ This allows specs written for OpenAPI 3.1 (which uses JSON Schema 2020-12)
 to be loaded by the openapi3 library which only supports OpenAPI 3.0.
 -}
 module Haskemathesis.OpenApi.Loader (
+    -- * Loading functions
+    loadOpenApi,
     loadOpenApiFile,
+    loadOpenApiUrl,
     loadOpenApiFileWithExtensions,
     OperationExtensions (..),
     OperationKey,
+
+    -- * URL detection
+    isUrl,
 
     -- * Internal (exported for testing)
     transformOpenApi31To30,
@@ -61,10 +84,13 @@ module Haskemathesis.OpenApi.Loader (
 )
 where
 
+import Control.Exception (SomeException, catch)
 import Data.Aeson (Result (..), Value (..), fromJSON)
 import Data.Aeson.Key (Key)
 import qualified Data.Aeson.Key as Key
 import qualified Data.Aeson.KeyMap as KM
+import qualified Data.ByteString.Lazy as LBS
+import Data.List (isPrefixOf)
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 import Data.OpenApi (OpenApi)
@@ -72,7 +98,16 @@ import Data.Scientific (isInteger, toBoundedInteger)
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Vector as V
-import Data.Yaml (decodeFileEither, prettyPrintParseException)
+import Data.Yaml (decodeEither', decodeFileEither, prettyPrintParseException)
+import Network.HTTP.Client (
+    httpLbs,
+    newManager,
+    parseRequest,
+    responseBody,
+    responseStatus,
+ )
+import Network.HTTP.Client.TLS (tlsManagerSettings)
+import Network.HTTP.Types.Status (statusCode)
 
 {- | Load an OpenAPI specification from a file.
 
@@ -103,6 +138,41 @@ main = do
             putStrLn $ "Loaded API with " ++ show (length spec) ++ " paths"
 @
 -}
+
+{- | Load an OpenAPI specification from a file path or URL.
+
+This is the recommended entry point for loading specs. It automatically
+detects whether the input is a URL (starting with @http://@ or @https://@)
+or a file path, and uses the appropriate loading method.
+
+=== Parameters
+
+* @pathOrUrl@ - Either a file path or a URL to the OpenAPI specification
+
+=== Return Value
+
+Returns 'Right OpenApi' on success, or 'Left Text' with an error
+message on failure.
+
+=== Example
+
+@
+-- Load from file
+spec1 <- loadOpenApi "api.yaml"
+
+-- Load from URL
+spec2 <- loadOpenApi "https://petstore.swagger.io/v2/swagger.json"
+@
+-}
+loadOpenApi :: String -> IO (Either Text OpenApi)
+loadOpenApi pathOrUrl
+    | isUrl pathOrUrl = loadOpenApiUrl pathOrUrl
+    | otherwise = loadOpenApiFile pathOrUrl
+
+-- | Check if a string is a URL (starts with http:// or https://).
+isUrl :: String -> Bool
+isUrl s = "http://" `isPrefixOf` s || "https://" `isPrefixOf` s
+
 loadOpenApiFile :: FilePath -> IO (Either Text OpenApi)
 loadOpenApiFile path = do
     -- First parse as raw Value to allow transformation
@@ -115,6 +185,67 @@ loadOpenApiFile path = do
              in case fromJSON transformed of
                     Error err' -> Left (T.pack err')
                     Success spec -> Right spec
+
+{- | Load an OpenAPI specification from a URL.
+
+This function fetches an OpenAPI specification from an HTTP or HTTPS URL.
+It supports both YAML and JSON formats.
+
+=== Parameters
+
+* @url@ - URL to the OpenAPI specification (must start with http:// or https://)
+
+=== Return Value
+
+Returns 'Right OpenApi' on success, or 'Left Text' with an error
+message on failure.
+
+=== Example
+
+@
+result <- loadOpenApiUrl "https://petstore.swagger.io/v2/swagger.json"
+case result of
+    Left err -> putStrLn $ "Failed to fetch: " ++ T.unpack err
+    Right spec -> putStrLn "Loaded from URL!"
+@
+
+=== Notes
+
+* Uses TLS for HTTPS connections
+* Follows redirects automatically
+* Returns an error if the response status is not 2xx
+-}
+loadOpenApiUrl :: String -> IO (Either Text OpenApi)
+loadOpenApiUrl url = do
+    result <- fetchUrl url
+    pure $ case result of
+        Left err -> Left err
+        Right body ->
+            -- Parse as YAML (which is a superset of JSON)
+            case decodeEither' (LBS.toStrict body) of
+                Left err -> Left (T.pack (prettyPrintParseException err))
+                Right value ->
+                    let transformed = transformOpenApi31To30 value
+                     in case fromJSON transformed of
+                            Error err' -> Left (T.pack err')
+                            Success spec -> Right spec
+
+-- | Fetch content from a URL.
+fetchUrl :: String -> IO (Either Text LBS.ByteString)
+fetchUrl url =
+    ( do
+        manager <- newManager tlsManagerSettings
+        request <- parseRequest url
+        response <- httpLbs request manager
+        let status = statusCode (responseStatus response)
+        if status >= 200 && status < 300
+            then pure $ Right (responseBody response)
+            else pure $ Left $ "HTTP error: status " <> T.pack (show status)
+    )
+        `catch` handleHttpException
+  where
+    handleHttpException :: SomeException -> IO (Either Text LBS.ByteString)
+    handleHttpException e = pure $ Left $ "Failed to fetch URL: " <> T.pack (show e)
 
 {- | Transform OpenAPI 3.1 JSON Schema constructs to OpenAPI 3.0 equivalents.
 

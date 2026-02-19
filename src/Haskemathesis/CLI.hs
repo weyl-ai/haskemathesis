@@ -110,6 +110,7 @@ testCommand =
             <*> workersOption
             <*> workdirOption
             <*> streamingTimeoutOption
+            <*> maxResponseTimeOption
 
 -- | Parser for the 'validate' command.
 validateCommand :: Parser Command
@@ -217,13 +218,14 @@ outputFormatOption =
             <> metavar "FORMAT"
             <> value OutputText
             <> showDefaultWith (const "text")
-            <> help "Output format: text or json"
+            <> help "Output format: text, json, or junit"
         )
   where
     parseOutputFormat :: String -> Either String OutputFormat
     parseOutputFormat "text" = Right OutputText
     parseOutputFormat "json" = Right OutputJson
-    parseOutputFormat s = Left $ "Unknown format: " ++ s ++ ". Use 'text' or 'json'."
+    parseOutputFormat "junit" = Right OutputJUnit
+    parseOutputFormat s = Left $ "Unknown format: " ++ s ++ ". Use 'text', 'json', or 'junit'."
 
 seedOption :: Parser (Maybe Int)
 seedOption =
@@ -258,6 +260,21 @@ streamingTimeoutOption =
             ( long "streaming-timeout"
                 <> metavar "MS"
                 <> help "Default timeout in milliseconds for streaming endpoints (default: 1000)"
+            )
+
+{- | Parser for max response time check.
+
+If set, tests will fail if any API response takes longer than this threshold.
+Useful for performance testing and SLA compliance verification.
+-}
+maxResponseTimeOption :: Parser (Maybe Int)
+maxResponseTimeOption =
+    optional $
+        option
+            auto
+            ( long "max-response-time"
+                <> metavar "MS"
+                <> help "Fail if response time exceeds this limit in milliseconds"
             )
 
 workersOption :: Parser Int

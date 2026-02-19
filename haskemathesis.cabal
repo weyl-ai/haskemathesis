@@ -17,8 +17,11 @@ library
     Haskemathesis.Auth.Config
     Haskemathesis.Check.Negative
     Haskemathesis.Check.Standard
+    Haskemathesis.Check.Standard.Helpers
+    Haskemathesis.Check.Standard.ResponseTime
     Haskemathesis.Check.Types
     Haskemathesis.CLI
+    Haskemathesis.CLI.Internal
     Haskemathesis.CLI.Options
     Haskemathesis.CLI.Runner
     Haskemathesis.Config
@@ -39,6 +42,7 @@ library
     Haskemathesis.OpenApi.Types
     Haskemathesis.Property
     Haskemathesis.Report.Curl
+    Haskemathesis.Report.JUnit
     Haskemathesis.Report.Render
     Haskemathesis.Schema
     Haskemathesis.Validate
@@ -46,10 +50,8 @@ library
   other-modules:
     Haskemathesis.Check.Standard.ContentType
     Haskemathesis.Check.Standard.Headers
-    Haskemathesis.Check.Standard.Helpers
     Haskemathesis.Check.Standard.ResponseSchema
     Haskemathesis.Check.Standard.Status
-    Haskemathesis.CLI.Internal
     Haskemathesis.Gen.Negative.Mutations
     Haskemathesis.Gen.Negative.Types
 
@@ -95,22 +97,30 @@ test-suite haskemathesis-test
     Haskemathesis.Test.Generators
     Haskemathesis.Test.Properties.Auth
     Haskemathesis.Test.Properties.CLI
+    Haskemathesis.Test.Properties.CLIInternal
     Haskemathesis.Test.Properties.Config
     Haskemathesis.Test.Properties.ContentType
+    Haskemathesis.Test.Properties.Convert
     Haskemathesis.Test.Properties.Curl
+    Haskemathesis.Test.Properties.Format
     Haskemathesis.Test.Properties.Gen
+    Haskemathesis.Test.Properties.Helpers
+    Haskemathesis.Test.Properties.JUnit
     Haskemathesis.Test.Properties.Loader
     Haskemathesis.Test.Properties.Negative
     Haskemathesis.Test.Properties.Negative.Checks
     Haskemathesis.Test.Properties.Negative.Generation
     Haskemathesis.Test.Properties.Negative.Mutations
+    Haskemathesis.Test.Properties.Primitive
     Haskemathesis.Test.Properties.Render
     Haskemathesis.Test.Properties.Request
     Haskemathesis.Test.Properties.Resolve
     Haskemathesis.Test.Properties.ResponseHeaders
     Haskemathesis.Test.Properties.ResponseSchema
+    Haskemathesis.Test.Properties.ResponseTime
     Haskemathesis.Test.Properties.StatusCode
     Haskemathesis.Test.Properties.Streaming
+    Haskemathesis.Test.Properties.Timeout
     Haskemathesis.Test.Properties.Validate
     Haskemathesis.Test.Properties.Wai
     Haskemathesis.Test.Spec
