@@ -32,6 +32,7 @@ library
     Haskemathesis.Gen.Core
     Haskemathesis.Gen.Format
     Haskemathesis.Gen.Negative
+    Haskemathesis.Gen.Pattern
     Haskemathesis.Gen.Primitive
     Haskemathesis.Gen.Request
     Haskemathesis.Integration.Hspec
@@ -45,6 +46,13 @@ library
     Haskemathesis.Report.JUnit
     Haskemathesis.Report.Render
     Haskemathesis.Schema
+    Haskemathesis.Stateful.Checks
+    Haskemathesis.Stateful.Extract
+    Haskemathesis.Stateful.Generator
+    Haskemathesis.Stateful.Heuristics
+    Haskemathesis.Stateful.Links
+    Haskemathesis.Stateful.Sequence
+    Haskemathesis.Stateful.Types
     Haskemathesis.Validate
 
   other-modules:
@@ -71,6 +79,7 @@ library
     , http-media
     , http-types                 >=0.12 && <0.13
     , insert-ordered-containers
+    , logict
     , openapi3                   >=3.2  && <3.3
     , optparse-applicative       >=0.18 && <0.19
     , regex-tdfa
@@ -111,6 +120,7 @@ test-suite haskemathesis-test
     Haskemathesis.Test.Properties.Negative.Checks
     Haskemathesis.Test.Properties.Negative.Generation
     Haskemathesis.Test.Properties.Negative.Mutations
+    Haskemathesis.Test.Properties.Pattern
     Haskemathesis.Test.Properties.Primitive
     Haskemathesis.Test.Properties.Render
     Haskemathesis.Test.Properties.Request
@@ -118,6 +128,12 @@ test-suite haskemathesis-test
     Haskemathesis.Test.Properties.ResponseHeaders
     Haskemathesis.Test.Properties.ResponseSchema
     Haskemathesis.Test.Properties.ResponseTime
+    Haskemathesis.Test.Properties.Stateful.Checks
+    Haskemathesis.Test.Properties.Stateful.Extract
+    Haskemathesis.Test.Properties.Stateful.Generator
+    Haskemathesis.Test.Properties.Stateful.Heuristics
+    Haskemathesis.Test.Properties.Stateful.Links
+    Haskemathesis.Test.Properties.Stateful.Sequence
     Haskemathesis.Test.Properties.StatusCode
     Haskemathesis.Test.Properties.Streaming
     Haskemathesis.Test.Properties.Timeout
@@ -139,11 +155,13 @@ test-suite haskemathesis-test
     , hspec-hedgehog
     , http-types
     , insert-ordered-containers
+    , logict
     , openapi3
     , optparse-applicative
     , regex-tdfa
     , scientific
     , text
+    , time
     , vector
     , wai
 

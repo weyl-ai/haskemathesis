@@ -161,12 +161,13 @@ renderResponse res =
 truncateBody :: Int -> BS.ByteString -> Text
 truncateBody maxLen body =
     case decodeUtf8' body of
-        Left _ -> "<binary data>"
+        Left _decodeError -> "<binary data>"
         Right txt ->
             let stripped = T.strip txt
              in case T.compareLength stripped maxLen of
                     GT -> T.take maxLen stripped <> "..."
-                    _ -> stripped
+                    LT -> stripped
+                    EQ -> stripped
 
 renderQuery :: [(Text, Text)] -> Text
 renderQuery [] = ""

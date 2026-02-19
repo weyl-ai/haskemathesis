@@ -32,17 +32,25 @@ genPrimitiveSchema =
 
 genStringSchema :: Gen Schema
 genStringSchema = do
-    minL <- Gen.int (Range.linear 0 5)
-    maxL <- Gen.int (Range.linear minL (minL + 10))
     usePattern <- Gen.bool
-    let patternVal = if usePattern then Just "^[a-z0-9]+$" else Nothing
-    pure
-        emptySchema
-            { schemaType = Just SString
-            , schemaMinLength = Just minL
-            , schemaMaxLength = Just maxL
-            , schemaPattern = patternVal
-            }
+    -- If using pattern, don't set length constraints as they may conflict
+    -- Pattern ^[a-z0-9]+$ generates strings of varying lengths
+    if usePattern
+        then
+            pure
+                emptySchema
+                    { schemaType = Just SString
+                    , schemaPattern = Just "^[a-z0-9]+$"
+                    }
+        else do
+            minL <- Gen.int (Range.linear 0 5)
+            maxL <- Gen.int (Range.linear minL (minL + 10))
+            pure
+                emptySchema
+                    { schemaType = Just SString
+                    , schemaMinLength = Just minL
+                    , schemaMaxLength = Just maxL
+                    }
 
 genIntegerSchema :: Gen Schema
 genIntegerSchema = do

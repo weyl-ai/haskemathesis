@@ -54,7 +54,10 @@ propIPv4ValidFormat = property $ do
         String txt -> do
             let parts = T.splitOn "." txt
             annotateShow parts
-            assert $ length parts == (4 :: Int)
+            -- splitOn always returns finite list, check exact length
+            case parts of
+                [_, _, _, _] -> pure ()
+                _other -> assert False
         _unexpectedValue -> assert False
 
 propIPv4ValidOctets :: Property
@@ -81,7 +84,10 @@ propIPv6ValidFormat = property $ do
         String txt -> do
             let parts = T.splitOn ":" txt
             annotateShow parts
-            assert $ length parts == (8 :: Int)
+            -- splitOn always returns finite list, check exact length
+            case parts of
+                [_, _, _, _, _, _, _, _] -> pure ()
+                _other -> assert False
         _unexpectedValue -> assert False
 
 propIPv6ValidHex :: Property
@@ -158,7 +164,9 @@ propUUIDValidFormat = property $ do
             let parts = T.splitOn "-" txt
             annotateShow parts
             -- UUID has 5 parts: 8-4-4-4-12
-            assert $ length parts == (5 :: Int)
+            case parts of
+                [_, _, _, _, _] -> pure ()
+                _other -> assert False
         _unexpectedValue -> assert False
 
 propUUIDSegmentLengths :: Property
@@ -167,8 +175,8 @@ propUUIDSegmentLengths = property $ do
     case value of
         String txt -> do
             let parts = T.splitOn "-" txt
-                expectedLengths = [8, 4, 4, 4, 12]
-                actualLengths = map T.length parts
-            annotateShow (zip expectedLengths actualLengths)
-            assert $ actualLengths == expectedLengths
+                expectedLengths = [8, 4, 4, 4, 12] :: [Int]
+                checkLength t expected = T.compareLength t expected == EQ
+            annotateShow parts
+            assert $ and (zipWith checkLength parts expectedLengths)
         _unexpectedValue -> assert False

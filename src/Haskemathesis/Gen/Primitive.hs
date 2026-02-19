@@ -32,13 +32,11 @@ where
 import Data.Aeson (Value (..))
 import Data.Maybe (fromMaybe)
 import Data.Scientific (fromFloatDigits)
-import Data.Text (Text)
-import qualified Data.Text as T
+import Haskemathesis.Gen.Pattern (genFromPatternWithLength)
 import Haskemathesis.Schema
 import Hedgehog (Gen)
 import qualified Hedgehog.Gen as Gen
 import qualified Hedgehog.Range as Range
-import Text.Regex.TDFA ((=~))
 
 -- | Try to generate from const or enum first, otherwise use the fallback generator.
 genConstOrEnum :: Schema -> Gen Value -> Gen Value
@@ -83,16 +81,22 @@ genString schema =
     genConstOrEnum schema $
         case schemaPattern schema of
             Just pat ->
-                let minL = fromMaybe 0 (schemaMinLength schema)
-                    maxL = fromMaybe (minL + 8) (schemaMaxLength schema)
-                    range = Range.linear minL maxL
-                 in Gen.filter
-                        (matchesPattern pat)
-                        (String <$> Gen.text range Gen.alphaNum)
-            Nothing -> do
+                let minL = schemaMinLength schema
+                    maxL = schemaMaxLength schema
+                 in case genFromPatternWithLength pat minL maxL of
+                        Just patGen ->
+                            -- Generate from pattern with length constraints
+                            String <$> patGen
+                        Nothing ->
+                            -- Pattern parsing failed or no matches fit length constraints
+                            -- Fall back to random alphanumeric string
+                            let minLen = fromMaybe 0 minL
+                                maxLen = fromMaybe (minLen + 8) maxL
+                             in String <$> Gen.text (Range.linear minLen maxLen) Gen.alphaNum
+            Nothing ->
                 let minL = fromMaybe 0 (schemaMinLength schema)
                     maxL = fromMaybe (minL + 32) (schemaMaxLength schema)
-                String <$> Gen.text (Range.linear minL maxL) Gen.alphaNum
+                 in String <$> Gen.text (Range.linear minL maxL) Gen.alphaNum
 
 {- | Generate an integer value according to schema constraints.
 
@@ -196,9 +200,3 @@ value <- genBoolean schema
 -}
 genBoolean :: Schema -> Gen Value
 genBoolean _ = Bool <$> Gen.bool
-
-matchesPattern :: Text -> Value -> Bool
-matchesPattern pat value =
-    case value of
-        String txt -> T.unpack txt =~ T.unpack pat
-        _otherValue -> False

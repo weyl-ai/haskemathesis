@@ -83,7 +83,7 @@ propStringBothLengths = property $ do
     value <- forAll $ genString schema
     case value of
         String txt -> do
-            annotateShow (T.length txt) -- OK for debugging, not performance critical
+            annotateShow txt
             assert $ T.compareLength txt minLen /= LT && T.compareLength txt maxLen /= GT
         _unexpectedValue -> assert False
 
