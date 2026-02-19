@@ -45,9 +45,9 @@ import qualified Data.Text as T
 import Haskemathesis.Check.Standard.Helpers (operationLabel)
 import Haskemathesis.Check.Types (Check)
 import Haskemathesis.Config (TestConfig (..))
-import Haskemathesis.Execute.Http (executeHttp)
-import Haskemathesis.Execute.Types (ApiRequest, ApiResponse, BaseUrl)
-import Haskemathesis.Execute.Wai (executeWai)
+import Haskemathesis.Execute.Http (executeHttpWithTimeout)
+import Haskemathesis.Execute.Types (BaseUrl, ExecutorWithTimeout)
+import Haskemathesis.Execute.Wai (executeWaiWithTimeout)
 import Haskemathesis.OpenApi.Resolve (resolveOperations)
 import Haskemathesis.OpenApi.Types (ResolvedOperation (..))
 import Haskemathesis.Property (propertyForOperation, propertyForOperationWithConfig)
@@ -79,7 +79,7 @@ spec = specForExecutor (Just "http://localhost:8080") checks myExecutor ops
 specForExecutor ::
     Maybe BaseUrl ->
     [Check] ->
-    (ApiRequest -> IO ApiResponse) ->
+    ExecutorWithTimeout ->
     [ResolvedOperation] ->
     Spec
 specForExecutor mBase checks execute ops =
@@ -114,7 +114,7 @@ specForApp ::
     Application ->
     Spec
 specForApp mBase checks openApi app =
-    specForExecutor mBase checks (executeWai app) (resolveOperations openApi)
+    specForExecutor mBase checks (executeWaiWithTimeout app) (resolveOperations openApi)
 
 {- | Create an Hspec 'Spec' with full configuration and custom executor.
 
@@ -139,7 +139,7 @@ spec = specForExecutorWithConfig openApiSpec config myExecutor ops
 specForExecutorWithConfig ::
     OpenApi ->
     TestConfig ->
-    (ApiRequest -> IO ApiResponse) ->
+    ExecutorWithTimeout ->
     [ResolvedOperation] ->
     Spec
 specForExecutorWithConfig openApi config execute ops =
@@ -172,7 +172,7 @@ specForAppWithConfig ::
     Application ->
     Spec
 specForAppWithConfig config openApi app =
-    specForExecutorWithConfig openApi config (executeWai app) (resolveOperations openApi)
+    specForExecutorWithConfig openApi config (executeWaiWithTimeout app) (resolveOperations openApi)
 
 {- | Create an Hspec 'Spec' for testing a remote HTTP server.
 
@@ -206,7 +206,7 @@ specForUrl ::
     Spec
 specForUrl config openApi manager baseUrl =
     let config' = config{tcBaseUrl = Just baseUrl}
-     in specForExecutorWithConfig openApi config' (executeHttp manager baseUrl) (resolveOperations openApi)
+     in specForExecutorWithConfig openApi config' (executeHttpWithTimeout manager baseUrl) (resolveOperations openApi)
 
 {- | Create an Hspec 'Spec' for negative testing with a custom executor.
 
@@ -231,7 +231,7 @@ validation and error handling.
 specForExecutorNegative ::
     OpenApi ->
     TestConfig ->
-    (ApiRequest -> IO ApiResponse) ->
+    ExecutorWithTimeout ->
     [ResolvedOperation] ->
     Spec
 specForExecutorNegative openApi config execute ops =
@@ -262,7 +262,7 @@ specForAppNegative ::
     Application ->
     Spec
 specForAppNegative config openApi app =
-    specForExecutorNegative openApi config (executeWai app) (resolveOperations openApi)
+    specForExecutorNegative openApi config (executeWaiWithTimeout app) (resolveOperations openApi)
 
 {- | Create an Hspec 'Spec' for negative testing of a remote HTTP server.
 
@@ -292,12 +292,12 @@ specForUrlNegative ::
     BaseUrl ->
     Spec
 specForUrlNegative config openApi manager baseUrl =
-    specForExecutorNegative openApi (config{tcBaseUrl = Just baseUrl}) (executeHttp manager baseUrl) (resolveOperations openApi)
+    specForExecutorNegative openApi (config{tcBaseUrl = Just baseUrl}) (executeHttpWithTimeout manager baseUrl) (resolveOperations openApi)
 
 specForOperation ::
     Maybe BaseUrl ->
     [Check] ->
-    (ApiRequest -> IO ApiResponse) ->
+    ExecutorWithTimeout ->
     ResolvedOperation ->
     Spec
 specForOperation mBase checks execute op =
@@ -307,7 +307,7 @@ specForOperation mBase checks execute op =
 specForOperationWithConfig ::
     OpenApi ->
     TestConfig ->
-    (ApiRequest -> IO ApiResponse) ->
+    ExecutorWithTimeout ->
     ResolvedOperation ->
     Spec
 specForOperationWithConfig openApi config execute op

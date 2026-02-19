@@ -109,6 +109,7 @@ testCommand =
             <*> timeoutOption
             <*> workersOption
             <*> workdirOption
+            <*> streamingTimeoutOption
 
 -- | Parser for the 'validate' command.
 validateCommand :: Parser Command
@@ -242,6 +243,21 @@ timeoutOption =
             ( long "timeout"
                 <> metavar "SECONDS"
                 <> help "Request timeout in seconds"
+            )
+
+{- | Parser for streaming endpoint timeout.
+
+This controls the default timeout for streaming endpoints (SSE, NDJSON)
+that don't have an explicit @x-timeout@ in the OpenAPI spec.
+-}
+streamingTimeoutOption :: Parser (Maybe Int)
+streamingTimeoutOption =
+    optional $
+        option
+            auto
+            ( long "streaming-timeout"
+                <> metavar "MS"
+                <> help "Default timeout in milliseconds for streaming endpoints (default: 1000)"
             )
 
 workersOption :: Parser Int

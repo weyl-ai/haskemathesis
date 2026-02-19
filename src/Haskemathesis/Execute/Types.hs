@@ -43,6 +43,8 @@ module Haskemathesis.Execute.Types (
     ApiResponse (..),
     MediaType,
     BaseUrl,
+    Executor,
+    ExecutorWithTimeout,
     contentTypeHeaders,
     queryToMaybe,
 )
@@ -106,3 +108,21 @@ contentTypeHeaders req =
 -- | Convert a key-value pair to query format with Maybe value.
 queryToMaybe :: (Text, Text) -> (Text, Maybe Text)
 queryToMaybe (k, v) = (k, Just v)
+
+-- | Simple executor type for backward compatibility.
+type Executor = ApiRequest -> IO ApiResponse
+
+{- | Executor type that supports request timeouts.
+
+This executor accepts an optional timeout in milliseconds. The timeout
+controls how long to wait for a response before aborting the request.
+
+@
+myExecutor :: ExecutorWithTimeout
+myExecutor mTimeout req = ...
+@
+
+Use this type when you need to support streaming endpoints or operations
+with custom @x-timeout@ values.
+-}
+type ExecutorWithTimeout = Maybe Int -> ApiRequest -> IO ApiResponse

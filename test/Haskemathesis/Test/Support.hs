@@ -31,6 +31,8 @@ emptyOperation =
         , roResponses = mempty
         , roDefaultResponse = Nothing
         , roSecurity = []
+        , roIsStreaming = False
+        , roTimeout = Nothing
         }
 
 dummyRequest :: ResolvedOperation -> ApiRequest

@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE StrictData #-}
 
 {- | Resolved OpenAPI types used by generators and checks.
@@ -43,12 +44,17 @@ module Haskemathesis.OpenApi.Types (
 
     -- * Operation Type
     ResolvedOperation (..),
+
+    -- * Streaming Detection
+    isStreamingContentType,
+    streamingContentTypes,
 )
 where
 
 import Data.Map.Strict (Map)
 import Data.OpenApi (SecurityRequirement)
 import Data.Text (Text)
+import qualified Data.Text as T
 import Haskemathesis.Schema (Schema)
 
 {- | Location of a parameter in an HTTP request.
@@ -131,6 +137,8 @@ validate responses for that endpoint.
 * 'roResponses' - Map of status codes to response specifications
 * 'roDefaultResponse' - Optional default response specification
 * 'roSecurity' - Security requirements for this operation
+* 'roIsStreaming' - Whether this operation returns a streaming response
+* 'roTimeout' - Optional request timeout in milliseconds (from @x-timeout@)
 -}
 data ResolvedOperation = ResolvedOperation
     { roMethod :: Text
@@ -159,5 +167,84 @@ data ResolvedOperation = ResolvedOperation
     {- ^ Security requirements for this operation.
     If empty, the operation requires no authentication.
     -}
+    , roIsStreaming :: Bool
+    {- ^ Whether this operation returns a streaming response.
+
+    An operation is considered streaming if any of its success responses
+    (2xx status codes) include one of these content types:
+
+    * @text/event-stream@ - Server-Sent Events (SSE)
+    * @application/x-ndjson@ - Newline-delimited JSON
+
+    Streaming operations are tested with a timeout to prevent tests
+    from hanging indefinitely. See 'roTimeout' for timeout configuration.
+    -}
+    , roTimeout :: Maybe Int
+    {- ^ Optional request timeout in milliseconds.
+
+    This value is parsed from the @x-timeout@ OpenAPI extension, which is
+    a __non-standard vendor extension__ that Haskemathesis recognizes:
+
+    @
+    \/events:
+      get:
+        x-timeout: 2000  # Timeout in milliseconds
+        responses:
+          "200":
+            content:
+              text/event-stream: {}
+    @
+
+    __Timeout behavior:__
+
+    * If @x-timeout@ is specified, that value is used
+    * If the operation is streaming ('roIsStreaming' is 'True') and no
+      @x-timeout@ is set, a default streaming timeout is applied
+      (configurable via 'tcStreamingTimeout' in 'TestConfig')
+    * For non-streaming operations without @x-timeout@, no timeout is applied
+      (or the HTTP client's default timeout is used)
+
+    __Why milliseconds?__
+
+    Milliseconds provide fine-grained control needed for streaming endpoints
+    where you want to capture "some" data quickly (e.g., 500ms) without
+    waiting for the stream to complete (which may never happen).
+    -}
     }
     deriving (Eq, Show)
+
+{- | List of content types that indicate streaming responses.
+
+These content types are used to automatically detect streaming operations:
+
+* @text/event-stream@ - Server-Sent Events (SSE), used for real-time updates
+* @application/x-ndjson@ - Newline-delimited JSON, used for streaming JSON records
+
+When an operation's success responses include any of these content types,
+the operation is marked as streaming ('roIsStreaming' = 'True').
+-}
+streamingContentTypes :: [Text]
+streamingContentTypes =
+    [ "text/event-stream"
+    , "application/x-ndjson"
+    ]
+
+{- | Check if a content type indicates a streaming response.
+
+Performs case-insensitive matching and ignores parameters (charset, etc.):
+
+>>> isStreamingContentType "text/event-stream"
+True
+
+>>> isStreamingContentType "TEXT/EVENT-STREAM; charset=utf-8"
+True
+
+>>> isStreamingContentType "application/json"
+False
+-}
+isStreamingContentType :: Text -> Bool
+isStreamingContentType contentType =
+    normalizedType `elem` streamingContentTypes
+  where
+    -- Strip parameters (e.g., "; charset=utf-8") and lowercase
+    normalizedType = T.toLower (T.strip (T.takeWhile (/= ';') contentType))

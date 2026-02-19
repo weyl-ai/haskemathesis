@@ -110,6 +110,7 @@ test-suite haskemathesis-test
     Haskemathesis.Test.Properties.ResponseHeaders
     Haskemathesis.Test.Properties.ResponseSchema
     Haskemathesis.Test.Properties.StatusCode
+    Haskemathesis.Test.Properties.Streaming
     Haskemathesis.Test.Properties.Validate
     Haskemathesis.Test.Properties.Wai
     Haskemathesis.Test.Spec

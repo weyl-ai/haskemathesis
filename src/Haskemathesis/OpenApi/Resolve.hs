@@ -12,6 +12,7 @@ schema mapping.
 -}
 module Haskemathesis.OpenApi.Resolve (
     resolveOperations,
+    resolveOperationsWithExtensions,
 )
 where
 
@@ -42,6 +43,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeUtf8)
 import Haskemathesis.OpenApi.Convert (convertSchema)
+import Haskemathesis.OpenApi.Loader (OperationExtensions (..), OperationKey)
 import qualified Haskemathesis.OpenApi.Types as HOT
 import qualified Haskemathesis.Schema as HS
 import Network.HTTP.Media (MediaType, renderHeader)
@@ -80,39 +82,72 @@ userOps = filter (\\op -> "users" \`elem\` roTags op) operations
 @
 -}
 resolveOperations :: OpenApi -> [HOT.ResolvedOperation]
-resolveOperations openApi =
-    concatMap (uncurry (resolvePathItem components globalSecurity)) (InsOrdHashMap.toList pathMap)
+resolveOperations openApi = resolveOperationsWithExtensions openApi Map.empty
+
+{- | Resolve operations with vendor extension support.
+
+Like 'resolveOperations', but also incorporates vendor extensions
+(e.g., @x-timeout@) extracted from the raw OpenAPI JSON.
+
+Use 'loadOpenApiFileWithExtensions' to obtain the extensions map.
+
+==== Example
+
+@
+result <- loadOpenApiFileWithExtensions "api.yaml"
+case result of
+    Right (spec, extensions) -> do
+        let ops = resolveOperationsWithExtensions spec extensions
+        -- ops now have roTimeout populated from x-timeout
+    Left err -> ...
+@
+-}
+resolveOperationsWithExtensions ::
+    OpenApi ->
+    Map OperationKey OperationExtensions ->
+    [HOT.ResolvedOperation]
+resolveOperationsWithExtensions openApi extensions =
+    concatMap (uncurry (resolvePathItem components globalSecurity extensions)) (InsOrdHashMap.toList pathMap)
   where
     components = _openApiComponents openApi
     globalSecurity = _openApiSecurity openApi
     pathMap = _openApiPaths openApi
 
-resolvePathItem :: Components -> [SecurityRequirement] -> FilePath -> PathItem -> [HOT.ResolvedOperation]
-resolvePathItem components globalSecurity path item =
+resolvePathItem ::
+    Components ->
+    [SecurityRequirement] ->
+    Map OperationKey OperationExtensions ->
+    FilePath ->
+    PathItem ->
+    [HOT.ResolvedOperation]
+resolvePathItem components globalSecurity extensions path item =
     catMaybes
-        [ resolveOperation components globalSecurity path (T.pack "GET") (_pathItemGet item)
-        , resolveOperation components globalSecurity path (T.pack "PUT") (_pathItemPut item)
-        , resolveOperation components globalSecurity path (T.pack "POST") (_pathItemPost item)
-        , resolveOperation components globalSecurity path (T.pack "DELETE") (_pathItemDelete item)
-        , resolveOperation components globalSecurity path (T.pack "OPTIONS") (_pathItemOptions item)
-        , resolveOperation components globalSecurity path (T.pack "HEAD") (_pathItemHead item)
-        , resolveOperation components globalSecurity path (T.pack "PATCH") (_pathItemPatch item)
-        , resolveOperation components globalSecurity path (T.pack "TRACE") (_pathItemTrace item)
+        [ resolveOperation components globalSecurity extensions path "GET" (_pathItemGet item)
+        , resolveOperation components globalSecurity extensions path "PUT" (_pathItemPut item)
+        , resolveOperation components globalSecurity extensions path "POST" (_pathItemPost item)
+        , resolveOperation components globalSecurity extensions path "DELETE" (_pathItemDelete item)
+        , resolveOperation components globalSecurity extensions path "OPTIONS" (_pathItemOptions item)
+        , resolveOperation components globalSecurity extensions path "HEAD" (_pathItemHead item)
+        , resolveOperation components globalSecurity extensions path "PATCH" (_pathItemPatch item)
+        , resolveOperation components globalSecurity extensions path "TRACE" (_pathItemTrace item)
         ]
   where
     pathParams = _pathItemParameters item
 
-    resolveOperation comps globalSec p method mOp = do
+    resolveOperation comps globalSec exts p method mOp = do
         op <- mOp
         let params = resolveParams comps (pathParams <> _operationParameters op)
         let requestBody = resolveRequestBody comps (_operationRequestBody op)
         let (responses, defaultResponse) = resolveResponses comps (_operationResponses op)
         let tags = InsOrdHashSet.toList (_operationTags op)
         let security = resolveSecurity globalSec (_operationSecurity op)
+        let pathText = T.pack p
+        let isStreaming = detectStreaming responses
+        let timeout = lookupTimeout exts pathText method
         pure
             HOT.ResolvedOperation
                 { HOT.roMethod = method
-                , HOT.roPath = T.pack p
+                , HOT.roPath = pathText
                 , HOT.roOperationId = _operationOperationId op
                 , HOT.roTags = tags
                 , HOT.roParameters = params
@@ -120,7 +155,23 @@ resolvePathItem components globalSecurity path item =
                 , HOT.roResponses = responses
                 , HOT.roDefaultResponse = defaultResponse
                 , HOT.roSecurity = security
+                , HOT.roIsStreaming = isStreaming
+                , HOT.roTimeout = timeout
                 }
+
+-- | Detect if any success response (2xx) has streaming content types
+detectStreaming :: Map Int HOT.ResponseSpec -> Bool
+detectStreaming responses =
+    any hasStreamingContent successResponses
+  where
+    successResponses = Map.filterWithKey (\code _ -> code >= 200 && code < 300) responses
+    hasStreamingContent spec =
+        any HOT.isStreamingContentType (Map.keys (HOT.rsContent spec))
+
+-- | Look up timeout from extensions map
+lookupTimeout :: Map OperationKey OperationExtensions -> Text -> Text -> Maybe Int
+lookupTimeout exts path method =
+    oeTimeout =<< Map.lookup (path, method) exts
 
 resolveSecurity :: [SecurityRequirement] -> [SecurityRequirement] -> [SecurityRequirement]
 resolveSecurity globalSecurity operationSecurity =

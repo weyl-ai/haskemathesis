@@ -62,6 +62,7 @@ authentication settings, and which operations to include.
 * 'tcNegativeTesting' - Whether to generate negative test cases
 * 'tcOperationFilter' - Predicate to filter which operations to test
 * 'tcHeaders' - Global headers to include in every request
+* 'tcStreamingTimeout' - Default timeout for streaming endpoints (milliseconds)
 -}
 data TestConfig = TestConfig
     { tcChecks :: ![Check]
@@ -71,6 +72,27 @@ data TestConfig = TestConfig
     , tcNegativeTesting :: !Bool
     , tcOperationFilter :: !(ResolvedOperation -> Bool)
     , tcHeaders :: ![(HeaderName, ByteString)]
+    , tcStreamingTimeout :: !(Maybe Int)
+    {- ^ Default timeout in milliseconds for streaming endpoints.
+
+    This timeout applies to operations that are detected as streaming
+    (have @text/event-stream@ or @application/x-ndjson@ content types)
+    and don't have an explicit @x-timeout@ set in the OpenAPI spec.
+
+    __Timeout precedence:__
+
+    1. Operation's @x-timeout@ extension (if set)
+    2. 'tcStreamingTimeout' (if operation is streaming)
+    3. No timeout (use HTTP client default)
+
+    __Recommended values:__
+
+    * 500-2000ms for quick test suites
+    * 5000ms or more if you need to capture meaningful streaming data
+
+    Set to 'Nothing' to use the HTTP client's default timeout for
+    streaming endpoints (which may cause tests to hang).
+    -}
     }
 
 {- | Sensible defaults for 'TestConfig'.
@@ -84,6 +106,7 @@ The default configuration:
 * Negative testing disabled
 * All operations included (filter always returns 'True')
 * No global headers
+* 1 second (1000ms) streaming timeout
 -}
 defaultTestConfig :: TestConfig
 defaultTestConfig =
@@ -95,6 +118,7 @@ defaultTestConfig =
         , tcNegativeTesting = False
         , tcOperationFilter = const True
         , tcHeaders = []
+        , tcStreamingTimeout = Just 1000
         }
 
 {- | Create a filter that matches a specific operation ID.

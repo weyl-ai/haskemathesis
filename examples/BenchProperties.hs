@@ -2,6 +2,7 @@
 
 module Main (main) where
 
+import Data.List (foldl')
 import Data.Time.Clock (diffUTCTime, getCurrentTime)
 import Haskemathesis.Check.Standard (allChecks)
 import Haskemathesis.Config (TestConfig (..), defaultTestConfig)
@@ -18,10 +19,10 @@ main = do
         Left err -> error (show err)
         Right s -> pure s
     let cfg = Nothing
-        executor _ = pure (ApiResponse 200 [] "" 0)
+        executor _timeout _req = pure (ApiResponse 200 [] "" 0)
         ops = resolveOperations spec
     start <- getCurrentTime
     let props = propertiesForSpec cfg allChecks executor ops
     end <- getCurrentTime
-    hPutStrLn stderr ("generated properties: " <> show (length props))
+    hPutStrLn stderr ("generated properties: " <> show (foldl' (\n _ -> n + 1) (0 :: Int) props))
     hPutStrLn stderr ("generation time: " <> show (diffUTCTime end start))

@@ -29,7 +29,7 @@ import System.IO.Temp (createTempDirectory, getCanonicalTemporaryDirectory)
 
 import Haskemathesis.CLI.Internal (buildOperationFilter, buildTestConfig, filterByAnyTag, matchesPattern)
 import Haskemathesis.CLI.Options (CurlOptions (..), TestOptions (..), ValidateOptions (..), WorkdirOption (..))
-import Haskemathesis.Execute.Http (executeHttp)
+import Haskemathesis.Execute.Http (executeHttpWithTimeout)
 import Haskemathesis.Execute.Types (BaseUrl)
 import Haskemathesis.OpenApi.Loader (loadOpenApiFile)
 import Haskemathesis.OpenApi.Resolve (resolveOperations)
@@ -84,9 +84,10 @@ runTestCommand opts = do
                 -- Create HTTP manager
                 manager <- newManager tlsManagerSettings
 
-                -- Generate properties
+                -- Generate properties with timeout-aware executor
                 let baseUrl = testBaseUrl opts
-                let props = propertiesForSpecWithConfig spec config (executeHttp manager baseUrl) filteredOps
+                let executor = executeHttpWithTimeout manager baseUrl
+                let props = propertiesForSpecWithConfig spec config executor filteredOps
 
                 -- Run tests
                 results <- mapM (runProperty baseUrl) props

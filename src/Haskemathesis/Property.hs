@@ -49,6 +49,9 @@ module Haskemathesis.Property (
     propertiesForSpec,
     propertiesForSpecWithConfig,
     propertiesForSpecNegative,
+
+    -- * Timeout Utilities
+    effectiveTimeout,
 )
 where
 
@@ -60,7 +63,7 @@ import Haskemathesis.Check.Negative (negativeTestRejection)
 import Haskemathesis.Check.Standard.Helpers (operationLabel)
 import Haskemathesis.Check.Types (Check (..), CheckResult (..), FailureDetail)
 import Haskemathesis.Config (TestConfig (..))
-import Haskemathesis.Execute.Types (ApiRequest (..), ApiResponse, BaseUrl)
+import Haskemathesis.Execute.Types (ApiRequest (..), ApiResponse, BaseUrl, ExecutorWithTimeout)
 import Haskemathesis.Gen.Negative (genNegativeRequest, renderNegativeMutation)
 import Haskemathesis.Gen.Request (genApiRequest)
 import Haskemathesis.OpenApi.Types (ResolvedOperation (..))
@@ -91,13 +94,14 @@ let prop = propertyForOperation (Just "http://localhost:8080") checks httpExecut
 propertyForOperation ::
     Maybe BaseUrl ->
     [Check] ->
-    (ApiRequest -> IO ApiResponse) ->
+    ExecutorWithTimeout ->
     ResolvedOperation ->
     Property
 propertyForOperation mBase checks execute op =
     property $ do
         req <- forAll (genApiRequest op)
-        res <- evalIO (execute req)
+        -- No config available, so no timeout for basic version
+        res <- evalIO (execute Nothing req)
         runChecks mBase checks req res op
 
 {- | Generate a property with full configuration support including authentication.
@@ -108,12 +112,13 @@ a 'TestConfig' record. It supports:
 * Authentication via 'tcAuthConfig'
 * Custom property counts via 'tcPropertyCount'
 * Operation filtering via 'tcOperationFilter'
+* Automatic timeout handling for streaming endpoints
 
 === Parameters
 
 * @openApi@ - The full OpenAPI specification (needed for auth resolution)
 * @config@ - The 'TestConfig' controlling test generation
-* @execute@ - Function to execute requests
+* @execute@ - Timeout-aware executor (see 'ExecutorWithTimeout')
 * @op@ - The operation to test
 
 === Example
@@ -126,7 +131,7 @@ prop = propertyForOperationWithConfig spec config httpExecutor myOperation
 propertyForOperationWithConfig ::
     OpenApi ->
     TestConfig ->
-    (ApiRequest -> IO ApiResponse) ->
+    ExecutorWithTimeout ->
     ResolvedOperation ->
     Property
 propertyForOperationWithConfig openApi config execute op =
@@ -134,7 +139,8 @@ propertyForOperationWithConfig openApi config execute op =
         property $ do
             req <- forAll (genApiRequest op)
             let req' = applyConfigToRequest openApi config op req
-            res <- evalIO (execute req')
+            let timeout = effectiveTimeout config op
+            res <- evalIO (execute timeout req')
             runChecks (tcBaseUrl config) (tcChecks config) req' res op
 
 {- | Generate a negative testing property for an operation.
@@ -154,7 +160,7 @@ these invalid requests.
 
 * @openApi@ - The full OpenAPI specification
 * @config@ - The 'TestConfig' (negative testing is enabled separately)
-* @execute@ - Function to execute requests
+* @execute@ - Timeout-aware executor
 * @op@ - The operation to test
 
 === Example
@@ -167,7 +173,7 @@ negProp = propertyForOperationNegative spec config httpExecutor myOperation
 propertyForOperationNegative ::
     OpenApi ->
     TestConfig ->
-    (ApiRequest -> IO ApiResponse) ->
+    ExecutorWithTimeout ->
     ResolvedOperation ->
     Property
 propertyForOperationNegative openApi config execute op =
@@ -178,7 +184,8 @@ propertyForOperationNegative openApi config execute op =
                 Nothing -> success
                 Just (req, mutation) -> do
                     let req' = applyConfigToRequest openApi config op req
-                    res <- evalIO (execute req')
+                    let timeout = effectiveTimeout config op
+                    res <- evalIO (execute timeout req')
                     case negativeTestRejection (renderNegativeMutation mutation) req' res op of
                         CheckPassed -> success
                         CheckFailed detail -> reportFailure (tcBaseUrl config) detail
@@ -216,7 +223,7 @@ main = do
 propertiesForSpec ::
     Maybe BaseUrl ->
     [Check] ->
-    (ApiRequest -> IO ApiResponse) ->
+    ExecutorWithTimeout ->
     [ResolvedOperation] ->
     [(Text, Property)]
 propertiesForSpec mBase checks execute ops =
@@ -228,7 +235,8 @@ propertiesForSpec mBase checks execute ops =
 
 This function provides the most flexibility for generating properties.
 It supports authentication, operation filtering, custom check sets,
-and can generate both positive and negative test cases.
+automatic timeout handling for streaming endpoints, and can generate
+both positive and negative test cases.
 
 === Negative Testing
 
@@ -242,11 +250,21 @@ invalid requests.
 Only operations that satisfy 'tcOperationFilter' will have properties
 generated. This is useful for testing subsets of your API.
 
+=== Timeout Handling
+
+Streaming endpoints (SSE, NDJSON) are automatically detected and
+tested with timeouts to prevent tests from hanging. The timeout
+is determined by (in order of precedence):
+
+1. Operation's @x-timeout@ extension (if set in OpenAPI spec)
+2. 'tcStreamingTimeout' from config (if operation is streaming)
+3. No timeout (for non-streaming operations without @x-timeout@)
+
 === Parameters
 
 * @openApi@ - The full OpenAPI specification (needed for auth resolution)
 * @config@ - The 'TestConfig' controlling all aspects of generation
-* @execute@ - Function to execute requests
+* @execute@ - Timeout-aware executor (see 'ExecutorWithTimeout')
 * @ops@ - List of resolved operations
 
 === Example
@@ -263,7 +281,7 @@ props = propertiesForSpecWithConfig spec config httpExecutor ops
 propertiesForSpecWithConfig ::
     OpenApi ->
     TestConfig ->
-    (ApiRequest -> IO ApiResponse) ->
+    ExecutorWithTimeout ->
     [ResolvedOperation] ->
     [(Text, Property)]
 propertiesForSpecWithConfig openApi config execute ops =
@@ -299,7 +317,7 @@ invalid requests (mutations that violate the OpenAPI schema).
 
 * @openApi@ - The full OpenAPI specification
 * @config@ - The 'TestConfig' (negative testing flag is ignored, always enabled)
-* @execute@ - Function to execute requests
+* @execute@ - Timeout-aware executor
 * @ops@ - List of resolved operations
 
 === Example
@@ -312,7 +330,7 @@ negativeProps = propertiesForSpecNegative spec defaultConfig httpExecutor ops
 propertiesForSpecNegative ::
     OpenApi ->
     TestConfig ->
-    (ApiRequest -> IO ApiResponse) ->
+    ExecutorWithTimeout ->
     [ResolvedOperation] ->
     [(Text, Property)]
 propertiesForSpecNegative openApi config =
@@ -351,3 +369,38 @@ runChecks mBase checks req res op =
         case [detail | Check{checkRun = run} <- checks, CheckFailed detail <- [run req res op]] of
             [] -> Nothing
             (detail : _) -> Just detail
+
+{- | Compute the effective timeout for an operation.
+
+This function determines the appropriate timeout to use for an operation
+based on the following precedence:
+
+1. __Operation's @x-timeout@__: If the OpenAPI spec has @x-timeout@ set
+   on the operation, that value is used (in milliseconds).
+
+2. __Config's streaming timeout__: If the operation is detected as
+   streaming (has @text/event-stream@ or @application/x-ndjson@ content
+   types), the 'tcStreamingTimeout' from config is used.
+
+3. __No timeout__: For non-streaming operations without @x-timeout@,
+   'Nothing' is returned (use HTTP client default).
+
+=== Example
+
+@
+let timeout = effectiveTimeout config operation
+-- timeout is Just 2000 if x-timeout: 2000 in spec
+-- timeout is Just 1000 if streaming with default config
+-- timeout is Nothing for normal operations
+@
+-}
+effectiveTimeout :: TestConfig -> ResolvedOperation -> Maybe Int
+effectiveTimeout config op =
+    case roTimeout op of
+        -- Explicit x-timeout takes precedence
+        Just t -> Just t
+        Nothing
+            -- Streaming operations use config timeout
+            | roIsStreaming op -> tcStreamingTimeout config
+            -- Non-streaming: no timeout
+            | otherwise -> Nothing

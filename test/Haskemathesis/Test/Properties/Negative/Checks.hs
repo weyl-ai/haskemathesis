@@ -94,7 +94,8 @@ prop_negative_properties_enabled =
     property $ do
         let op = emptyOperation
             config = defaultTestConfig{tcNegativeTesting = True}
-            props = propertiesForSpecWithConfig mempty config (const (pure (ApiResponse 400 [] "" 0))) [op]
+            dummyExecutor _timeout _req = pure (ApiResponse 400 [] "" 0)
+            props = propertiesForSpecWithConfig mempty config dummyExecutor [op]
         assert (any (T.isPrefixOf "NEGATIVE:" . fst) props)
 
 prop_negative_properties_disabled :: Property
@@ -102,5 +103,6 @@ prop_negative_properties_disabled =
     property $ do
         let op = emptyOperation
             config = defaultTestConfig{tcNegativeTesting = False}
-            props = propertiesForSpecWithConfig mempty config (const (pure (ApiResponse 400 [] "" 0))) [op]
+            dummyExecutor _timeout _req = pure (ApiResponse 400 [] "" 0)
+            props = propertiesForSpecWithConfig mempty config dummyExecutor [op]
         assert (not (any (T.isPrefixOf "NEGATIVE:" . fst) props))

@@ -8,7 +8,7 @@ import Network.Wai (Application, responseLBS)
 import Test.Tasty (defaultMain)
 
 import Haskemathesis.Check.Standard (allChecks)
-import Haskemathesis.Execute.Wai (executeWai)
+import Haskemathesis.Execute.Wai (executeWaiWithTimeout)
 import Haskemathesis.Integration.Tasty (testTreeForExecutor)
 import Haskemathesis.OpenApi.Loader (loadOpenApiFile)
 import Haskemathesis.OpenApi.Resolve (resolveOperations)
@@ -19,7 +19,7 @@ main = do
     case specResult of
         Left err -> error (show err)
         Right spec ->
-            defaultMain (testTreeForExecutor Nothing allChecks (executeWai app) (resolveOperations spec))
+            defaultMain (testTreeForExecutor Nothing allChecks (executeWaiWithTimeout app) (resolveOperations spec))
 
 app :: Application
 app _request respond =

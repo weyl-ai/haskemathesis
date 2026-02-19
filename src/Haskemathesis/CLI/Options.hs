@@ -48,11 +48,23 @@ data TestOptions = TestOptions
     , testSeed :: !(Maybe Int)
     -- ^ Random seed for reproducible tests
     , testTimeout :: !(Maybe Int)
-    -- ^ Request timeout in seconds
+    -- ^ Request timeout in seconds (unused, kept for compatibility)
     , testWorkers :: !Int
     -- ^ Number of parallel workers (default: 1)
     , testWorkdir :: !WorkdirOption
     -- ^ Working directory for tests (to isolate side effects)
+    , testStreamingTimeout :: !(Maybe Int)
+    {- ^ Default timeout in milliseconds for streaming endpoints (SSE, NDJSON).
+
+    Streaming endpoints never complete normally, so a timeout is required
+    to prevent tests from hanging. This is the default timeout applied to
+    operations detected as streaming (by content-type) that don't have an
+    explicit @x-timeout@ set in the OpenAPI spec.
+
+    Default: 1000ms (1 second)
+
+    Set to 'Nothing' to disable timeout (may cause hangs with streaming APIs).
+    -}
     }
     deriving (Eq, Show)
 
@@ -115,4 +127,5 @@ defaultTestOptions =
         , testTimeout = Nothing
         , testWorkers = 1
         , testWorkdir = WorkdirTemp
+        , testStreamingTimeout = Just 1000
         }

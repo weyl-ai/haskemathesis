@@ -23,6 +23,7 @@ main = do
 -}
 module Haskemathesis.Execute.Wai (
     executeWai,
+    executeWaiWithTimeout,
 )
 where
 
@@ -98,3 +99,21 @@ toWaiRequest req =
         , rawQueryString = LBS.toStrict (toLazyByteString (renderQueryText True (map queryToMaybe (reqQueryParams req))))
         , requestHeaders = contentTypeHeaders req ++ reqHeaders req
         }
+
+{- | Execute a request against a WAI application (timeout-aware interface).
+
+This is a wrapper around 'executeWai' that conforms to the 'ExecutorWithTimeout'
+type. The timeout parameter is __ignored__ because WAI testing is synchronous
+and in-memory - there's no network to timeout.
+
+Use this when you need to test a WAI application with functions that expect
+an 'ExecutorWithTimeout'.
+
+=== Parameters
+
+* @app@ - The WAI 'Application' to test
+* @_timeout@ - Ignored (WAI is synchronous)
+* @req@ - The 'ApiRequest' to execute
+-}
+executeWaiWithTimeout :: Application -> Maybe Int -> ApiRequest -> IO ApiResponse
+executeWaiWithTimeout app _timeout = executeWai app

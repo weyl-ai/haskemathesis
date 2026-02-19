@@ -77,9 +77,9 @@ import qualified Data.Text as T
 import Haskemathesis.Check.Standard.Helpers (operationLabel)
 import Haskemathesis.Check.Types (Check)
 import Haskemathesis.Config (TestConfig (..))
-import Haskemathesis.Execute.Http (executeHttp)
-import Haskemathesis.Execute.Types (ApiRequest, ApiResponse, BaseUrl)
-import Haskemathesis.Execute.Wai (executeWai)
+import Haskemathesis.Execute.Http (executeHttpWithTimeout)
+import Haskemathesis.Execute.Types (BaseUrl, ExecutorWithTimeout)
+import Haskemathesis.Execute.Wai (executeWaiWithTimeout)
 import Haskemathesis.OpenApi.Resolve (resolveOperations)
 import Haskemathesis.OpenApi.Types (ResolvedOperation (..))
 import Haskemathesis.Property (propertyForOperation, propertyForOperationWithConfig)
@@ -113,7 +113,7 @@ tests = testTreeForExecutor Nothing defaultChecks myExecutor ops
 testTreeForExecutor ::
     Maybe BaseUrl ->
     [Check] ->
-    (ApiRequest -> IO ApiResponse) ->
+    ExecutorWithTimeout ->
     [ResolvedOperation] ->
     TestTree
 testTreeForExecutor mBase checks execute ops =
@@ -159,7 +159,7 @@ testTreeForApp ::
     Application ->
     TestTree
 testTreeForApp mBase checks openApi app =
-    testTreeForExecutor mBase checks (executeWai app) (resolveOperations openApi)
+    testTreeForExecutor mBase checks (executeWaiWithTimeout app) (resolveOperations openApi)
 
 {- | Create a Tasty 'TestTree' with full configuration support.
 
@@ -188,7 +188,7 @@ tests = testTreeForExecutorWithConfig spec config executor ops
 testTreeForExecutorWithConfig ::
     OpenApi ->
     TestConfig ->
-    (ApiRequest -> IO ApiResponse) ->
+    ExecutorWithTimeout ->
     [ResolvedOperation] ->
     TestTree
 testTreeForExecutorWithConfig openApi config execute ops =
@@ -224,7 +224,7 @@ testTreeForAppWithConfig ::
     Application ->
     TestTree
 testTreeForAppWithConfig config openApi app =
-    testTreeForExecutorWithConfig openApi config (executeWai app) (resolveOperations openApi)
+    testTreeForExecutorWithConfig openApi config (executeWaiWithTimeout app) (resolveOperations openApi)
 
 {- | Create a Tasty 'TestTree' for testing a running HTTP server.
 
@@ -259,7 +259,7 @@ testTreeForUrl ::
     TestTree
 testTreeForUrl config openApi manager baseUrl =
     let config' = config{tcBaseUrl = Just baseUrl}
-     in testTreeForExecutorWithConfig openApi config' (executeHttp manager baseUrl) (resolveOperations openApi)
+     in testTreeForExecutorWithConfig openApi config' (executeHttpWithTimeout manager baseUrl) (resolveOperations openApi)
 
 {- | Create a Tasty 'TestTree' for negative testing with a custom executor.
 
@@ -283,7 +283,7 @@ negTests = testTreeForExecutorNegative spec config executor ops
 testTreeForExecutorNegative ::
     OpenApi ->
     TestConfig ->
-    (ApiRequest -> IO ApiResponse) ->
+    ExecutorWithTimeout ->
     [ResolvedOperation] ->
     TestTree
 testTreeForExecutorNegative openApi config execute ops =
@@ -313,7 +313,7 @@ testTreeForAppNegative ::
     Application ->
     TestTree
 testTreeForAppNegative config openApi app =
-    testTreeForExecutorNegative openApi config (executeWai app) (resolveOperations openApi)
+    testTreeForExecutorNegative openApi config (executeWaiWithTimeout app) (resolveOperations openApi)
 
 {- | Create a Tasty 'TestTree' for negative testing against a live server.
 
@@ -347,4 +347,4 @@ testTreeForUrlNegative ::
     BaseUrl ->
     TestTree
 testTreeForUrlNegative config openApi manager baseUrl =
-    testTreeForExecutorNegative openApi (config{tcBaseUrl = Just baseUrl}) (executeHttp manager baseUrl) (resolveOperations openApi)
+    testTreeForExecutorNegative openApi (config{tcBaseUrl = Just baseUrl}) (executeHttpWithTimeout manager baseUrl) (resolveOperations openApi)

@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE StrictData #-}
 
 {- | Load OpenAPI specs from YAML or JSON files.
 
@@ -50,17 +51,24 @@ to be loaded by the openapi3 library which only supports OpenAPI 3.0.
 -}
 module Haskemathesis.OpenApi.Loader (
     loadOpenApiFile,
+    loadOpenApiFileWithExtensions,
+    OperationExtensions (..),
+    OperationKey,
 
     -- * Internal (exported for testing)
     transformOpenApi31To30,
+    extractOperationExtensions,
 )
 where
 
 import Data.Aeson (Result (..), Value (..), fromJSON)
 import Data.Aeson.Key (Key)
+import qualified Data.Aeson.Key as Key
 import qualified Data.Aeson.KeyMap as KM
+import Data.Map.Strict (Map)
+import qualified Data.Map.Strict as Map
 import Data.OpenApi (OpenApi)
-import Data.Scientific (isInteger)
+import Data.Scientific (isInteger, toBoundedInteger)
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Vector as V
@@ -171,3 +179,122 @@ transformOpenApi31To30 = transformValue
 
     openapiKey :: Key
     openapiKey = "openapi"
+
+{- | Vendor extensions extracted from an OpenAPI operation.
+
+These extensions are non-standard fields (prefixed with @x-@) that
+Haskemathesis recognizes for controlling test behavior.
+
+=== Supported Extensions
+
+[@x-timeout@] Request timeout in milliseconds. Useful for:
+
+    * Streaming endpoints (SSE, NDJSON) that never complete
+    * Slow endpoints that need longer than default timeout
+    * Fast endpoints where you want to fail quickly
+
+    Example in OpenAPI spec:
+
+    @
+    \/events:
+      get:
+        x-timeout: 2000  # 2 second timeout
+        responses:
+          "200":
+            content:
+              text/event-stream: {}
+    @
+
+=== Why Use Extensions?
+
+OpenAPI 3.x doesn't have a standard way to specify:
+
+* Request timeouts
+* Streaming behavior hints
+* Test-specific configuration
+
+Vendor extensions (x-* fields) are the OpenAPI-sanctioned way to add
+such metadata while remaining spec-compliant.
+-}
+newtype OperationExtensions = OperationExtensions
+    { oeTimeout :: Maybe Int
+    -- ^ Request timeout in milliseconds from @x-timeout@
+    }
+    deriving (Eq, Show)
+
+-- | Key for looking up operation extensions: (path, method)
+type OperationKey = (Text, Text)
+
+{- | Load an OpenAPI spec along with vendor extensions.
+
+This function returns both the parsed OpenAPI spec and a map of
+vendor extensions for each operation, keyed by (path, method).
+
+=== Example
+
+@
+result <- loadOpenApiFileWithExtensions "api.yaml"
+case result of
+    Left err -> putStrLn $ "Error: " ++ T.unpack err
+    Right (spec, extensions) -> do
+        -- Look up timeout for GET /events
+        let key = ("/events", "GET")
+        case Map.lookup key extensions of
+            Just ext -> print (oeTimeout ext)
+            Nothing -> putStrLn "No extensions"
+@
+-}
+loadOpenApiFileWithExtensions ::
+    FilePath ->
+    IO (Either Text (OpenApi, Map OperationKey OperationExtensions))
+loadOpenApiFileWithExtensions path = do
+    result <- decodeFileEither path
+    pure $ case result of
+        Left err -> Left (T.pack (prettyPrintParseException err))
+        Right value ->
+            let transformed = transformOpenApi31To30 value
+                extensions = extractOperationExtensions value
+             in case fromJSON transformed of
+                    Error err' -> Left (T.pack err')
+                    Success spec -> Right (spec, extensions)
+
+{- | Extract vendor extensions from all operations in a raw OpenAPI JSON value.
+
+This function walks the paths and operations in the raw JSON to extract
+x-* fields before they are discarded by the openapi3 library parser.
+
+Returns a map from (path, method) to the extracted extensions.
+-}
+extractOperationExtensions :: Value -> Map OperationKey OperationExtensions
+extractOperationExtensions (Object root) =
+    case KM.lookup "paths" root of
+        Just (Object paths) ->
+            Map.fromList
+                [ ((path, method), ext)
+                | (pathKey, Object pathItem) <- KM.toList paths
+                , let path = Key.toText pathKey
+                , (methodKey, Object operation) <- KM.toList pathItem
+                , let method = T.toUpper (Key.toText methodKey)
+                , method `elem` httpMethods
+                , let ext = extractExtensionsFromOperation operation
+                ]
+        _noPaths -> Map.empty
+extractOperationExtensions _notObject = Map.empty
+
+-- | HTTP methods to look for in path items
+httpMethods :: [Text]
+httpMethods = ["GET", "PUT", "POST", "DELETE", "OPTIONS", "HEAD", "PATCH", "TRACE"]
+
+-- | Extract extensions from a single operation object
+extractExtensionsFromOperation :: KM.KeyMap Value -> OperationExtensions
+extractExtensionsFromOperation op =
+    OperationExtensions
+        { oeTimeout = extractTimeout op
+        }
+
+-- | Extract x-timeout as milliseconds (Int)
+extractTimeout :: KM.KeyMap Value -> Maybe Int
+extractTimeout op =
+    case KM.lookup "x-timeout" op of
+        Just (Number n) -> toBoundedInteger n
+        _notNumber -> Nothing

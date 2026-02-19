@@ -58,6 +58,7 @@ buildTestConfig opts =
         , tcNegativeTesting = testNegative opts
         , tcOperationFilter = const True
         , tcHeaders = buildHeaders opts
+        , tcStreamingTimeout = testStreamingTimeout opts
         }
 
 -- | Build global headers from CLI options.
