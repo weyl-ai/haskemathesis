@@ -211,7 +211,7 @@ propResolvesNdjsonAsStreaming = property $ do
     let resolved = resolveOperations makeNdjsonOpenApi
     case resolved of
         [resolvedOp] -> assert (roIsStreaming resolvedOp)
-        _ -> assert False
+        _unexpectedValue -> assert False
 
 -- | Operations with application/json response should NOT be marked as streaming
 propResolvesJsonAsNonStreaming :: Property
@@ -219,7 +219,7 @@ propResolvesJsonAsNonStreaming = property $ do
     let resolved = resolveOperations makeJsonOpenApi
     case resolved of
         [resolvedOp] -> assert (not (roIsStreaming resolvedOp))
-        _ -> assert False
+        _unexpectedValue -> assert False
 
 {- | Streaming should be detected even when schema uses $ref
 This is a regression test for a bug where schemas with $ref would

@@ -58,8 +58,8 @@ propStringMinLength = property $ do
     let schema = emptySchema{schemaType = Just SString, schemaMinLength = Just minLen}
     value <- forAll $ genString schema
     case value of
-        String txt -> assert $ T.length txt >= minLen
-        _ -> assert False
+        String txt -> assert $ T.compareLength txt minLen /= LT
+        _unexpectedValue -> assert False
 
 propStringMaxLength :: Property
 propStringMaxLength = property $ do
@@ -67,8 +67,8 @@ propStringMaxLength = property $ do
     let schema = emptySchema{schemaType = Just SString, schemaMaxLength = Just maxLen}
     value <- forAll $ genString schema
     case value of
-        String txt -> assert $ T.length txt <= maxLen
-        _ -> assert False
+        String txt -> assert $ T.compareLength txt maxLen /= GT
+        _unexpectedValue -> assert False
 
 propStringBothLengths :: Property
 propStringBothLengths = property $ do
@@ -83,9 +83,9 @@ propStringBothLengths = property $ do
     value <- forAll $ genString schema
     case value of
         String txt -> do
-            annotateShow (T.length txt)
-            assert $ T.length txt >= minLen && T.length txt <= maxLen
-        _ -> assert False
+            annotateShow (T.length txt) -- OK for debugging, not performance critical
+            assert $ T.compareLength txt minLen /= LT && T.compareLength txt maxLen /= GT
+        _unexpectedValue -> assert False
 
 -- Integer properties
 
@@ -96,7 +96,7 @@ propIntegerMinimum = property $ do
     value <- forAll $ genInteger schema
     case value of
         Number n -> assert $ (toRealFloat n :: Double) >= fromIntegral minVal
-        _ -> assert False
+        _unexpectedValue -> assert False
 
 propIntegerMaximum :: Property
 propIntegerMaximum = property $ do
@@ -105,7 +105,7 @@ propIntegerMaximum = property $ do
     value <- forAll $ genInteger schema
     case value of
         Number n -> assert $ (toRealFloat n :: Double) <= fromIntegral maxVal
-        _ -> assert False
+        _unexpectedValue -> assert False
 
 propIntegerExclusiveMin :: Property
 propIntegerExclusiveMin = property $ do
@@ -114,7 +114,7 @@ propIntegerExclusiveMin = property $ do
     value <- forAll $ genInteger schema
     case value of
         Number n -> assert $ (toRealFloat n :: Double) > fromIntegral minVal
-        _ -> assert False
+        _unexpectedValue -> assert False
 
 propIntegerExclusiveMax :: Property
 propIntegerExclusiveMax = property $ do
@@ -123,7 +123,7 @@ propIntegerExclusiveMax = property $ do
     value <- forAll $ genInteger schema
     case value of
         Number n -> assert $ (toRealFloat n :: Double) < fromIntegral maxVal
-        _ -> assert False
+        _unexpectedValue -> assert False
 
 -- Number properties
 
@@ -134,7 +134,7 @@ propNumberMinimum = property $ do
     value <- forAll $ genNumber schema
     case value of
         Number n -> assert $ toRealFloat n >= minVal
-        _ -> assert False
+        _unexpectedValue -> assert False
 
 propNumberMaximum :: Property
 propNumberMaximum = property $ do
@@ -143,7 +143,7 @@ propNumberMaximum = property $ do
     value <- forAll $ genNumber schema
     case value of
         Number n -> assert $ toRealFloat n <= maxVal
-        _ -> assert False
+        _unexpectedValue -> assert False
 
 propNumberExclusiveMin :: Property
 propNumberExclusiveMin = property $ do
@@ -152,7 +152,7 @@ propNumberExclusiveMin = property $ do
     value <- forAll $ genNumber schema
     case value of
         Number n -> assert $ toRealFloat n > minVal
-        _ -> assert False
+        _unexpectedValue -> assert False
 
 propNumberExclusiveMax :: Property
 propNumberExclusiveMax = property $ do
@@ -161,7 +161,7 @@ propNumberExclusiveMax = property $ do
     value <- forAll $ genNumber schema
     case value of
         Number n -> assert $ toRealFloat n < maxVal
-        _ -> assert False
+        _unexpectedValue -> assert False
 
 -- Boolean properties
 
@@ -171,7 +171,7 @@ propBooleanValid = property $ do
     value <- forAll $ genBoolean schema
     case value of
         Bool _ -> assert True
-        _ -> assert False
+        _unexpectedValue -> assert False
 
 -- ConstOrEnum properties
 

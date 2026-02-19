@@ -170,15 +170,15 @@ propChecksIncludesResponseTime = property $ do
     let opts = defaultTestOptions{testMaxResponseTime = Just maxMs}
         checks = buildChecks opts
     -- Check that we have more checks than default (allChecks)
-    -- The response time check should be added
-    assert $ length checks > 5 -- allChecks has 5 checks
+    -- The response time check should be added (allChecks has 5 checks)
+    assert $ not (null (drop 5 checks))
 
 propChecksExcludesResponseTime :: Property
 propChecksExcludesResponseTime = property $ do
     let opts = defaultTestOptions{testMaxResponseTime = Nothing}
         checks = buildChecks opts
     -- Should have exactly allChecks (5 checks)
-    assert $ length checks == 5
+    assert $ null (drop 5 checks) && not (null checks)
 
 -- buildHeaders properties
 

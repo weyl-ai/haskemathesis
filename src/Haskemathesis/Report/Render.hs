@@ -31,12 +31,14 @@ module Haskemathesis.Report.Render (
 )
 where
 
+import qualified Data.ByteString as BS
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Text.Encoding (decodeUtf8)
+import Data.Text.Encoding (decodeUtf8, decodeUtf8')
 import Haskemathesis.Check.Types (FailureDetail (..))
 import Haskemathesis.Execute.Types (ApiRequest (..), ApiResponse (..), BaseUrl)
 import Haskemathesis.Report.Curl (toCurl)
+import Network.HTTP.Types (hContentType)
 
 {- | Render a failure detail as plain text.
 
@@ -142,7 +144,29 @@ renderRequest req =
 
 renderResponse :: ApiResponse -> Text
 renderResponse res =
-    "status=" <> T.pack (show (resStatusCode res))
+    T.intercalate ", " $
+        ["status=" <> T.pack (show (resStatusCode res))]
+            <> contentTypePart
+            <> bodyPart
+  where
+    contentTypePart =
+        case lookup hContentType (resHeaders res) of
+            Just ct -> ["content-type=" <> decodeUtf8 ct]
+            Nothing -> []
+    bodyPart =
+        let body = resBody res
+         in ["body=" <> truncateBody 100 body | not (BS.null body)]
+
+-- | Truncate body to a maximum length, showing ellipsis if truncated.
+truncateBody :: Int -> BS.ByteString -> Text
+truncateBody maxLen body =
+    case decodeUtf8' body of
+        Left _ -> "<binary data>"
+        Right txt ->
+            let stripped = T.strip txt
+             in case T.compareLength stripped maxLen of
+                    GT -> T.take maxLen stripped <> "..."
+                    _ -> stripped
 
 renderQuery :: [(Text, Text)] -> Text
 renderQuery [] = ""

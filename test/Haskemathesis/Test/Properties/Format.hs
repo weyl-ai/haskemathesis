@@ -54,8 +54,8 @@ propIPv4ValidFormat = property $ do
         String txt -> do
             let parts = T.splitOn "." txt
             annotateShow parts
-            assert $ length parts == 4
-        _ -> assert False
+            assert $ length parts == (4 :: Int)
+        _unexpectedValue -> assert False
 
 propIPv4ValidOctets :: Property
 propIPv4ValidOctets = property $ do
@@ -66,7 +66,7 @@ propIPv4ValidOctets = property $ do
                 octets = map (readMaybe . T.unpack) parts :: [Maybe Int]
             annotateShow octets
             assert $ all isValidOctet octets
-        _ -> assert False
+        _unexpectedValue -> assert False
   where
     isValidOctet :: Maybe Int -> Bool
     isValidOctet (Just n) = n >= 0 && n <= 255
@@ -81,8 +81,8 @@ propIPv6ValidFormat = property $ do
         String txt -> do
             let parts = T.splitOn ":" txt
             annotateShow parts
-            assert $ length parts == 8
-        _ -> assert False
+            assert $ length parts == (8 :: Int)
+        _unexpectedValue -> assert False
 
 propIPv6ValidHex :: Property
 propIPv6ValidHex = property $ do
@@ -92,8 +92,8 @@ propIPv6ValidHex = property $ do
             let parts = T.splitOn ":" txt
             annotateShow parts
             -- Each part should be 4 hex characters
-            assert $ all (\p -> T.length p == 4 && T.all isHexChar p) parts
-        _ -> assert False
+            assert $ all (\p -> T.compareLength p 4 == EQ && T.all isHexChar p) parts
+        _unexpectedValue -> assert False
   where
     isHexChar :: Char -> Bool
     isHexChar c = c `elem` ("0123456789abcdef" :: String)
@@ -109,7 +109,7 @@ propByteValidBase64 = property $ do
             let validChars = T.all isBase64Char txt
             annotateShow txt
             assert validChars
-        _ -> assert False
+        _unexpectedValue -> assert False
   where
     isBase64Char :: Char -> Bool
     isBase64Char c =
@@ -127,7 +127,7 @@ propByteDecodes = property $ do
                 Left err -> do
                     annotateShow err
                     assert False
-        _ -> assert False
+        _unexpectedValue -> assert False
 
 -- URI properties
 
@@ -139,14 +139,14 @@ propURIValidFormat = property $ do
             annotateShow txt
             -- Should be a valid-looking URI
             assert $ T.isPrefixOf "https://" txt
-        _ -> assert False
+        _unexpectedValue -> assert False
 
 propURIStartsWithHttps :: Property
 propURIStartsWithHttps = property $ do
     value <- forAll genURI
     case value of
         String txt -> assert $ T.isPrefixOf "https://example.com/" txt
-        _ -> assert False
+        _unexpectedValue -> assert False
 
 -- UUID properties
 
@@ -158,8 +158,8 @@ propUUIDValidFormat = property $ do
             let parts = T.splitOn "-" txt
             annotateShow parts
             -- UUID has 5 parts: 8-4-4-4-12
-            assert $ length parts == 5
-        _ -> assert False
+            assert $ length parts == (5 :: Int)
+        _unexpectedValue -> assert False
 
 propUUIDSegmentLengths :: Property
 propUUIDSegmentLengths = property $ do
@@ -171,4 +171,4 @@ propUUIDSegmentLengths = property $ do
                 actualLengths = map T.length parts
             annotateShow (zip expectedLengths actualLengths)
             assert $ actualLengths == expectedLengths
-        _ -> assert False
+        _unexpectedValue -> assert False

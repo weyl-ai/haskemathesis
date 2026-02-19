@@ -179,17 +179,6 @@ executable haskemathesis-hspec-negative-example
 
   default-language: Haskell2010
 
-executable bench-properties
-  main-is:          BenchProperties.hs
-  hs-source-dirs:   examples
-  build-depends:
-    , base
-    , bytestring     >=0.11 && <0.13
-    , haskemathesis
-    , time
-
-  default-language: Haskell2010
-
 executable haskemathesis-tasty-example
   import:           warnings
   main-is:          TastyExample.hs

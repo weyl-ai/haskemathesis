@@ -58,6 +58,7 @@ where
 import Data.OpenApi (OpenApi)
 import Data.Text (Text)
 import qualified Data.Text as T
+import GHC.Stack (withFrozenCallStack)
 import Haskemathesis.Auth.Config (applyAuthForOperation)
 import Haskemathesis.Check.Negative (negativeTestRejection)
 import Haskemathesis.Check.Standard.Helpers (operationLabel)
@@ -68,8 +69,8 @@ import Haskemathesis.Gen.Negative (genNegativeRequest, renderNegativeMutation)
 import Haskemathesis.Gen.Request (genApiRequest)
 import Haskemathesis.OpenApi.Types (ResolvedOperation (..))
 import Haskemathesis.Report.Render (renderFailureDetailAnsi)
-import Hedgehog (Property, annotate, evalIO, failure, forAll, property, success, withTests)
-import Hedgehog.Internal.Property (PropertyT)
+import Hedgehog (Gen, Property, evalIO, failure, forAll, property, success, withTests)
+import Hedgehog.Internal.Property (PropertyT, footnote)
 import System.Environment (lookupEnv)
 
 {- | Generate a Hedgehog property for a single operation using basic configuration.
@@ -99,7 +100,7 @@ propertyForOperation ::
     Property
 propertyForOperation mBase checks execute op =
     property $ do
-        req <- forAll (genApiRequest op)
+        req <- forAllNoLoc (genApiRequest op)
         -- No config available, so no timeout for basic version
         res <- evalIO (execute Nothing req)
         runChecks mBase checks req res op
@@ -137,7 +138,7 @@ propertyForOperationWithConfig ::
 propertyForOperationWithConfig openApi config execute op =
     withTests (fromIntegral (tcPropertyCount config)) $
         property $ do
-            req <- forAll (genApiRequest op)
+            req <- forAllNoLoc (genApiRequest op)
             let req' = applyConfigToRequest openApi config op req
             let timeout = effectiveTimeout config op
             res <- evalIO (execute timeout req')
@@ -179,7 +180,7 @@ propertyForOperationNegative ::
 propertyForOperationNegative openApi config execute op =
     withTests (fromIntegral (tcPropertyCount config)) $
         property $ do
-            mReq <- forAll (genNegativeRequest op)
+            mReq <- forAllNoLoc (genNegativeRequest op)
             case mReq of
                 Nothing -> success
                 Just (req, mutation) -> do
@@ -344,13 +345,16 @@ applyConfigToRequest openApi config op req =
             Just auth -> applyAuthForOperation openApi auth op req
      in reqAuth{reqHeaders = tcHeaders config ++ reqHeaders reqAuth}
 
--- | Internal helper to report a failure with seed and details.
+{- | Internal helper to report a failure with seed and details.
+Uses footnote instead of annotate to avoid showing source location in output.
+Uses withFrozenCallStack to hide internal library locations from failure call.
+-}
 reportFailure :: Maybe BaseUrl -> FailureDetail -> PropertyT IO ()
 reportFailure mBase detail = do
     mSeed <- evalIO (lookupEnv "HEDGEHOG_SEED")
     let seedText = T.pack <$> mSeed
-    annotate (T.unpack (renderFailureDetailAnsi mBase seedText detail))
-    failure
+    footnote (T.unpack (renderFailureDetailAnsi mBase seedText detail))
+    withFrozenCallStack failure
 
 -- | Internal helper to run all checks and report first failure.
 runChecks ::
@@ -404,3 +408,10 @@ effectiveTimeout config op =
             | roIsStreaming op -> tcStreamingTimeout config
             -- Non-streaming: no timeout
             | otherwise -> Nothing
+
+{- | Internal helper: forAll with frozen call stack.
+This hides internal library source locations from Hedgehog output
+while still showing the generated value.
+-}
+forAllNoLoc :: (Monad m, Show a) => Gen a -> PropertyT m a
+forAllNoLoc gen = withFrozenCallStack (forAll gen)

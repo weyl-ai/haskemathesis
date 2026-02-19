@@ -3,15 +3,14 @@
 module Main (main) where
 
 import qualified Data.ByteString.Lazy as LBS
-import Network.HTTP.Types (hContentType, status200)
-import Network.Wai (Application, responseLBS)
-import Test.Hspec (hspec)
-
 import Haskemathesis.Check.Standard (allChecks)
 import Haskemathesis.Execute.Wai (executeWaiWithTimeout)
 import Haskemathesis.Integration.Hspec (specForExecutor)
 import Haskemathesis.OpenApi.Loader (loadOpenApiFile)
 import Haskemathesis.OpenApi.Resolve (resolveOperations)
+import Network.HTTP.Types (hContentType, status200)
+import Network.Wai (Application, responseLBS)
+import Test.Hspec (hspec)
 
 main :: IO ()
 main = do
