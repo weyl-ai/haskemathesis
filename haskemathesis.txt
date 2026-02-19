@@ -215,6 +215,12 @@ type MediaType = Text
 -- | Base URL for the API as a text string (e.g.,
 --   "<a>http://localhost:8080")</a>.
 type BaseUrl = Text
+
+-- | Extract Content-Type header from request body if present.
+contentTypeHeaders :: ApiRequest -> [(HeaderName, ByteString)]
+
+-- | Convert a key-value pair to query format with Maybe value.
+queryToMaybe :: (Text, Text) -> (Text, Maybe Text)
 instance GHC.Classes.Eq Haskemathesis.Execute.Types.ApiRequest
 instance GHC.Classes.Eq Haskemathesis.Execute.Types.ApiResponse
 instance GHC.Internal.Show.Show Haskemathesis.Execute.Types.ApiRequest
@@ -1273,75 +1279,6 @@ renderFailureDetail :: Maybe BaseUrl -> Maybe Text -> FailureDetail -> Text
 renderFailureDetailAnsi :: Maybe BaseUrl -> Maybe Text -> FailureDetail -> Text
 
 
--- | Checks that assert negative (invalid) requests are rejected.
---   
---   This module provides checks for negative testing, which verifies that
---   the API properly rejects invalid requests. Negative tests generate
---   mutations that violate the OpenAPI schema (e.g., missing required
---   fields, wrong content types, invalid values) and verify the API
---   returns a 4xx status code.
---   
---   <h3>When to Use</h3>
---   
---   Use negative testing when you want to verify:
---   
---   <ul>
---   <li>Input validation is working correctly</li>
---   <li>Required fields are enforced</li>
---   <li>Content types are validated</li>
---   <li>Invalid values are rejected</li>
---   </ul>
---   
---   <h3>Example</h3>
---   
---   <pre>
---   import Haskemathesis.Check.Negative (negativeTestRejection)
---   import Haskemathesis.Gen.Negative (renderNegativeMutation)
---   
---   -- In a property test
---   result = negativeTestRejection mutationDescription request response operation
---   </pre>
-module Haskemathesis.Check.Negative
-
--- | Check that a negative test request was properly rejected.
---   
---   This check verifies that the API returned a 4xx status code (client
---   error) for a request that was intentionally made invalid. If the API
---   accepts the invalid request (returns 2xx or 5xx), the check fails.
---   
---   <h3>Parameters</h3>
---   
---   <ul>
---   <li><tt>mutation</tt> - Description of the mutation applied to make
---   the request invalid</li>
---   <li><tt>req</tt> - The mutated <a>ApiRequest</a> that was sent</li>
---   <li><tt>res</tt> - The <a>ApiResponse</a> received from the API</li>
---   <li><tt>op</tt> - The <a>ResolvedOperation</a> being tested</li>
---   </ul>
---   
---   <h3>Return Value</h3>
---   
---   Returns <a>CheckPassed</a> if the response status is 4xx, otherwise
---   returns <a>CheckFailed</a> with details about the failure.
---   
---   <h3>Example</h3>
---   
---   <pre>
---   import Haskemathesis.Gen.Negative (genNegativeRequest, renderNegativeMutation)
---   
---   -- In a property test
---   mReq &lt;- forAll (genNegativeRequest operation)
---   case mReq of
---       Nothing -&gt; success
---       Just (req, mutation) -&gt; do
---           res &lt;- evalIO (execute req)
---           case negativeTestRejection (renderNegativeMutation mutation) req res operation of
---               CheckPassed -&gt; success
---               CheckFailed detail -&gt; ...
---   </pre>
-negativeTestRejection :: Text -> ApiRequest -> ApiResponse -> ResolvedOperation -> CheckResult
-
-
 -- | Authentication configuration and request mutation helpers.
 --   
 --   This module provides types and functions for configuring
@@ -1743,6 +1680,79 @@ genNumber :: Schema -> Gen Value
 --   value &lt;- genBoolean schema
 --   </pre>
 genBoolean :: Schema -> Gen Value
+
+-- | Try to generate from const or enum first, otherwise use the fallback
+--   generator.
+genConstOrEnum :: Schema -> Gen Value -> Gen Value
+
+
+-- | Checks that assert negative (invalid) requests are rejected.
+--   
+--   This module provides checks for negative testing, which verifies that
+--   the API properly rejects invalid requests. Negative tests generate
+--   mutations that violate the OpenAPI schema (e.g., missing required
+--   fields, wrong content types, invalid values) and verify the API
+--   returns a 4xx status code.
+--   
+--   <h3>When to Use</h3>
+--   
+--   Use negative testing when you want to verify:
+--   
+--   <ul>
+--   <li>Input validation is working correctly</li>
+--   <li>Required fields are enforced</li>
+--   <li>Content types are validated</li>
+--   <li>Invalid values are rejected</li>
+--   </ul>
+--   
+--   <h3>Example</h3>
+--   
+--   <pre>
+--   import Haskemathesis.Check.Negative (negativeTestRejection)
+--   import Haskemathesis.Gen.Negative (renderNegativeMutation)
+--   
+--   -- In a property test
+--   result = negativeTestRejection mutationDescription request response operation
+--   </pre>
+module Haskemathesis.Check.Negative
+
+-- | Check that a negative test request was properly rejected.
+--   
+--   This check verifies that the API returned a 4xx status code (client
+--   error) for a request that was intentionally made invalid. If the API
+--   accepts the invalid request (returns 2xx or 5xx), the check fails.
+--   
+--   <h3>Parameters</h3>
+--   
+--   <ul>
+--   <li><tt>mutation</tt> - Description of the mutation applied to make
+--   the request invalid</li>
+--   <li><tt>req</tt> - The mutated <a>ApiRequest</a> that was sent</li>
+--   <li><tt>res</tt> - The <a>ApiResponse</a> received from the API</li>
+--   <li><tt>op</tt> - The <a>ResolvedOperation</a> being tested</li>
+--   </ul>
+--   
+--   <h3>Return Value</h3>
+--   
+--   Returns <a>CheckPassed</a> if the response status is 4xx, otherwise
+--   returns <a>CheckFailed</a> with details about the failure.
+--   
+--   <h3>Example</h3>
+--   
+--   <pre>
+--   import Haskemathesis.Gen.Negative (genNegativeRequest, renderNegativeMutation)
+--   
+--   -- In a property test
+--   mReq &lt;- forAll (genNegativeRequest operation)
+--   case mReq of
+--       Nothing -&gt; success
+--       Just (req, mutation) -&gt; do
+--           res &lt;- evalIO (execute req)
+--           case negativeTestRejection (renderNegativeMutation mutation) req res operation of
+--               CheckPassed -&gt; success
+--               CheckFailed detail -&gt; ...
+--   </pre>
+negativeTestRejection :: Text -> ApiRequest -> ApiResponse -> ResolvedOperation -> CheckResult
 
 
 -- | Validation utilities for JSON values against schemas.

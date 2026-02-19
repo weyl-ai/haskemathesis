@@ -59,25 +59,25 @@ checks = ['contentTypeConformance', 'responseSchemaConformance']
 -&gt; (ApiRequest -&gt; ApiResponse -&gt; ResolvedOperation -&gt; CheckResult)
 -&gt; Check
 forall a b. (a -&gt; b) -&gt; a -&gt; b
-</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="hs-glyph">\</span><span id="local-6989586621679221625"><span class="annot"><span class="annottext">ApiRequest
-</span><a href="#local-6989586621679221625"><span class="hs-identifier hs-var">req</span></a></span></span><span> </span><span id="local-6989586621679221626"><span class="annot"><span class="annottext">ApiResponse
-</span><a href="#local-6989586621679221626"><span class="hs-identifier hs-var">res</span></a></span></span><span> </span><span id="local-6989586621679221627"><span class="annot"><span class="annottext">ResolvedOperation
-</span><a href="#local-6989586621679221627"><span class="hs-identifier hs-var">op</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="hs-glyph">\</span><span id="local-6989586621679220987"><span class="annot"><span class="annottext">ApiRequest
+</span><a href="#local-6989586621679220987"><span class="hs-identifier hs-var">req</span></a></span></span><span> </span><span id="local-6989586621679220988"><span class="annot"><span class="annottext">ApiResponse
+</span><a href="#local-6989586621679220988"><span class="hs-identifier hs-var">res</span></a></span></span><span> </span><span id="local-6989586621679220989"><span class="annot"><span class="annottext">ResolvedOperation
+</span><a href="#local-6989586621679220989"><span class="hs-identifier hs-var">op</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
 </span><span id="line-53"></span><span>        </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">Int -&gt; ResolvedOperation -&gt; Maybe ResponseSpec
 </span><a href="Haskemathesis.Check.Standard.Helpers.html#responseSchemasForStatus"><span class="hs-identifier hs-var">responseSchemasForStatus</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">ApiResponse -&gt; Int
 </span><a href="Haskemathesis.Execute.Types.html#resStatusCode"><span class="hs-identifier hs-var">resStatusCode</span></a></span><span> </span><span class="annot"><span class="annottext">ApiResponse
-</span><a href="#local-6989586621679221626"><span class="hs-identifier hs-var">res</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">ResolvedOperation
-</span><a href="#local-6989586621679221627"><span class="hs-identifier hs-var">op</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><a href="#local-6989586621679220988"><span class="hs-identifier hs-var">res</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">ResolvedOperation
+</span><a href="#local-6989586621679220989"><span class="hs-identifier hs-var">op</span></a></span><span> </span><span class="hs-keyword">of</span><span>
 </span><span id="line-54"></span><span>            </span><span class="annot"><span class="annottext">Maybe ResponseSpec
 </span><span class="hs-identifier hs-var">Nothing</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">CheckResult
 </span><a href="Haskemathesis.Check.Types.html#CheckPassed"><span class="hs-identifier hs-var">CheckPassed</span></a></span><span>
-</span><span id="line-55"></span><span>            </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span id="local-6989586621679221630"><span class="annot"><span class="annottext">ResponseSpec
-</span><a href="#local-6989586621679221630"><span class="hs-identifier hs-var">responseSpec</span></a></span></span><span>
+</span><span id="line-55"></span><span>            </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span id="local-6989586621679220992"><span class="annot"><span class="annottext">ResponseSpec
+</span><a href="#local-6989586621679220992"><span class="hs-identifier hs-var">responseSpec</span></a></span></span><span>
 </span><span id="line-56"></span><span>                </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Map Text Schema -&gt; Bool
 forall k a. Map k a -&gt; Bool
 </span><span class="hs-identifier hs-var">Map.null</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">ResponseSpec -&gt; Map Text Schema
 </span><a href="Haskemathesis.OpenApi.Types.html#rsContent"><span class="hs-identifier hs-var">rsContent</span></a></span><span> </span><span class="annot"><span class="annottext">ResponseSpec
-</span><a href="#local-6989586621679221630"><span class="hs-identifier hs-var">responseSpec</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">CheckResult
+</span><a href="#local-6989586621679220992"><span class="hs-identifier hs-var">responseSpec</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">CheckResult
 </span><a href="Haskemathesis.Check.Types.html#CheckPassed"><span class="hs-identifier hs-var">CheckPassed</span></a></span><span>
 </span><span id="line-57"></span><span>                </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="annottext">Bool
 </span><span class="hs-identifier hs-var">otherwise</span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
@@ -85,7 +85,7 @@ forall k a. Map k a -&gt; Bool
 </span><a href="Haskemathesis.Check.Standard.Helpers.html#lookupHeader"><span class="hs-identifier hs-var">lookupHeader</span></a></span><span> </span><span class="annot"><span class="annottext">HeaderName
 </span><a href="file:///nix/store/fsi2cvnm3mdngjk22hkkpyl0q5h66sjj-http-types-0.12.4-doc/share/doc/http-types-0.12.4/html/src/Network.HTTP.Types.Header.html#hContentType"><span class="hs-identifier hs-var">hContentType</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">ApiResponse -&gt; [(HeaderName, ByteString)]
 </span><a href="Haskemathesis.Execute.Types.html#resHeaders"><span class="hs-identifier hs-var">resHeaders</span></a></span><span> </span><span class="annot"><span class="annottext">ApiResponse
-</span><a href="#local-6989586621679221626"><span class="hs-identifier hs-var">res</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-keyword">of</span><span>
+</span><a href="#local-6989586621679220988"><span class="hs-identifier hs-var">res</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-keyword">of</span><span>
 </span><span id="line-59"></span><span>                        </span><span class="annot"><span class="annottext">Maybe ByteString
 </span><span class="hs-identifier hs-var">Nothing</span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
 </span><span id="line-60"></span><span>                            </span><span class="annot"><span class="annottext">FailureDetail -&gt; CheckResult
@@ -108,23 +108,23 @@ forall k a. Map k a -&gt; Bool
 forall a. Maybe a
 </span><span class="hs-identifier hs-var">Nothing</span></span><span>
 </span><span id="line-66"></span><span>                                    </span><span class="annot"><span class="annottext">ApiRequest
-</span><a href="#local-6989586621679221625"><span class="hs-identifier hs-var">req</span></a></span><span>
+</span><a href="#local-6989586621679220987"><span class="hs-identifier hs-var">req</span></a></span><span>
 </span><span id="line-67"></span><span>                                    </span><span class="annot"><span class="annottext">ApiResponse
-</span><a href="#local-6989586621679221626"><span class="hs-identifier hs-var">res</span></a></span><span>
+</span><a href="#local-6989586621679220988"><span class="hs-identifier hs-var">res</span></a></span><span>
 </span><span id="line-68"></span><span>                                    </span><span class="annot"><span class="annottext">ResolvedOperation
-</span><a href="#local-6989586621679221627"><span class="hs-identifier hs-var">op</span></a></span><span>
+</span><a href="#local-6989586621679220989"><span class="hs-identifier hs-var">op</span></a></span><span>
 </span><span id="line-69"></span><span>                                </span><span class="hs-special">)</span><span>
-</span><span id="line-70"></span><span>                        </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span id="local-6989586621679221635"><span class="annot"><span class="annottext">ByteString
-</span><a href="#local-6989586621679221635"><span class="hs-identifier hs-var">rawType</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
-</span><span id="line-71"></span><span>                            </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621679221636"><span class="annot"><span class="annottext">contentType :: Text
-</span><a href="#local-6989586621679221636"><span class="hs-identifier hs-var hs-var">contentType</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">ByteString -&gt; Text
+</span><span id="line-70"></span><span>                        </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span id="local-6989586621679220997"><span class="annot"><span class="annottext">ByteString
+</span><a href="#local-6989586621679220997"><span class="hs-identifier hs-var">rawType</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-71"></span><span>                            </span><span class="hs-keyword">let</span><span> </span><span id="local-6989586621679220998"><span class="annot"><span class="annottext">contentType :: Text
+</span><a href="#local-6989586621679220998"><span class="hs-identifier hs-var hs-var">contentType</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">ByteString -&gt; Text
 </span><span class="hs-identifier hs-var">decodeUtf8</span></span><span> </span><span class="annot"><span class="annottext">ByteString
-</span><a href="#local-6989586621679221635"><span class="hs-identifier hs-var">rawType</span></a></span><span>
+</span><a href="#local-6989586621679220997"><span class="hs-identifier hs-var">rawType</span></a></span><span>
 </span><span id="line-72"></span><span>                             </span><span class="hs-keyword">in</span><span> </span><span class="hs-keyword">if</span><span> </span><span class="annot"><span class="annottext">Text -&gt; Map Text Schema -&gt; Bool
 </span><a href="Haskemathesis.Check.Standard.Helpers.html#matchesContentType"><span class="hs-identifier hs-var">matchesContentType</span></a></span><span> </span><span class="annot"><span class="annottext">Text
-</span><a href="#local-6989586621679221636"><span class="hs-identifier hs-var">contentType</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">ResponseSpec -&gt; Map Text Schema
+</span><a href="#local-6989586621679220998"><span class="hs-identifier hs-var">contentType</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">ResponseSpec -&gt; Map Text Schema
 </span><a href="Haskemathesis.OpenApi.Types.html#rsContent"><span class="hs-identifier hs-var">rsContent</span></a></span><span> </span><span class="annot"><span class="annottext">ResponseSpec
-</span><a href="#local-6989586621679221630"><span class="hs-identifier hs-var">responseSpec</span></a></span><span class="hs-special">)</span><span>
+</span><a href="#local-6989586621679220992"><span class="hs-identifier hs-var">responseSpec</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-73"></span><span>                                    </span><span class="hs-keyword">then</span><span> </span><span class="annot"><span class="annottext">CheckResult
 </span><a href="Haskemathesis.Check.Types.html#CheckPassed"><span class="hs-identifier hs-var">CheckPassed</span></a></span><span>
 </span><span id="line-74"></span><span>                                    </span><span class="hs-keyword">else</span><span>
@@ -145,16 +145,16 @@ forall a. Maybe a
 </span><span class="hs-string">&quot;response Content-Type not documented: &quot;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
 forall a. Semigroup a =&gt; a -&gt; a -&gt; a
 </span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Text
-</span><a href="#local-6989586621679221636"><span class="hs-identifier hs-var">contentType</span></a></span><span class="hs-special">)</span><span>
+</span><a href="#local-6989586621679220998"><span class="hs-identifier hs-var">contentType</span></a></span><span class="hs-special">)</span><span>
 </span><span id="line-79"></span><span>                                                </span><span class="hs-special">[</span><span class="hs-special">]</span><span>
 </span><span id="line-80"></span><span>                                                </span><span class="annot"><span class="annottext">Maybe Text
 forall a. Maybe a
 </span><span class="hs-identifier hs-var">Nothing</span></span><span>
 </span><span id="line-81"></span><span>                                                </span><span class="annot"><span class="annottext">ApiRequest
-</span><a href="#local-6989586621679221625"><span class="hs-identifier hs-var">req</span></a></span><span>
+</span><a href="#local-6989586621679220987"><span class="hs-identifier hs-var">req</span></a></span><span>
 </span><span id="line-82"></span><span>                                                </span><span class="annot"><span class="annottext">ApiResponse
-</span><a href="#local-6989586621679221626"><span class="hs-identifier hs-var">res</span></a></span><span>
+</span><a href="#local-6989586621679220988"><span class="hs-identifier hs-var">res</span></a></span><span>
 </span><span id="line-83"></span><span>                                                </span><span class="annot"><span class="annottext">ResolvedOperation
-</span><a href="#local-6989586621679221627"><span class="hs-identifier hs-var">op</span></a></span><span>
+</span><a href="#local-6989586621679220989"><span class="hs-identifier hs-var">op</span></a></span><span>
 </span><span id="line-84"></span><span>                                            </span><span class="hs-special">)</span><span>
 </span><span id="line-85"></span></pre></body></html>
