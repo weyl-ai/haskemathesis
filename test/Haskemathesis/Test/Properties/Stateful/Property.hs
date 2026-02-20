@@ -177,8 +177,8 @@ propRespectsMaxLength = property $ do
         ops = [postOp, getOp, putOp, deleteOp]
         links = inferLinks ops
     seq' <- forAll $ genOperationSequence maxLen ops links
-    -- Main steps should not exceed max length
-    assert $ length (osSteps seq') <= maxLen
+    -- Main steps should not exceed max length (lazy check)
+    assert $ null $ drop maxLen (osSteps seq')
 
 -- | Test that propertyStateful uses tcPropertyCount from config
 propUsesPropertyCount :: Property
@@ -197,11 +197,11 @@ propAppliesOperationFilter = property $ do
         -- Filter that only allows /users paths
         filterFn op = "/users" `T.isPrefixOf` roPath op
         filteredOps = filter filterFn ops
-    -- Should only include the users operation
-    length filteredOps === 1
+    -- Should only include the users operation (use pattern matching)
     case filteredOps of
         [op] -> roPath op === "/users"
-        _ -> assert False
+        [] -> assert False
+        _multipleOps -> assert False
 
 -- ============================================================================
 -- Section 2: propertiesForSpecStateful tests
@@ -223,7 +223,10 @@ propFiltersOperations = property $ do
         ops = [op1, op2]
         filterFn op = "/public" `T.isPrefixOf` roPath op
         filteredOps = filter filterFn ops
-    length filteredOps === 1
+    -- Verify exactly one operation using pattern matching
+    case filteredOps of
+        [_op] -> pure ()
+        _other -> assert False
 
 -- | Test handling of empty operation list
 propHandlesEmptyOps :: Property
@@ -263,7 +266,10 @@ propAccumulatesState = property $ do
                 }
     -- Verify accumulation
     Map.lookup "id" (tsExtractedValues stateAfterStep2) === Just (Number 42)
-    length (tsHistory stateAfterStep2) === 2
+    -- Verify exactly 2 history entries using pattern matching
+    case tsHistory stateAfterStep2 of
+        [_, _] -> pure ()
+        _other -> assert False
 
 -- ============================================================================
 -- Section 4: isStatefulFailure tests
@@ -389,8 +395,10 @@ propCrudPostThenGet = property $ do
 
     -- Verify ID was extracted
     Map.lookup "id" (tsExtractedValues stateAfterPost) === Just (Number 42)
-    -- Verify resource was tracked
-    length (tsCreatedResources stateAfterPost) === 1
+    -- Verify exactly one resource was tracked
+    case tsCreatedResources stateAfterPost of
+        [_resource] -> pure ()
+        _other -> assert False
 
 -- | Test that nested IDs are extracted correctly
 propExtractsNestedId :: Property
@@ -415,8 +423,10 @@ propHandlesMultipleResources = property $ do
                         , ("postId", Number 2)
                         ]
                 }
-    -- Should track both resources
-    length (tsCreatedResources state) === 2
+    -- Should track both resources (verify using pattern matching)
+    case tsCreatedResources state of
+        [_, _] -> pure ()
+        _other -> assert False
     Map.size (tsExtractedValues state) === 2
 
 -- ============================================================================
@@ -435,7 +445,9 @@ propDefaultChecksIncludesRA :: Property
 propDefaultChecksIncludesRA = property $ do
     let checks = defaultStatefulChecks
     -- Should have at least 2 checks (use-after-free and resource-availability)
-    assert $ length checks >= 2
+    case checks of
+        (_ : _ : _) -> pure () -- At least 2 elements
+        _fewer -> assert False
 
 -- | Test default max sequence length is 5
 propDefaultMaxSeqLength :: Property
@@ -481,7 +493,8 @@ propCustomMaxSequenceLength = property $ do
 propEmptyStatefulChecks :: Property
 propEmptyStatefulChecks = property $ do
     let config = defaultTestConfig{tcStatefulChecks = []}
-    length (tcStatefulChecks config) === 0
+    -- Verify no stateful checks using null
+    assert $ null (tcStatefulChecks config)
 
 -- ============================================================================
 -- Section 9: executeStatefulStep detailed tests
@@ -505,7 +518,10 @@ propStepBindingsLiteral = property $ do
     let binding = ValueSource.Literal (String "fixed-value")
     case binding of
         ValueSource.Literal (String v) -> v === "fixed-value"
-        _ -> assert False
+        ValueSource.Literal _nonStringLiteral -> assert False
+        ValueSource.FromResponseBody{} -> assert False
+        ValueSource.FromState{} -> assert False
+        ValueSource.FromResponseHeader{} -> assert False
 
 -- | Test history is prepended (newest first)
 propHistoryPrependedNewestFirst :: Property
@@ -515,8 +531,9 @@ propHistoryPrependedNewestFirst = property $ do
         newEntry = ("op2", mkRequest "GET" "/2", mkResponse 200 "{}")
         state2 = state1{tsHistory = newEntry : tsHistory state1}
     -- New entry should be first
+    -- Explicitly pattern matching on non-empty list
     case tsHistory state2 of
-        ((opId, _, _) : _) -> opId === "op2"
+        ((opId, _, _) : _rest) -> opId === "op2"
         [] -> assert False
 
 -- | Test state preserves history across multiple steps
@@ -528,7 +545,12 @@ propStatePreservesFullHistory = property $ do
             | i <- [1 .. numSteps]
             ]
         state = emptyState{tsHistory = entries}
-    length (tsHistory state) === numSteps
+    -- Verify history length matches expected using lazy check:
+    -- exactly numSteps means: not shorter (drop numSteps is empty would be wrong)
+    -- and not longer (drop numSteps leaves nothing)
+    let history = tsHistory state
+    assert $ not (null (drop (numSteps - 1) history)) -- at least numSteps
+    assert $ null (drop numSteps history) -- at most numSteps
 
 -- ============================================================================
 -- Section 10: More integration tests
@@ -543,11 +565,11 @@ propPutTracksModification = property $ do
             emptyState
                 { tsHistory = [("updateUser", putReq, putRes)]
                 }
-    -- History should contain the PUT
-    length (tsHistory state) === 1
+    -- History should contain exactly one entry (the PUT)
     case tsHistory state of
-        ((opId, _, _) : _) -> opId === "updateUser"
-        _ -> assert False
+        [(opId, _, _)] -> opId === "updateUser"
+        [] -> assert False
+        _multipleEntries -> assert False
 
 -- | Test DELETE after POST creates use-after-free scenario
 propDeleteAfterPostScenario :: Property
@@ -563,10 +585,14 @@ propDeleteAfterPostScenario = property $ do
                     , ("createUser", mkRequest "POST" "/users", postRes)
                     ]
                 }
-    -- Should have the resource tracked
-    length (tsCreatedResources state) === 1
-    -- History has both operations
-    length (tsHistory state) === 2
+    -- Should have exactly one resource tracked
+    case tsCreatedResources state of
+        [_resource] -> pure ()
+        _other -> assert False
+    -- History has exactly two operations
+    case tsHistory state of
+        [_, _] -> pure ()
+        _other -> assert False
 
 -- | Test multiple extracted values don't overwrite each other
 propMultipleExtractedValues :: Property
@@ -598,9 +624,11 @@ propHeuristicLinksForCrud = property $ do
         deleteOp = mkOp "DELETE" "/items/{id}" (Just "deleteItem") [mkPathParam "id"]
         ops = [postOp, getOp, putOp, deleteOp]
         links = inferLinks ops
-    -- Should have links from createItem to other operations
+    -- Should have links from createItem to other operations (at least 3: GET, PUT, DELETE)
     let linksFromCreate = filter (\l -> olSourceOperation l == "createItem") links
-    assert $ length linksFromCreate >= 3 -- GET, PUT, DELETE
+    case linksFromCreate of
+        (_ : _ : _ : _) -> pure () -- At least 3 elements
+        _fewer -> assert False
 
 -- | Test link parameter bindings are created
 propLinkParameterBindings :: Property
@@ -688,8 +716,13 @@ propOperationSequenceStructure = property $ do
                     ]
                 , osCleanup = [mkSequenceStep "cleanup1"]
                 }
-    length (osSteps seq') === 2
-    length (osCleanup seq') === 1
+    -- Verify exactly 2 steps and 1 cleanup using pattern matching
+    case osSteps seq' of
+        [_, _] -> pure ()
+        _other -> assert False
+    case osCleanup seq' of
+        [_cleanup] -> pure ()
+        _other -> assert False
 
 -- ============================================================================
 -- Section 12: Edge cases
@@ -705,8 +738,8 @@ propNoCreatorsEmptySeq = property $ do
     -- No POST operations means no "creators" - links should be empty or sequence starts empty
     -- (GET without path params can start, but has no links to follow)
     seq' <- forAll $ genOperationSequence 5 ops links
-    -- Either empty or single step
-    assert $ length (osSteps seq') <= 1
+    -- Either empty or single step (lazy length check)
+    assert $ null $ drop 1 (osSteps seq')
 
 -- | Test that spec with no links generates single-step sequences
 propNoLinksSingleStep :: Property
@@ -718,7 +751,9 @@ propNoLinksSingleStep = property $ do
     -- No links to follow (no GET/PUT/DELETE on /standalone/{id})
     seq' <- forAll $ genOperationSequence 5 ops links
     -- Should just be the single POST step
-    length (osSteps seq') === 1
+    case osSteps seq' of
+        [_step] -> pure ()
+        _other -> assert False
 
 -- | Test that circular links are bounded by max length
 propCircularLinksBounded :: Property
@@ -734,8 +769,8 @@ propCircularLinksBounded = property $ do
             , OperationLink "opB" "opA" [] Nothing Nothing
             ]
     seq' <- forAll $ genOperationSequence maxLen ops links
-    -- Should not exceed max length even with cycles
-    assert $ length (osSteps seq') <= maxLen
+    -- Should not exceed max length even with cycles (lazy length check)
+    assert $ null $ drop maxLen (osSteps seq')
 
 -- | Test that error response doesn't track resources
 propErrorNoTracking :: Property

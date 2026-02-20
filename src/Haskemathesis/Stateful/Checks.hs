@@ -69,6 +69,7 @@ import Data.Maybe (mapMaybe)
 import qualified Data.Scientific as Scientific
 import Data.Text (Text)
 import qualified Data.Text as T
+import Text.Read (readMaybe)
 
 import Haskemathesis.Execute.Types (
     ApiRequest (..),
@@ -554,7 +555,8 @@ findDeletedResources state =
             && (T.all isDigit segment || isUuidLike segment)
 
     isUuidLike segment =
-        T.length segment == 36 && T.count "-" segment == 4
+        -- Use compareLength for efficient short-circuiting before counting dashes
+        T.compareLength segment 36 == EQ && T.count "-" segment == 4
 
 {- | Find all resources that were created during the test.
 
@@ -605,14 +607,18 @@ extractPathIds path =
     segments = filter (not . T.null) $ T.splitOn "/" path
     extractId :: (Int, Text) -> Maybe (Text, Value)
     extractId (idx, segment)
-        | isNumeric segment =
-            Just ("id" <> if idx == 0 then "" else T.pack (show idx), Number (read (T.unpack segment)))
+        | isNumeric segment = do
+            -- Use readMaybe to safely parse the number, avoiding partial 'read'
+            n <- readMaybe (T.unpack segment) :: Maybe Integer
+            let key = "id" <> if idx == 0 then "" else T.pack (show idx)
+            Just (key, Number (fromInteger n))
         | isUuidLike segment =
             Just ("id" <> if idx == 0 then "" else T.pack (show idx), String segment)
         | otherwise = Nothing
 
     isNumeric s = not (T.null s) && T.all isDigit s
-    isUuidLike s = T.length s == 36 && T.count "-" s == 4
+    -- Use compareLength for efficient short-circuiting before counting dashes
+    isUuidLike s = T.compareLength s 36 == EQ && T.count "-" s == 4
 
 -- | Find a GET operation that can retrieve the given resource.
 findGetOperation :: [ResolvedOperation] -> ResourceRef -> Maybe ResolvedOperation
@@ -629,8 +635,16 @@ findGetOperation ops resource =
         -- Check if template matches concrete path structure
         let templateSegments = T.splitOn "/" template
             concreteSegments = T.splitOn "/" concrete
-         in length templateSegments == length concreteSegments
+         in -- Use lazy length comparison to avoid traversing lists twice
+            -- and to work safely with any list size
+            sameLength templateSegments concreteSegments
                 && all segmentMatches (zip templateSegments concreteSegments)
+
+    -- Safe length comparison that short-circuits and works with any list
+    sameLength :: [a] -> [b] -> Bool
+    sameLength [] [] = True
+    sameLength (_ : xs) (_ : ys) = sameLength xs ys
+    sameLength _ _ = False
 
     segmentMatches (t, c)
         | "{" `T.isPrefixOf` t && "}" `T.isSuffixOf` t = True

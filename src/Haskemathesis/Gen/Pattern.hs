@@ -99,8 +99,10 @@ genFromPatternWithLength patternText minLen maxLen =
                     else Just (Gen.element filtered)
   where
     validLength txt =
-        let len = T.length txt
-         in maybe True (len >=) minLen && maybe True (len <=) maxLen
+        -- Use compareLength for efficient short-circuiting length checks
+        let checkMin = maybe True (\m -> T.compareLength txt m /= LT) minLen
+            checkMax = maybe True (\m -> T.compareLength txt m /= GT) maxLen
+         in checkMin && checkMax
 
 -- | Parse a regex string into a Pattern, normalizing it for generation.
 parsePattern :: String -> Either String Pattern
@@ -164,7 +166,7 @@ run p = case p of
     PCarat{} -> pure T.empty -- Anchor: zero-width match
     PDollar{} -> pure T.empty -- Anchor: zero-width match
     PGroup _ inner -> run inner
-    _ -> pure T.empty -- Unsupported patterns produce empty string
+    _unsupportedPattern -> pure T.empty -- Unsupported patterns produce empty string
   where
     isChar = pure . T.singleton
     chars = each . map T.singleton

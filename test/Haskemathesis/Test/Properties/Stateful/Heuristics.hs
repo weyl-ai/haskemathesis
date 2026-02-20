@@ -188,7 +188,8 @@ propFindRelatedGet = property $ do
         related = findRelatedOperations allOps postOp
     case related of
         [op] -> roOperationId op === Just "getUser"
-        _ -> assert False
+        [] -> assert False
+        _multipleOps -> assert False
 
 propFindRelatedMultiple :: Property
 propFindRelatedMultiple = property $ do
@@ -198,7 +199,10 @@ propFindRelatedMultiple = property $ do
         deleteOp = mkOp "DELETE" "/users/{id}" (Just "deleteUser") [mkPathParam "id"]
         allOps = [postOp, getOp, putOp, deleteOp]
         related = findRelatedOperations allOps postOp
-    length related === 3
+    -- Verify exactly 3 related operations using pattern matching
+    case related of
+        [_, _, _] -> pure ()
+        _other -> assert False
 
 propFindRelatedUnrelated :: Property
 propFindRelatedUnrelated = property $ do
@@ -219,7 +223,8 @@ propInferLinkPostToGet = property $ do
         [link] -> do
             olSourceOperation link === "createUser"
             olTargetOperation link === "getUser"
-        _ -> assert False
+        [] -> assert False
+        _multipleLinks -> assert False
 
 propInferLinkBindings :: Property
 propInferLinkBindings = property $ do
@@ -232,9 +237,13 @@ propInferLinkBindings = property $ do
                 pbTargetParam binding === "userId"
                 case pbSource binding of
                     FromResponseBody path -> assert $ T.isInfixOf "userId" path
-                    _other -> assert False
-            _ -> assert False
-        _ -> assert False
+                    Literal{} -> assert False
+                    FromState{} -> assert False
+                    FromResponseHeader{} -> assert False
+            [] -> assert False
+            _multipleBindings -> assert False
+        [] -> assert False
+        _multipleLinks -> assert False
 
 propInferLinkNested :: Property
 propInferLinkNested = property $ do
@@ -245,8 +254,10 @@ propInferLinkNested = property $ do
     case links of
         [link] -> case olParameterBindings link of
             [binding] -> pbTargetParam binding === "postId"
-            _ -> assert False
-        _ -> assert False
+            [] -> assert False
+            _multipleBindings -> assert False
+        [] -> assert False
+        _multipleLinks -> assert False
 
 -- matchResponseFieldsToParams properties
 
@@ -267,7 +278,8 @@ propMatchFieldsNormalized = property $ do
         [(field, param)] -> do
             field === "userId"
             param === "user_id"
-        _ -> assert False
+        [] -> assert False
+        _multipleMatches -> assert False
 
 propMatchFieldsNoMatch :: Property
 propMatchFieldsNoMatch = property $ do
@@ -284,8 +296,10 @@ propInferLinksCombined = property $ do
         getOp = mkOp "GET" "/users/{id}" (Just "getUser") [mkPathParam "id"]
         deleteOp = mkOp "DELETE" "/users/{id}" (Just "deleteUser") [mkPathParam "id"]
         links = inferLinks [postOp, getOp, deleteOp]
-    -- Should have links from POST to both GET and DELETE
-    assert $ length links >= 2
+    -- Should have links from POST to both GET and DELETE (at least 2)
+    case links of
+        (_ : _ : _) -> pure () -- At least 2 elements
+        _fewer -> assert False
 
 -- Helper functions
 
@@ -339,7 +353,8 @@ propFindRelatedPatch = property $ do
         related = findRelatedOperations allOps postOp
     case related of
         [op] -> roOperationId op === Just "patchUser"
-        _ -> assert False
+        [] -> assert False
+        _multipleOps -> assert False
 
 propExcludesSelf :: Property
 propExcludesSelf = property $ do
@@ -359,7 +374,8 @@ propNoOperationId = property $ do
         [link] -> do
             olSourceOperation link === "POST /users"
             olTargetOperation link === "GET /users/{id}"
-        _ -> assert False
+        [] -> assert False
+        _multipleLinks -> assert False
 
 propNormalizeMixedCase :: Property
 propNormalizeMixedCase = property $ do
@@ -386,5 +402,7 @@ propMatchMultipleParams = property $ do
             -- Should only have one binding (for userId, not orgId)
             case olParameterBindings link of
                 [binding] -> pbTargetParam binding === "userId"
-                _ -> assert False
-        _ -> assert False
+                [] -> assert False
+                _multipleBindings -> assert False
+        [] -> assert False
+        _multipleLinks -> assert False

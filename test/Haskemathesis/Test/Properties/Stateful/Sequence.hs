@@ -78,7 +78,10 @@ propFindLinksFrom = property $ do
         link3 = mkLink "getUser" "updateUser"
         links = [link1, link2, link3]
         result = findLinksFrom "createUser" links
-    length result === 2
+    -- Verify exactly 2 links found using pattern matching
+    case result of
+        [_, _] -> pure ()
+        _other -> assert False
 
 propFindLinksFromEmpty :: Property
 propFindLinksFromEmpty = property $ do
@@ -94,7 +97,10 @@ propFindLinksFromMultiple = property $ do
             , mkLink "createUser" "deleteUser"
             ]
         result = findLinksFrom "createUser" links
-    length result === 3
+    -- Verify exactly 3 links found using pattern matching
+    case result of
+        [_, _, _] -> pure ()
+        _other -> assert False
 
 -- findOperationByLabel properties
 
@@ -172,10 +178,11 @@ propGetCreatorsPosts = property $ do
     let postOp = mkOp "POST" "/users" (Just "createUser") []
         getOp = mkOp "GET" "/users" (Just "listUsers") []
         creators = getCreatorOperations [postOp, getOp]
-    length creators === 1
+    -- Use pattern matching to verify exactly one creator found
     case creators of
         [op] -> roMethod op === "POST"
-        _ -> assert False
+        [] -> assert False
+        _multipleCreators -> assert False
 
 propGetCreatorsExcludesGet :: Property
 propGetCreatorsExcludesGet = property $ do
@@ -192,7 +199,10 @@ propGetResourceOps = property $ do
         deleteOp = mkOp "DELETE" "/users/{id}" (Just "deleteUser") [mkPathParam "id"]
         ops = [postOp, getOp, deleteOp]
         resources = getResourceOperations "/users" ops
-    length resources === 2
+    -- Verify exactly 2 resources using pattern matching
+    case resources of
+        [_, _] -> pure ()
+        _other -> assert False
 
 propGetResourceOpsExcludesBase :: Property
 propGetResourceOpsExcludesBase = property $ do
@@ -220,7 +230,8 @@ propGenSeqMaxLength = property $ do
         getOp = mkOp "GET" "/users/{id}" (Just "getUser") [mkPathParam "id"]
         links = [mkLink "createUser" "getUser"]
     seq' <- forAll $ genOperationSequence maxLen [postOp, getOp] links
-    assert $ length (osSteps seq') <= maxLen
+    -- Use lazy length check: null after dropping maxLen means <= maxLen elements
+    assert $ null $ drop maxLen (osSteps seq')
 
 -- genCrudSequence properties
 

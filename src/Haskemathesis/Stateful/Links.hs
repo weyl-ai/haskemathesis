@@ -162,6 +162,8 @@ getTargetOperationId :: Link -> Maybe Text
 getTargetOperationId link =
     _linkOperationId link <|> parseOperationRef (_linkOperationRef link)
   where
+    -- Local Alternative-like operator for Maybe (same fixity as Control.Applicative.<|>)
+    infixl 3 <|>
     (<|>) :: Maybe a -> Maybe a -> Maybe a
     (<|>) Nothing b = b
     (<|>) a _ = a

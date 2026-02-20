@@ -223,10 +223,13 @@ extractBasePath path =
             | isParamSegment lastSeg -> removeTrailingParams initSegs
             | otherwise -> segs
 
-    -- Safe version of (init, last) combined
+    -- Safe version of (init, last) combined using only total functions
     unsnoc :: [a] -> Maybe ([a], a)
     unsnoc [] = Nothing
-    unsnoc xs = Just (Prelude.init xs, Prelude.last xs)
+    unsnoc [x] = Just ([], x)
+    unsnoc (x : xs) = case unsnoc xs of
+        Nothing -> Nothing -- unreachable since xs is non-empty
+        Just (initPart, lastElem) -> Just (x : initPart, lastElem)
 
     isParamSegment :: Text -> Bool
     isParamSegment seg = "{" `T.isPrefixOf` seg && "}" `T.isSuffixOf` seg

@@ -162,7 +162,11 @@ propUpdateHistory = property $ do
         req = mkRequest "POST" "/users"
         res = mkResponse 201 "{\"id\": 42}"
         newState = updateState "createUser" op req res state
-    length (tsHistory newState) === 1
+    -- Verify exactly one history entry using pattern matching
+    case tsHistory newState of
+        [_entry] -> pure ()
+        [] -> assert False
+        _multipleEntries -> assert False
 
 propUpdateExtractsId :: Property
 propUpdateExtractsId = property $ do
@@ -174,7 +178,8 @@ propUpdateExtractsId = property $ do
     -- Should have extracted "id"
     case Map.lookup "id" (tsExtractedValues newState) of
         Just (Number n) -> n === 42
-        _ -> assert False
+        Just _nonNumericValue -> assert False
+        Nothing -> assert False
 
 propUpdateExtractsUserId :: Property
 propUpdateExtractsUserId = property $ do
@@ -186,7 +191,8 @@ propUpdateExtractsUserId = property $ do
     -- Should have extracted "userId" (ends with Id)
     case Map.lookup "userId" (tsExtractedValues newState) of
         Just (Number n) -> n === 123
-        _ -> assert False
+        Just _nonNumericValue -> assert False
+        Nothing -> assert False
 
 propUpdateTracksResource :: Property
 propUpdateTracksResource = property $ do
@@ -195,8 +201,11 @@ propUpdateTracksResource = property $ do
         req = mkRequest "POST" "/users"
         res = mkResponse 201 "{\"id\": 42}"
         newState = updateState "createUser" op req res state
-    -- POST with 2xx should track resource
-    length (tsCreatedResources newState) === 1
+    -- POST with 2xx should track exactly one resource
+    case tsCreatedResources newState of
+        [_resource] -> pure ()
+        [] -> assert False
+        _multipleResources -> assert False
 
 propUpdateNoTrackGet :: Property
 propUpdateNoTrackGet = property $ do
@@ -262,7 +271,8 @@ propApplyLiteralBindings = property $ do
     ssOperationId step === "getUser"
     case Map.lookup "id" (ssParamBindings step) of
         Just (Literal (Number n)) -> n === 42
-        _ -> assert False
+        Just _nonLiteralNumber -> assert False
+        Nothing -> assert False
 
 propApplyResponseBodyBindings :: Property
 propApplyResponseBodyBindings = property $ do
@@ -279,7 +289,8 @@ propApplyResponseBodyBindings = property $ do
     -- Should resolve to literal value
     case Map.lookup "id" (ssParamBindings step) of
         Just (Literal (Number n)) -> n === 99
-        _ -> assert False
+        Just _nonLiteralNumber -> assert False
+        Nothing -> assert False
 
 -- Helper functions
 

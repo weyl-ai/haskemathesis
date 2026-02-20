@@ -115,10 +115,11 @@ propFindCreatedResources = property $ do
     let resource = mkResource "/users/{id}" [("id", Number 42)]
         state = emptyState{tsCreatedResources = [resource]}
         created = findCreatedResources state
-    length created === 1
+    -- Use pattern matching to verify exactly one resource was found
     case created of
         [r] -> rrResourcePath r === "/users/{id}"
-        _ -> assert False
+        [] -> assert False
+        _multipleResources -> assert False
 
 -- findModifiedResources properties
 

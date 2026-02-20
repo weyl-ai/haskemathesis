@@ -16,6 +16,7 @@ module Haskemathesis.Test.Properties.Pattern (spec) where
 
 import Data.List ((\\))
 import Data.Maybe (isJust)
+import qualified Data.Set as Set
 import Data.Text (Text)
 import qualified Data.Text as T
 import Hedgehog (
@@ -166,7 +167,7 @@ spec =
                 generateMatchesFromText "(a+)+" `shouldSatisfy` (not . null)
 
             it "bounds unbounded quantifiers" $
-                all (\m -> T.length m <= 10) (generateMatchesFromText "a*") `shouldBe` True
+                all (\m -> T.compareLength m 10 /= GT) (generateMatchesFromText "a*") `shouldBe` True
 
         describe "Stress Tests" $ do
             itProp "handles many character classes" propManyCharClasses
@@ -368,10 +369,16 @@ propUniqueMatches = property $ do
     annotate $ "Pattern: " ++ T.unpack pat
     let matches = generateMatchesFromText pat
     annotateShow matches
-    -- Check uniqueness
-    assert $ length matches == length (unique matches)
+    -- Check uniqueness by verifying no duplicates exist
+    assert $ allUnique matches
   where
-    unique = foldr (\x acc -> if x `elem` acc then acc else x : acc) []
+    -- Check uniqueness without using length: fold through list tracking seen elements
+    allUnique = go Set.empty
+      where
+        go _ [] = True
+        go seen (y : ys)
+            | y `Set.member` seen = False
+            | otherwise = go (Set.insert y seen) ys
 
 -- Property: Quantifier bounds produce correct lengths
 propQuantifierBounds :: Property
@@ -385,8 +392,8 @@ propQuantifierBounds = property $ do
         Just gen -> do
             match <- forAll gen
             annotateShow match
-            let len = T.length match
-            assert $ len >= lo && len <= hi
+            -- Use compareLength for efficient bounds checking
+            assert $ T.compareLength match lo /= LT && T.compareLength match hi /= GT
 
 -- Property: Character classes produce only valid characters
 propCharClassValid :: Property
@@ -431,14 +438,17 @@ propManyCharClasses = property $ do
         Just gen -> do
             match <- forAll gen
             annotateShow match
-            assert $ T.length match == n
+            -- Use compareLength for efficient equality check
+            assert $ T.compareLength match n == EQ
             assert $ T.all (`elem` ['a' .. 'z']) match
 
 -- Property: Handles long alternations
 propLongAlternations :: Property
 propLongAlternations = property $ do
     n <- forAll $ Gen.int (Range.linear 5 10)
-    let alts = map (T.singleton . toEnum . (+ fromEnum 'a')) [0 .. n - 1]
+    -- Use take to safely get the first n characters (n is at most 10, validChars has 26)
+    let validChars = "abcdefghijklmnopqrstuvwxyz"
+        alts = map T.singleton (take n validChars)
         pat = T.intercalate "|" alts
     annotate $ "Pattern: " ++ T.unpack pat
     case genFromPattern pat of

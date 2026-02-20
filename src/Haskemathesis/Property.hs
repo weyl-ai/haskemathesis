@@ -694,5 +694,10 @@ renderStatefulFailure sf =
         , case (sfExpectedStatus sf, sfActualStatus sf) of
             (Just expected, Just actual) ->
                 "Expected status: " <> T.pack (show expected) <> ", Actual: " <> T.pack (show actual)
-            _ -> ""
+            (Nothing, Just actual) ->
+                "Actual status: " <> T.pack (show actual)
+            (Just expected, Nothing) ->
+                "Expected status: " <> T.pack (show expected)
+            (Nothing, Nothing) ->
+                ""
         ]
