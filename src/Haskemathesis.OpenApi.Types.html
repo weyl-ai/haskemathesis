@@ -71,7 +71,7 @@ OpenAPI supports parameters in four locations:
 </span><span id="line-71"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span id="ParamQuery"><span class="annot"><a href="Haskemathesis.OpenApi.Types.html#ParamQuery"><span class="hs-identifier hs-var">ParamQuery</span></a></span></span><span>
 </span><span id="line-72"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span id="ParamHeader"><span class="annot"><a href="Haskemathesis.OpenApi.Types.html#ParamHeader"><span class="hs-identifier hs-var">ParamHeader</span></a></span></span><span>
 </span><span id="line-73"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span id="ParamCookie"><span class="annot"><a href="Haskemathesis.OpenApi.Types.html#ParamCookie"><span class="hs-identifier hs-var">ParamCookie</span></a></span></span><span>
-</span><span id="line-74"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679237142"><span id="local-6989586621679237147"><span class="annot"><span class="annottext">ParamLocation -&gt; ParamLocation -&gt; Bool
+</span><span id="line-74"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679238419"><span id="local-6989586621679238424"><span class="annot"><span class="annottext">ParamLocation -&gt; ParamLocation -&gt; Bool
 (ParamLocation -&gt; ParamLocation -&gt; Bool)
 -&gt; (ParamLocation -&gt; ParamLocation -&gt; Bool) -&gt; Eq ParamLocation
 forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
@@ -79,7 +79,7 @@ $c== :: ParamLocation -&gt; ParamLocation -&gt; Bool
 == :: ParamLocation -&gt; ParamLocation -&gt; Bool
 $c/= :: ParamLocation -&gt; ParamLocation -&gt; Bool
 /= :: ParamLocation -&gt; ParamLocation -&gt; Bool
-</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679237152"><span id="local-6989586621679237154"><span id="local-6989586621679237158"><span class="annot"><span class="annottext">Int -&gt; ParamLocation -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679238429"><span id="local-6989586621679238431"><span id="local-6989586621679238435"><span class="annot"><span class="annottext">Int -&gt; ParamLocation -&gt; ShowS
 [ParamLocation] -&gt; ShowS
 ParamLocation -&gt; String
 (Int -&gt; ParamLocation -&gt; ShowS)
@@ -116,7 +116,7 @@ and its JSON schema.
 </span><a href="Haskemathesis.OpenApi.Types.html#rpSchema"><span class="hs-identifier hs-var hs-var">rpSchema</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Haskemathesis.Schema.html#Schema"><span class="hs-identifier hs-type">Schema</span></a></span><span>
 </span><span id="line-90"></span><span>    </span><span class="annot"><span class="hs-comment">-- ^ JSON Schema defining the parameter's type and constraints.</span></span><span>
 </span><span id="line-91"></span><span>    </span><span class="hs-special">}</span><span>
-</span><span id="line-92"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679237167"><span id="local-6989586621679237175"><span class="annot"><span class="annottext">ResolvedParam -&gt; ResolvedParam -&gt; Bool
+</span><span id="line-92"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679238444"><span id="local-6989586621679238452"><span class="annot"><span class="annottext">ResolvedParam -&gt; ResolvedParam -&gt; Bool
 (ResolvedParam -&gt; ResolvedParam -&gt; Bool)
 -&gt; (ResolvedParam -&gt; ResolvedParam -&gt; Bool) -&gt; Eq ResolvedParam
 forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
@@ -124,7 +124,7 @@ $c== :: ResolvedParam -&gt; ResolvedParam -&gt; Bool
 == :: ResolvedParam -&gt; ResolvedParam -&gt; Bool
 $c/= :: ResolvedParam -&gt; ResolvedParam -&gt; Bool
 /= :: ResolvedParam -&gt; ResolvedParam -&gt; Bool
-</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679237179"><span id="local-6989586621679237190"><span id="local-6989586621679237194"><span class="annot"><span class="annottext">Int -&gt; ResolvedParam -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679238456"><span id="local-6989586621679238467"><span id="local-6989586621679238471"><span class="annot"><span class="annottext">Int -&gt; ResolvedParam -&gt; ShowS
 [ResolvedParam] -&gt; ShowS
 ResolvedParam -&gt; String
 (Int -&gt; ResolvedParam -&gt; ShowS)
@@ -154,7 +154,7 @@ Currently only the first content type is used.
 </span><a href="Haskemathesis.OpenApi.Types.html#rbSchema"><span class="hs-identifier hs-var hs-var">rbSchema</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Haskemathesis.Schema.html#Schema"><span class="hs-identifier hs-type">Schema</span></a></span><span>
 </span><span id="line-103"></span><span>    </span><span class="annot"><span class="hs-comment">-- ^ JSON Schema defining the request body structure.</span></span><span>
 </span><span id="line-104"></span><span>    </span><span class="hs-special">}</span><span>
-</span><span id="line-105"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679237199"><span id="local-6989586621679237203"><span class="annot"><span class="annottext">ResolvedRequestBody -&gt; ResolvedRequestBody -&gt; Bool
+</span><span id="line-105"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679238476"><span id="local-6989586621679238480"><span class="annot"><span class="annottext">ResolvedRequestBody -&gt; ResolvedRequestBody -&gt; Bool
 (ResolvedRequestBody -&gt; ResolvedRequestBody -&gt; Bool)
 -&gt; (ResolvedRequestBody -&gt; ResolvedRequestBody -&gt; Bool)
 -&gt; Eq ResolvedRequestBody
@@ -163,7 +163,7 @@ $c== :: ResolvedRequestBody -&gt; ResolvedRequestBody -&gt; Bool
 == :: ResolvedRequestBody -&gt; ResolvedRequestBody -&gt; Bool
 $c/= :: ResolvedRequestBody -&gt; ResolvedRequestBody -&gt; Bool
 /= :: ResolvedRequestBody -&gt; ResolvedRequestBody -&gt; Bool
-</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679237207"><span id="local-6989586621679237212"><span id="local-6989586621679237216"><span class="annot"><span class="annottext">Int -&gt; ResolvedRequestBody -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679238484"><span id="local-6989586621679238489"><span id="local-6989586621679238493"><span class="annot"><span class="annottext">Int -&gt; ResolvedRequestBody -&gt; ShowS
 [ResolvedRequestBody] -&gt; ShowS
 ResolvedRequestBody -&gt; String
 (Int -&gt; ResolvedRequestBody -&gt; ShowS)
@@ -196,7 +196,7 @@ the content schema and header definitions.
 </span><a href="Haskemathesis.OpenApi.Types.html#rsRequiredHeaders"><span class="hs-identifier hs-var hs-var">rsRequiredHeaders</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span class="hs-special">]</span><span>
 </span><span id="line-118"></span><span>    </span><span class="annot"><span class="hs-comment">-- ^ List of header names that must be present in the response.</span></span><span>
 </span><span id="line-119"></span><span>    </span><span class="hs-special">}</span><span>
-</span><span id="line-120"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679237222"><span id="local-6989586621679237230"><span class="annot"><span class="annottext">ResponseSpec -&gt; ResponseSpec -&gt; Bool
+</span><span id="line-120"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679238499"><span id="local-6989586621679238507"><span class="annot"><span class="annottext">ResponseSpec -&gt; ResponseSpec -&gt; Bool
 (ResponseSpec -&gt; ResponseSpec -&gt; Bool)
 -&gt; (ResponseSpec -&gt; ResponseSpec -&gt; Bool) -&gt; Eq ResponseSpec
 forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
@@ -204,7 +204,7 @@ $c== :: ResponseSpec -&gt; ResponseSpec -&gt; Bool
 == :: ResponseSpec -&gt; ResponseSpec -&gt; Bool
 $c/= :: ResponseSpec -&gt; ResponseSpec -&gt; Bool
 /= :: ResponseSpec -&gt; ResponseSpec -&gt; Bool
-</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679237234"><span id="local-6989586621679237244"><span id="local-6989586621679237248"><span class="annot"><span class="annottext">Int -&gt; ResponseSpec -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679238511"><span id="local-6989586621679238521"><span id="local-6989586621679238525"><span class="annot"><span class="annottext">Int -&gt; ResponseSpec -&gt; ShowS
 [ResponseSpec] -&gt; ShowS
 ResponseSpec -&gt; String
 (Int -&gt; ResponseSpec -&gt; ShowS)
@@ -324,7 +324,7 @@ validate responses for that endpoint.
     waiting for the stream to complete (which may never happen).
     -}</span></span><span>
 </span><span id="line-213"></span><span>    </span><span class="hs-special">}</span><span>
-</span><span id="line-214"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679237262"><span id="local-6989586621679237281"><span class="annot"><span class="annottext">ResolvedOperation -&gt; ResolvedOperation -&gt; Bool
+</span><span id="line-214"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679238539"><span id="local-6989586621679238558"><span class="annot"><span class="annottext">ResolvedOperation -&gt; ResolvedOperation -&gt; Bool
 (ResolvedOperation -&gt; ResolvedOperation -&gt; Bool)
 -&gt; (ResolvedOperation -&gt; ResolvedOperation -&gt; Bool)
 -&gt; Eq ResolvedOperation
@@ -333,7 +333,7 @@ $c== :: ResolvedOperation -&gt; ResolvedOperation -&gt; Bool
 == :: ResolvedOperation -&gt; ResolvedOperation -&gt; Bool
 $c/= :: ResolvedOperation -&gt; ResolvedOperation -&gt; Bool
 /= :: ResolvedOperation -&gt; ResolvedOperation -&gt; Bool
-</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679237287"><span id="local-6989586621679237307"><span id="local-6989586621679237311"><span class="annot"><span class="annottext">Int -&gt; ResolvedOperation -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679238564"><span id="local-6989586621679238584"><span id="local-6989586621679238588"><span class="annot"><span class="annottext">Int -&gt; ResolvedOperation -&gt; ShowS
 [ResolvedOperation] -&gt; ShowS
 ResolvedOperation -&gt; String
 (Int -&gt; ResolvedOperation -&gt; ShowS)
@@ -388,23 +388,23 @@ False
 -}</span></span><span>
 </span><span id="line-249"></span><span class="annot"><a href="Haskemathesis.OpenApi.Types.html#isStreamingContentType"><span class="hs-identifier hs-type">isStreamingContentType</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span>
 </span><span id="line-250"></span><span id="isStreamingContentType"><span class="annot"><span class="annottext">isStreamingContentType :: Text -&gt; Bool
-</span><a href="Haskemathesis.OpenApi.Types.html#isStreamingContentType"><span class="hs-identifier hs-var hs-var">isStreamingContentType</span></a></span></span><span> </span><span id="local-6989586621679237315"><span class="annot"><span class="annottext">Text
-</span><a href="#local-6989586621679237315"><span class="hs-identifier hs-var">contentType</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><a href="Haskemathesis.OpenApi.Types.html#isStreamingContentType"><span class="hs-identifier hs-var hs-var">isStreamingContentType</span></a></span></span><span> </span><span id="local-6989586621679238592"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679238592"><span class="hs-identifier hs-var">contentType</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
 </span><span id="line-251"></span><span>    </span><span class="annot"><span class="annottext">Text
-</span><a href="#local-6989586621679237316"><span class="hs-identifier hs-var">normalizedType</span></a></span><span> </span><span class="annot"><span class="annottext">Text -&gt; [Text] -&gt; Bool
+</span><a href="#local-6989586621679238593"><span class="hs-identifier hs-var">normalizedType</span></a></span><span> </span><span class="annot"><span class="annottext">Text -&gt; [Text] -&gt; Bool
 forall a. Eq a =&gt; a -&gt; [a] -&gt; Bool
 forall (t :: * -&gt; *) a. (Foldable t, Eq a) =&gt; a -&gt; t a -&gt; Bool
 </span><span class="hs-operator hs-var">`elem`</span></span><span> </span><span class="annot"><span class="annottext">[Text]
 </span><a href="Haskemathesis.OpenApi.Types.html#streamingContentTypes"><span class="hs-identifier hs-var">streamingContentTypes</span></a></span><span>
 </span><span id="line-252"></span><span>  </span><span class="hs-keyword">where</span><span>
 </span><span id="line-253"></span><span>    </span><span class="hs-comment">-- Strip parameters (e.g., &quot;; charset=utf-8&quot;) and lowercase</span><span>
-</span><span id="line-254"></span><span>    </span><span id="local-6989586621679237316"><span class="annot"><span class="annottext">normalizedType :: Text
-</span><a href="#local-6989586621679237316"><span class="hs-identifier hs-var hs-var">normalizedType</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text
+</span><span id="line-254"></span><span>    </span><span id="local-6989586621679238593"><span class="annot"><span class="annottext">normalizedType :: Text
+</span><a href="#local-6989586621679238593"><span class="hs-identifier hs-var hs-var">normalizedType</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text
 </span><span class="hs-identifier hs-var">T.toLower</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Text -&gt; Text
 </span><span class="hs-identifier hs-var">T.strip</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">(Char -&gt; Bool) -&gt; Text -&gt; Text
 </span><span class="hs-identifier hs-var">T.takeWhile</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Char -&gt; Char -&gt; Bool
 forall a. Eq a =&gt; a -&gt; a -&gt; Bool
 </span><span class="hs-operator hs-var">/=</span></span><span> </span><span class="annot"><span class="annottext">Char
 </span><span class="hs-char">';'</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Text
-</span><a href="#local-6989586621679237315"><span class="hs-identifier hs-var">contentType</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><a href="#local-6989586621679238592"><span class="hs-identifier hs-var">contentType</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
 </span><span id="line-255"></span></pre></body></html>

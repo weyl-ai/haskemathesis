@@ -81,7 +81,7 @@ and are used to specify what kind of values a schema accepts.
 </span><span id="line-81"></span><span>      </span><span id="SObject"><span class="annot"><a href="Haskemathesis.Schema.html#SObject"><span class="hs-identifier hs-var">SObject</span></a></span></span><span>
 </span><span id="line-82"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="hs-comment">-- | The null value.</span></span><span>
 </span><span id="line-83"></span><span>      </span><span id="SNull"><span class="annot"><a href="Haskemathesis.Schema.html#SNull"><span class="hs-identifier hs-var">SNull</span></a></span></span><span>
-</span><span id="line-84"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679236944"><span id="local-6989586621679236949"><span class="annot"><span class="annottext">SchemaType -&gt; SchemaType -&gt; Bool
+</span><span id="line-84"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679238221"><span id="local-6989586621679238226"><span class="annot"><span class="annottext">SchemaType -&gt; SchemaType -&gt; Bool
 (SchemaType -&gt; SchemaType -&gt; Bool)
 -&gt; (SchemaType -&gt; SchemaType -&gt; Bool) -&gt; Eq SchemaType
 forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
@@ -89,7 +89,7 @@ $c== :: SchemaType -&gt; SchemaType -&gt; Bool
 == :: SchemaType -&gt; SchemaType -&gt; Bool
 $c/= :: SchemaType -&gt; SchemaType -&gt; Bool
 /= :: SchemaType -&gt; SchemaType -&gt; Bool
-</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679236954"><span id="local-6989586621679236956"><span id="local-6989586621679236960"><span class="annot"><span class="annottext">Int -&gt; SchemaType -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679238231"><span id="local-6989586621679238233"><span id="local-6989586621679238237"><span class="annot"><span class="annottext">Int -&gt; SchemaType -&gt; ShowS
 [SchemaType] -&gt; ShowS
 SchemaType -&gt; String
 (Int -&gt; SchemaType -&gt; ShowS)
@@ -118,7 +118,7 @@ beyond those explicitly defined in 'schemaProperties'.
 </span><span id="line-95"></span><span>      </span><span id="AdditionalPropertiesNone"><span class="annot"><a href="Haskemathesis.Schema.html#AdditionalPropertiesNone"><span class="hs-identifier hs-var">AdditionalPropertiesNone</span></a></span></span><span>
 </span><span id="line-96"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="hs-comment">-- | Additional properties must conform to the given schema.</span></span><span>
 </span><span id="line-97"></span><span>      </span><span id="AdditionalPropertiesSchema"><span class="annot"><a href="Haskemathesis.Schema.html#AdditionalPropertiesSchema"><span class="hs-identifier hs-var">AdditionalPropertiesSchema</span></a></span></span><span> </span><span class="annot"><a href="Haskemathesis.Schema.html#Schema"><span class="hs-identifier hs-type">Schema</span></a></span><span>
-</span><span id="line-98"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679236969"><span id="local-6989586621679236975"><span class="annot"><span class="annottext">AdditionalProperties -&gt; AdditionalProperties -&gt; Bool
+</span><span id="line-98"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679238246"><span id="local-6989586621679238252"><span class="annot"><span class="annottext">AdditionalProperties -&gt; AdditionalProperties -&gt; Bool
 (AdditionalProperties -&gt; AdditionalProperties -&gt; Bool)
 -&gt; (AdditionalProperties -&gt; AdditionalProperties -&gt; Bool)
 -&gt; Eq AdditionalProperties
@@ -127,7 +127,7 @@ $c== :: AdditionalProperties -&gt; AdditionalProperties -&gt; Bool
 == :: AdditionalProperties -&gt; AdditionalProperties -&gt; Bool
 $c/= :: AdditionalProperties -&gt; AdditionalProperties -&gt; Bool
 /= :: AdditionalProperties -&gt; AdditionalProperties -&gt; Bool
-</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679236979"><span id="local-6989586621679236985"><span id="local-6989586621679236989"><span class="annot"><span class="annottext">Int -&gt; AdditionalProperties -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679238256"><span id="local-6989586621679238262"><span id="local-6989586621679238266"><span class="annot"><span class="annottext">Int -&gt; AdditionalProperties -&gt; ShowS
 [AdditionalProperties] -&gt; ShowS
 AdditionalProperties -&gt; String
 (Int -&gt; AdditionalProperties -&gt; ShowS)
@@ -234,7 +234,7 @@ Haskemathesis for generating test data and validating responses.
 </span><a href="Haskemathesis.Schema.html#schemaNullable"><span class="hs-identifier hs-var hs-var">schemaNullable</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span>
 </span><span id="line-167"></span><span>    </span><span class="annot"><span class="hs-comment">-- ^ Whether null is an acceptable value in addition to the main type.</span></span><span>
 </span><span id="line-168"></span><span>    </span><span class="hs-special">}</span><span>
-</span><span id="line-169"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679237012"><span id="local-6989586621679237047"><span class="annot"><span class="annottext">Schema -&gt; Schema -&gt; Bool
+</span><span id="line-169"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679238289"><span id="local-6989586621679238324"><span class="annot"><span class="annottext">Schema -&gt; Schema -&gt; Bool
 (Schema -&gt; Schema -&gt; Bool)
 -&gt; (Schema -&gt; Schema -&gt; Bool) -&gt; Eq Schema
 forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
@@ -242,7 +242,7 @@ $c== :: Schema -&gt; Schema -&gt; Bool
 == :: Schema -&gt; Schema -&gt; Bool
 $c/= :: Schema -&gt; Schema -&gt; Bool
 /= :: Schema -&gt; Schema -&gt; Bool
-</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679237054"><span id="local-6989586621679237090"><span id="local-6989586621679237093"><span class="annot"><span class="annottext">Int -&gt; Schema -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679238331"><span id="local-6989586621679238367"><span id="local-6989586621679238370"><span class="annot"><span class="annottext">Int -&gt; Schema -&gt; ShowS
 [Schema] -&gt; ShowS
 Schema -&gt; String
 (Int -&gt; Schema -&gt; ShowS)

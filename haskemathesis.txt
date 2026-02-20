@@ -57,7 +57,7 @@ Curl :: !CurlOptions -> Command
 
 -- | Options for the <tt>test</tt> command.
 data TestOptions
-TestOptions :: !FilePath -> !Text -> !Int -> ![Text] -> ![Text] -> ![Text] -> !Bool -> !Maybe Text -> !OutputFormat -> !Maybe Int -> !Maybe Int -> !Int -> !WorkdirOption -> !Maybe Int -> !Maybe Int -> TestOptions
+TestOptions :: !FilePath -> !Text -> !Int -> ![Text] -> ![Text] -> ![Text] -> !Bool -> !Maybe Text -> !OutputFormat -> !Maybe Int -> !Maybe Int -> !Int -> !WorkdirOption -> !Maybe Int -> !Maybe Int -> !Bool -> !Int -> TestOptions
 
 -- | Path to the OpenAPI specification file (YAML or JSON)
 [testSpecPath] :: TestOptions -> !FilePath
@@ -122,6 +122,24 @@ TestOptions :: !FilePath -> !Text -> !Int -> ![Text] -> ![Text] -> ![Text] -> !B
 --   Example: <tt>--max-response-time 500</tt> fails if any response
 --   exceeds 500ms.
 [testMaxResponseTime] :: TestOptions -> !Maybe Int
+
+-- | Enable stateful testing mode.
+--   
+--   When enabled, generates sequences of API operations where responses
+--   from earlier operations inform subsequent requests. Tests CRUD
+--   patterns like: POST <i>users -&gt; GET </i>users<i>{id} -&gt; DELETE
+--   </i>users/{id}
+--   
+--   Default: <a>False</a>
+[testStateful] :: TestOptions -> !Bool
+
+-- | Maximum number of operations per stateful sequence.
+--   
+--   Controls how long generated sequences can be. Longer sequences test
+--   more complex scenarios but take longer to run.
+--   
+--   Default: 5
+[testMaxSequenceLength] :: TestOptions -> !Int
 
 -- | Options for the <tt>validate</tt> command.
 data ValidateOptions
@@ -4717,6 +4735,19 @@ maxResponseTime :: Int -> Check
 --       { tcOperationFilter = filterByTag "public"
 --       }
 --   </pre>
+--   
+--   <h3>Stateful Testing</h3>
+--   
+--   Enable stateful testing to chain operations together:
+--   
+--   <pre>
+--   statefulConfig :: TestConfig
+--   statefulConfig = defaultTestConfig
+--       { tcStatefulTesting = True
+--       , tcMaxSequenceLength = 5
+--       , tcStatefulChecks = defaultStatefulChecks
+--       }
+--   </pre>
 module Haskemathesis.Config
 
 -- | Configuration for test generation and execution.
@@ -4741,9 +4772,16 @@ module Haskemathesis.Config
 --   <li><a>tcHeaders</a> - Global headers to include in every request</li>
 --   <li><a>tcStreamingTimeout</a> - Default timeout for streaming
 --   endpoints (milliseconds)</li>
+--   <li><a>tcStatefulTesting</a> - Whether to enable stateful testing</li>
+--   <li><a>tcStatefulChecks</a> - List of stateful checks to run after
+--   sequences</li>
+--   <li><a>tcMaxSequenceLength</a> - Maximum number of operations per
+--   sequence</li>
+--   <li><a>tcCleanupOnFailure</a> - Whether to run cleanup steps even on
+--   failure</li>
 --   </ul>
 data TestConfig
-TestConfig :: ![Check] -> !Maybe AuthConfig -> !Maybe BaseUrl -> !Int -> !Bool -> !ResolvedOperation -> Bool -> ![(HeaderName, ByteString)] -> !Maybe Int -> TestConfig
+TestConfig :: ![Check] -> !Maybe AuthConfig -> !Maybe BaseUrl -> !Int -> !Bool -> !ResolvedOperation -> Bool -> ![(HeaderName, ByteString)] -> !Maybe Int -> !Bool -> ![StatefulCheck] -> !Int -> !Bool -> TestConfig
 [tcChecks] :: TestConfig -> ![Check]
 [tcAuthConfig] :: TestConfig -> !Maybe AuthConfig
 [tcBaseUrl] :: TestConfig -> !Maybe BaseUrl
@@ -4779,6 +4817,46 @@ TestConfig :: ![Check] -> !Maybe AuthConfig -> !Maybe BaseUrl -> !Int -> !Bool -
 --   streaming endpoints (which may cause tests to hang).
 [tcStreamingTimeout] :: TestConfig -> !Maybe Int
 
+-- | Enable stateful testing.
+--   
+--   When enabled, <tt>propertiesForSpecWithConfig</tt> will also generate
+--   stateful properties that test operation sequences. Use
+--   <tt>propertyStateful</tt> for direct access to stateful testing.
+--   
+--   Default: <a>False</a>
+[tcStatefulTesting] :: TestConfig -> !Bool
+
+-- | Stateful checks to run after each sequence.
+--   
+--   These checks verify stateful properties like:
+--   
+--   <ul>
+--   <li><a>useAfterFree</a> - Deleted resources return 404</li>
+--   <li><a>ensureResourceAvailability</a> - Created resources are
+--   accessible</li>
+--   </ul>
+--   
+--   Default: <a>defaultStatefulChecks</a> (both of the above)
+[tcStatefulChecks] :: TestConfig -> ![StatefulCheck]
+
+-- | Maximum number of operations per stateful sequence.
+--   
+--   Controls how long generated sequences can be. Longer sequences test
+--   more complex scenarios but take longer to run and may be harder to
+--   debug when they fail.
+--   
+--   Default: 5
+[tcMaxSequenceLength] :: TestConfig -> !Int
+
+-- | Whether to run cleanup steps even when the main sequence fails.
+--   
+--   When <a>True</a>, cleanup operations (typically DELETEs) are executed
+--   even if an earlier step in the sequence fails. This prevents resource
+--   leaks but may make debugging harder.
+--   
+--   Default: <a>True</a>
+[tcCleanupOnFailure] :: TestConfig -> !Bool
+
 -- | Sensible defaults for <a>TestConfig</a>.
 --   
 --   The default configuration:
@@ -4793,6 +4871,11 @@ TestConfig :: ![Check] -> !Maybe AuthConfig -> !Maybe BaseUrl -> !Int -> !Bool -
 --   <li>All operations included (filter always returns <a>True</a>)</li>
 --   <li>No global headers</li>
 --   <li>1 second (1000ms) streaming timeout</li>
+--   <li>Stateful testing disabled</li>
+--   <li>Default stateful checks (use-after-free, resource
+--   availability)</li>
+--   <li>Max sequence length of 5</li>
+--   <li>Cleanup on failure enabled</li>
 --   </ul>
 defaultTestConfig :: TestConfig
 
@@ -4828,6 +4911,23 @@ filterByPathPrefix :: Text -> ResolvedOperation -> Bool
 --       }
 --   </pre>
 filterByTag :: Text -> ResolvedOperation -> Bool
+
+-- | Default stateful checks.
+--   
+--   Includes:
+--   
+--   <ul>
+--   <li><a>useAfterFree</a> - Verifies deleted resources return 404</li>
+--   <li><a>ensureResourceAvailability</a> - Verifies created resources are
+--   accessible</li>
+--   </ul>
+--   
+--   Use these as a starting point and add or remove checks as needed:
+--   
+--   <pre>
+--   myChecks = defaultStatefulChecks ++ [ensureModificationPersisted]
+--   </pre>
+defaultStatefulChecks :: [StatefulCheck]
 
 
 -- | High-level property generation for resolved operations and specs.
@@ -4868,6 +4968,17 @@ filterByTag :: Text -> ResolvedOperation -> Bool
 --       , tcNegativeTesting = True
 --       , tcOperationFilter = filterByTag "public"
 --       }
+--   </pre>
+--   
+--   <h3>Stateful Testing</h3>
+--   
+--   For stateful API testing that chains operations together:
+--   
+--   <pre>
+--   import Haskemathesis.Property (propertyStateful)
+--   
+--   -- Run stateful CRUD sequences
+--   prop = propertyStateful spec config httpExecutor ops
 --   </pre>
 module Haskemathesis.Property
 
@@ -5091,6 +5202,156 @@ propertiesForSpecWithConfig :: OpenApi -> TestConfig -> ExecutorWithTimeout -> [
 --   negativeProps = propertiesForSpecNegative spec defaultConfig httpExecutor ops
 --   </pre>
 propertiesForSpecNegative :: OpenApi -> TestConfig -> ExecutorWithTimeout -> [ResolvedOperation] -> [(Text, Property)]
+
+-- | Run a stateful test that chains multiple API operations together.
+--   
+--   Stateful testing generates sequences of API operations where responses
+--   from earlier operations inform requests of later operations. This
+--   enables testing realistic scenarios like:
+--   
+--   <pre>
+--   POST /users         -- Create user, returns {id: 123}
+--   GET <i>users</i>123      -- Fetch using id from POST response
+--   PUT <i>users</i>123      -- Update using same id
+--   DELETE <i>users</i>123   -- Remove the resource
+--   GET <i>users</i>123      -- Should return 404 (use-after-free check)
+--   </pre>
+--   
+--   <h3>How It Works</h3>
+--   
+--   <ol>
+--   <li>Combines explicit OpenAPI links with heuristically-inferred
+--   links</li>
+--   <li>Generates a random valid operation sequence following these
+--   links</li>
+--   <li>Executes each operation, extracting values for subsequent
+--   requests</li>
+--   <li>Runs regular checks after each operation</li>
+--   <li>Runs stateful checks after the sequence completes (e.g.,
+--   use-after-free)</li>
+--   </ol>
+--   
+--   <h3>Parameters</h3>
+--   
+--   <ul>
+--   <li><tt>openApi</tt> - The full OpenAPI specification</li>
+--   <li><tt>config</tt> - Test configuration (should have stateful options
+--   set)</li>
+--   <li><tt>execute</tt> - Timeout-aware executor</li>
+--   <li><tt>ops</tt> - List of resolved operations</li>
+--   </ul>
+--   
+--   <h3>Example</h3>
+--   
+--   <pre>
+--   config = defaultTestConfig
+--       { tcStatefulTesting = True
+--       , tcMaxSequenceLength = 5
+--       }
+--   prop = propertyStateful spec config httpExecutor ops
+--   </pre>
+propertyStateful :: OpenApi -> TestConfig -> ExecutorWithTimeout -> [ResolvedOperation] -> Property
+
+-- | Generate stateful properties for all operations that can start
+--   sequences.
+--   
+--   Creates properties that test CRUD-like sequences starting from each
+--   "creator" operation (typically POSTs). Unlike
+--   <a>propertiesForSpecWithConfig</a>, these properties test multiple
+--   operations together in sequences.
+--   
+--   <h3>Parameters</h3>
+--   
+--   <ul>
+--   <li><tt>openApi</tt> - The full OpenAPI specification</li>
+--   <li><tt>config</tt> - Test configuration with stateful options</li>
+--   <li><tt>execute</tt> - Timeout-aware executor</li>
+--   <li><tt>ops</tt> - List of resolved operations</li>
+--   </ul>
+--   
+--   <h3>Return Value</h3>
+--   
+--   Returns a list of tuples where: * First element: "STATEFUL: " prefix +
+--   operation label * Second element: The stateful <a>Property</a>
+--   
+--   <h3>Example</h3>
+--   
+--   <pre>
+--   config = defaultTestConfig { tcMaxSequenceLength = 5 }
+--   props = propertiesForSpecStateful spec config httpExecutor ops
+--   -- Returns: [("STATEFUL: createUser", ...), ("STATEFUL: createPost", ...)]
+--   </pre>
+propertiesForSpecStateful :: OpenApi -> TestConfig -> ExecutorWithTimeout -> [ResolvedOperation] -> [(Text, Property)]
+
+-- | Execute a complete stateful sequence and return the final state.
+--   
+--   This function executes each step in the sequence, updating state after
+--   each successful request. It also executes cleanup steps at the end.
+--   
+--   <h3>Parameters</h3>
+--   
+--   <ul>
+--   <li><tt>openApi</tt> - OpenAPI spec for auth resolution</li>
+--   <li><tt>config</tt> - Test configuration</li>
+--   <li><tt>execute</tt> - Timeout-aware executor</li>
+--   <li><tt>ops</tt> - Available operations (for looking up by ID)</li>
+--   <li><tt>sequence'</tt> - The sequence to execute</li>
+--   </ul>
+--   
+--   <h3>Return Value</h3>
+--   
+--   Returns the final <a>TestState</a> after executing all steps.
+--   
+--   <h3>Side Effects</h3>
+--   
+--   <ul>
+--   <li>Executes HTTP requests via the executor</li>
+--   <li>May abort with a Hedgehog failure if checks fail</li>
+--   </ul>
+executeStatefulSequence :: OpenApi -> TestConfig -> ExecutorWithTimeout -> [ResolvedOperation] -> OperationSequence -> PropertyT IO TestState
+
+-- | Execute a single step in a stateful sequence.
+--   
+--   This function:
+--   
+--   <ol>
+--   <li>Looks up the operation by ID</li>
+--   <li>Generates a request using state for bound parameters</li>
+--   <li>Applies auth and config headers</li>
+--   <li>Executes the request</li>
+--   <li>Runs standard checks</li>
+--   <li>Updates state with extracted values from response</li>
+--   </ol>
+--   
+--   <h3>Parameters</h3>
+--   
+--   <ul>
+--   <li><tt>openApi</tt> - OpenAPI spec for auth resolution</li>
+--   <li><tt>config</tt> - Test configuration</li>
+--   <li><tt>execute</tt> - Timeout-aware executor</li>
+--   <li><tt>ops</tt> - Available operations</li>
+--   <li><tt>state</tt> - Current test state</li>
+--   <li><tt>step</tt> - The step to execute</li>
+--   </ul>
+--   
+--   <h3>Return Value</h3>
+--   
+--   Returns the updated <a>TestState</a> after executing the step.
+--   
+--   <h3>Failures</h3>
+--   
+--   If the operation ID is not found, or if checks fail, the property
+--   fails.
+executeStatefulStep :: OpenApi -> TestConfig -> ExecutorWithTimeout -> [ResolvedOperation] -> TestState -> SequenceStep -> PropertyT IO TestState
+
+-- | Internal helper to run stateful checks and report failures.
+runStatefulChecksProperty :: TestConfig -> ExecutorWithTimeout -> [ResolvedOperation] -> TestState -> PropertyT IO ()
+
+-- | Check if a stateful check result is a failure.
+isStatefulFailure :: StatefulCheckResult -> Bool
+
+-- | Render a stateful failure as human-readable text.
+renderStatefulFailure :: StatefulFailure -> Text
 
 -- | Compute the effective timeout for an operation.
 --   
@@ -6059,7 +6320,7 @@ Curl :: !CurlOptions -> Command
 
 -- | Options for the <tt>test</tt> command.
 data TestOptions
-TestOptions :: !FilePath -> !Text -> !Int -> ![Text] -> ![Text] -> ![Text] -> !Bool -> !Maybe Text -> !OutputFormat -> !Maybe Int -> !Maybe Int -> !Int -> !WorkdirOption -> !Maybe Int -> !Maybe Int -> TestOptions
+TestOptions :: !FilePath -> !Text -> !Int -> ![Text] -> ![Text] -> ![Text] -> !Bool -> !Maybe Text -> !OutputFormat -> !Maybe Int -> !Maybe Int -> !Int -> !WorkdirOption -> !Maybe Int -> !Maybe Int -> !Bool -> !Int -> TestOptions
 
 -- | Path to the OpenAPI specification file (YAML or JSON)
 [testSpecPath] :: TestOptions -> !FilePath
@@ -6124,6 +6385,24 @@ TestOptions :: !FilePath -> !Text -> !Int -> ![Text] -> ![Text] -> ![Text] -> !B
 --   Example: <tt>--max-response-time 500</tt> fails if any response
 --   exceeds 500ms.
 [testMaxResponseTime] :: TestOptions -> !Maybe Int
+
+-- | Enable stateful testing mode.
+--   
+--   When enabled, generates sequences of API operations where responses
+--   from earlier operations inform subsequent requests. Tests CRUD
+--   patterns like: POST <i>users -&gt; GET </i>users<i>{id} -&gt; DELETE
+--   </i>users/{id}
+--   
+--   Default: <a>False</a>
+[testStateful] :: TestOptions -> !Bool
+
+-- | Maximum number of operations per stateful sequence.
+--   
+--   Controls how long generated sequences can be. Longer sequences test
+--   more complex scenarios but take longer to run.
+--   
+--   Default: 5
+[testMaxSequenceLength] :: TestOptions -> !Int
 
 -- | Options for the <tt>validate</tt> command.
 data ValidateOptions

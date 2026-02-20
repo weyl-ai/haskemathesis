@@ -104,7 +104,7 @@ use-after-free detection.
 </span><a href="Haskemathesis.Stateful.Types.html#tsHistory"><span class="hs-identifier hs-var hs-var">tsHistory</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Haskemathesis.Execute.Types.html#ApiRequest"><span class="hs-identifier hs-type">ApiRequest</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Haskemathesis.Execute.Types.html#ApiResponse"><span class="hs-identifier hs-type">ApiResponse</span></a></span><span class="hs-special">)</span><span class="hs-special">]</span><span>
 </span><span id="line-102"></span><span>    </span><span class="annot"><span class="hs-comment">-- ^ History: (operationId or label, request, response)</span></span><span>
 </span><span id="line-103"></span><span>    </span><span class="hs-special">}</span><span>
-</span><span id="line-104"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679239454"><span id="local-6989586621679239465"><span class="annot"><span class="annottext">TestState -&gt; TestState -&gt; Bool
+</span><span id="line-104"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679240731"><span id="local-6989586621679240742"><span class="annot"><span class="annottext">TestState -&gt; TestState -&gt; Bool
 (TestState -&gt; TestState -&gt; Bool)
 -&gt; (TestState -&gt; TestState -&gt; Bool) -&gt; Eq TestState
 forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
@@ -112,7 +112,7 @@ $c== :: TestState -&gt; TestState -&gt; Bool
 == :: TestState -&gt; TestState -&gt; Bool
 $c/= :: TestState -&gt; TestState -&gt; Bool
 /= :: TestState -&gt; TestState -&gt; Bool
-</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679239478"><span id="local-6989586621679239491"><span id="local-6989586621679239495"><span class="annot"><span class="annottext">Int -&gt; TestState -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679240755"><span id="local-6989586621679240768"><span id="local-6989586621679240772"><span class="annot"><span class="annottext">Int -&gt; TestState -&gt; ShowS
 [TestState] -&gt; ShowS
 TestState -&gt; String
 (Int -&gt; TestState -&gt; ShowS)
@@ -181,7 +181,7 @@ ResourceRef
 </span><a href="Haskemathesis.Stateful.Types.html#rrIdentifiers"><span class="hs-identifier hs-var hs-var">rrIdentifiers</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Map</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span> </span><span class="annot"><a href="file:///nix/store/bjx03k98335ijsml9dq303bj5ddk8a5f-aeson-2.2.3.0-doc/share/doc/aeson-2.2.3.0/html/src/Data.Aeson.Types.Internal.html#Value"><span class="hs-identifier hs-type">Value</span></a></span><span>
 </span><span id="line-147"></span><span>    </span><span class="annot"><span class="hs-comment">-- ^ Extracted identifiers needed to access the resource</span></span><span>
 </span><span id="line-148"></span><span>    </span><span class="hs-special">}</span><span>
-</span><span id="line-149"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679239512"><span id="local-6989586621679239518"><span class="annot"><span class="annottext">ResourceRef -&gt; ResourceRef -&gt; Bool
+</span><span id="line-149"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679240789"><span id="local-6989586621679240795"><span class="annot"><span class="annottext">ResourceRef -&gt; ResourceRef -&gt; Bool
 (ResourceRef -&gt; ResourceRef -&gt; Bool)
 -&gt; (ResourceRef -&gt; ResourceRef -&gt; Bool) -&gt; Eq ResourceRef
 forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
@@ -189,7 +189,7 @@ $c== :: ResourceRef -&gt; ResourceRef -&gt; Bool
 == :: ResourceRef -&gt; ResourceRef -&gt; Bool
 $c/= :: ResourceRef -&gt; ResourceRef -&gt; Bool
 /= :: ResourceRef -&gt; ResourceRef -&gt; Bool
-</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679239521"><span id="local-6989586621679239528"><span id="local-6989586621679239531"><span class="annot"><span class="annottext">Int -&gt; ResourceRef -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679240798"><span id="local-6989586621679240805"><span id="local-6989586621679240808"><span class="annot"><span class="annottext">Int -&gt; ResourceRef -&gt; ShowS
 [ResourceRef] -&gt; ShowS
 ResourceRef -&gt; String
 (Int -&gt; ResourceRef -&gt; ShowS)
@@ -245,7 +245,7 @@ OperationLink
 </span><a href="Haskemathesis.Stateful.Types.html#olLinkName"><span class="hs-identifier hs-var hs-var">olLinkName</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
 </span><span id="line-183"></span><span>    </span><span class="annot"><span class="hs-comment">-- ^ Optional name of the link (from OpenAPI spec)</span></span><span>
 </span><span id="line-184"></span><span>    </span><span class="hs-special">}</span><span>
-</span><span id="line-185"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679239539"><span id="local-6989586621679239548"><span class="annot"><span class="annottext">OperationLink -&gt; OperationLink -&gt; Bool
+</span><span id="line-185"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679240816"><span id="local-6989586621679240825"><span class="annot"><span class="annottext">OperationLink -&gt; OperationLink -&gt; Bool
 (OperationLink -&gt; OperationLink -&gt; Bool)
 -&gt; (OperationLink -&gt; OperationLink -&gt; Bool) -&gt; Eq OperationLink
 forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
@@ -253,7 +253,7 @@ $c== :: OperationLink -&gt; OperationLink -&gt; Bool
 == :: OperationLink -&gt; OperationLink -&gt; Bool
 $c/= :: OperationLink -&gt; OperationLink -&gt; Bool
 /= :: OperationLink -&gt; OperationLink -&gt; Bool
-</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679239553"><span id="local-6989586621679239563"><span id="local-6989586621679239567"><span class="annot"><span class="annottext">Int -&gt; OperationLink -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679240830"><span id="local-6989586621679240840"><span id="local-6989586621679240844"><span class="annot"><span class="annottext">Int -&gt; OperationLink -&gt; ShowS
 [OperationLink] -&gt; ShowS
 OperationLink -&gt; String
 (Int -&gt; OperationLink -&gt; ShowS)
@@ -292,7 +292,7 @@ ParameterBinding
 </span><a href="Haskemathesis.Stateful.Types.html#pbSource"><span class="hs-identifier hs-var hs-var">pbSource</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Haskemathesis.Stateful.Types.html#ValueSource"><span class="hs-identifier hs-type">ValueSource</span></a></span><span>
 </span><span id="line-205"></span><span>    </span><span class="annot"><span class="hs-comment">-- ^ Where to get the value for this parameter</span></span><span>
 </span><span id="line-206"></span><span>    </span><span class="hs-special">}</span><span>
-</span><span id="line-207"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679239574"><span id="local-6989586621679239579"><span class="annot"><span class="annottext">ParameterBinding -&gt; ParameterBinding -&gt; Bool
+</span><span id="line-207"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679240851"><span id="local-6989586621679240856"><span class="annot"><span class="annottext">ParameterBinding -&gt; ParameterBinding -&gt; Bool
 (ParameterBinding -&gt; ParameterBinding -&gt; Bool)
 -&gt; (ParameterBinding -&gt; ParameterBinding -&gt; Bool)
 -&gt; Eq ParameterBinding
@@ -301,7 +301,7 @@ $c== :: ParameterBinding -&gt; ParameterBinding -&gt; Bool
 == :: ParameterBinding -&gt; ParameterBinding -&gt; Bool
 $c/= :: ParameterBinding -&gt; ParameterBinding -&gt; Bool
 /= :: ParameterBinding -&gt; ParameterBinding -&gt; Bool
-</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679239582"><span id="local-6989586621679239588"><span id="local-6989586621679239591"><span class="annot"><span class="annottext">Int -&gt; ParameterBinding -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679240859"><span id="local-6989586621679240865"><span id="local-6989586621679240868"><span class="annot"><span class="annottext">Int -&gt; ParameterBinding -&gt; ShowS
 [ParameterBinding] -&gt; ShowS
 ParameterBinding -&gt; String
 (Int -&gt; ParameterBinding -&gt; ShowS)
@@ -355,7 +355,7 @@ Literal (String &quot;admin&quot;)
 </span><span id="line-243"></span><span>      </span><span id="FromState"><span class="annot"><a href="Haskemathesis.Stateful.Types.html#FromState"><span class="hs-identifier hs-var">FromState</span></a></span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
 </span><span id="line-244"></span><span>    </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="hs-comment">-- | Use a literal value</span></span><span>
 </span><span id="line-245"></span><span>      </span><span id="Literal"><span class="annot"><a href="Haskemathesis.Stateful.Types.html#Literal"><span class="hs-identifier hs-var">Literal</span></a></span></span><span> </span><span class="annot"><a href="file:///nix/store/bjx03k98335ijsml9dq303bj5ddk8a5f-aeson-2.2.3.0-doc/share/doc/aeson-2.2.3.0/html/src/Data.Aeson.Types.Internal.html#Value"><span class="hs-identifier hs-type">Value</span></a></span><span>
-</span><span id="line-246"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679239598"><span id="local-6989586621679239607"><span class="annot"><span class="annottext">ValueSource -&gt; ValueSource -&gt; Bool
+</span><span id="line-246"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679240875"><span id="local-6989586621679240884"><span class="annot"><span class="annottext">ValueSource -&gt; ValueSource -&gt; Bool
 (ValueSource -&gt; ValueSource -&gt; Bool)
 -&gt; (ValueSource -&gt; ValueSource -&gt; Bool) -&gt; Eq ValueSource
 forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
@@ -363,7 +363,7 @@ $c== :: ValueSource -&gt; ValueSource -&gt; Bool
 == :: ValueSource -&gt; ValueSource -&gt; Bool
 $c/= :: ValueSource -&gt; ValueSource -&gt; Bool
 /= :: ValueSource -&gt; ValueSource -&gt; Bool
-</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679239610"><span id="local-6989586621679239620"><span id="local-6989586621679239623"><span class="annot"><span class="annottext">Int -&gt; ValueSource -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679240887"><span id="local-6989586621679240897"><span id="local-6989586621679240900"><span class="annot"><span class="annottext">Int -&gt; ValueSource -&gt; ShowS
 [ValueSource] -&gt; ShowS
 ValueSource -&gt; String
 (Int -&gt; ValueSource -&gt; ShowS)
@@ -406,7 +406,7 @@ OperationSequence
 </span><a href="Haskemathesis.Stateful.Types.html#osCleanup"><span class="hs-identifier hs-var hs-var">osCleanup</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="Haskemathesis.Stateful.Types.html#SequenceStep"><span class="hs-identifier hs-type">SequenceStep</span></a></span><span class="hs-special">]</span><span>
 </span><span id="line-270"></span><span>    </span><span class="annot"><span class="hs-comment">-- ^ Cleanup steps to run after main steps (even on failure)</span></span><span>
 </span><span id="line-271"></span><span>    </span><span class="hs-special">}</span><span>
-</span><span id="line-272"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679239629"><span id="local-6989586621679239634"><span class="annot"><span class="annottext">OperationSequence -&gt; OperationSequence -&gt; Bool
+</span><span id="line-272"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679240906"><span id="local-6989586621679240911"><span class="annot"><span class="annottext">OperationSequence -&gt; OperationSequence -&gt; Bool
 (OperationSequence -&gt; OperationSequence -&gt; Bool)
 -&gt; (OperationSequence -&gt; OperationSequence -&gt; Bool)
 -&gt; Eq OperationSequence
@@ -415,7 +415,7 @@ $c== :: OperationSequence -&gt; OperationSequence -&gt; Bool
 == :: OperationSequence -&gt; OperationSequence -&gt; Bool
 $c/= :: OperationSequence -&gt; OperationSequence -&gt; Bool
 /= :: OperationSequence -&gt; OperationSequence -&gt; Bool
-</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679239639"><span id="local-6989586621679239645"><span id="local-6989586621679239649"><span class="annot"><span class="annottext">Int -&gt; OperationSequence -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679240916"><span id="local-6989586621679240922"><span id="local-6989586621679240926"><span class="annot"><span class="annottext">Int -&gt; OperationSequence -&gt; ShowS
 [OperationSequence] -&gt; ShowS
 OperationSequence -&gt; String
 (Int -&gt; OperationSequence -&gt; ShowS)
@@ -461,7 +461,7 @@ SequenceStep
 </span><a href="Haskemathesis.Stateful.Types.html#ssParamBindings"><span class="hs-identifier hs-var hs-var">ssParamBindings</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Map</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span> </span><span class="annot"><a href="Haskemathesis.Stateful.Types.html#ValueSource"><span class="hs-identifier hs-type">ValueSource</span></a></span><span>
 </span><span id="line-299"></span><span>    </span><span class="annot"><span class="hs-comment">-- ^ How to fill each parameter (missing = generate from schema)</span></span><span>
 </span><span id="line-300"></span><span>    </span><span class="hs-special">}</span><span>
-</span><span id="line-301"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679239656"><span id="local-6989586621679239661"><span class="annot"><span class="annottext">SequenceStep -&gt; SequenceStep -&gt; Bool
+</span><span id="line-301"></span><span>    </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679240933"><span id="local-6989586621679240938"><span class="annot"><span class="annottext">SequenceStep -&gt; SequenceStep -&gt; Bool
 (SequenceStep -&gt; SequenceStep -&gt; Bool)
 -&gt; (SequenceStep -&gt; SequenceStep -&gt; Bool) -&gt; Eq SequenceStep
 forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
@@ -469,7 +469,7 @@ $c== :: SequenceStep -&gt; SequenceStep -&gt; Bool
 == :: SequenceStep -&gt; SequenceStep -&gt; Bool
 $c/= :: SequenceStep -&gt; SequenceStep -&gt; Bool
 /= :: SequenceStep -&gt; SequenceStep -&gt; Bool
-</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679239664"><span id="local-6989586621679239670"><span id="local-6989586621679239673"><span class="annot"><span class="annottext">Int -&gt; SequenceStep -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679240941"><span id="local-6989586621679240947"><span id="local-6989586621679240950"><span class="annot"><span class="annottext">Int -&gt; SequenceStep -&gt; ShowS
 [SequenceStep] -&gt; ShowS
 SequenceStep -&gt; String
 (Int -&gt; SequenceStep -&gt; ShowS)

@@ -28,27 +28,46 @@ filterConfig = defaultTestConfig
     { tcOperationFilter = filterByTag &quot;public&quot;
     }
 @
+
+=== Stateful Testing
+
+Enable stateful testing to chain operations together:
+
+@
+statefulConfig :: TestConfig
+statefulConfig = defaultTestConfig
+    { tcStatefulTesting = True
+    , tcMaxSequenceLength = 5
+    , tcStatefulChecks = defaultStatefulChecks
+    }
+@
 -}</span></span><span>
-</span><span id="line-32"></span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="Haskemathesis.Config.html"><span class="hs-identifier">Haskemathesis.Config</span></a></span><span> </span><span class="hs-special">(</span><span>
-</span><span id="line-33"></span><span>    </span><span class="annot"><a href="Haskemathesis.Config.html#TestConfig"><span class="hs-identifier">TestConfig</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span>
-</span><span id="line-34"></span><span>    </span><span class="annot"><a href="Haskemathesis.Config.html#defaultTestConfig"><span class="hs-identifier">defaultTestConfig</span></a></span><span class="hs-special">,</span><span>
-</span><span id="line-35"></span><span>    </span><span class="annot"><a href="Haskemathesis.Config.html#filterByOperationId"><span class="hs-identifier">filterByOperationId</span></a></span><span class="hs-special">,</span><span>
-</span><span id="line-36"></span><span>    </span><span class="annot"><a href="Haskemathesis.Config.html#filterByPathPrefix"><span class="hs-identifier">filterByPathPrefix</span></a></span><span class="hs-special">,</span><span>
-</span><span id="line-37"></span><span>    </span><span class="annot"><a href="Haskemathesis.Config.html#filterByTag"><span class="hs-identifier">filterByTag</span></a></span><span class="hs-special">,</span><span>
-</span><span id="line-38"></span><span class="hs-special">)</span><span>
-</span><span id="line-39"></span><span class="hs-keyword">where</span><span>
-</span><span id="line-40"></span><span>
-</span><span id="line-41"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.ByteString</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">ByteString</span></span><span class="hs-special">)</span><span>
-</span><span id="line-42"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Text</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Text</span></span><span class="hs-special">)</span><span>
-</span><span id="line-43"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.Text</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">T</span></span><span>
-</span><span id="line-44"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Haskemathesis.Auth.Config.html"><span class="hs-identifier">Haskemathesis.Auth.Config</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Haskemathesis.Auth.Config.html#AuthConfig"><span class="hs-identifier">AuthConfig</span></a></span><span class="hs-special">)</span><span>
-</span><span id="line-45"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Haskemathesis.Check.Standard.html"><span class="hs-identifier">Haskemathesis.Check.Standard</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Haskemathesis.Check.Standard.html#defaultChecks"><span class="hs-identifier">defaultChecks</span></a></span><span class="hs-special">)</span><span>
-</span><span id="line-46"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Haskemathesis.Check.Types.html"><span class="hs-identifier">Haskemathesis.Check.Types</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Haskemathesis.Check.Types.html#Check"><span class="hs-identifier">Check</span></a></span><span class="hs-special">)</span><span>
-</span><span id="line-47"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Haskemathesis.Execute.Types.html"><span class="hs-identifier">Haskemathesis.Execute.Types</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Haskemathesis.Execute.Types.html#BaseUrl"><span class="hs-identifier">BaseUrl</span></a></span><span class="hs-special">)</span><span>
-</span><span id="line-48"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Haskemathesis.OpenApi.Types.html"><span class="hs-identifier">Haskemathesis.OpenApi.Types</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Haskemathesis.OpenApi.Types.html#ResolvedOperation"><span class="hs-identifier">ResolvedOperation</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
-</span><span id="line-49"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="file:///nix/store/fsi2cvnm3mdngjk22hkkpyl0q5h66sjj-http-types-0.12.4-doc/share/doc/http-types-0.12.4/html/src/Network.HTTP.Types.html"><span class="hs-identifier">Network.HTTP.Types</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="file:///nix/store/fsi2cvnm3mdngjk22hkkpyl0q5h66sjj-http-types-0.12.4-doc/share/doc/http-types-0.12.4/html/src/Network.HTTP.Types.Header.html#HeaderName"><span class="hs-identifier">HeaderName</span></a></span><span class="hs-special">)</span><span>
-</span><span id="line-50"></span><span>
-</span><span id="line-51"></span><span class="annot"><span class="hs-comment">{- | Configuration for test generation and execution.
+</span><span id="line-45"></span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="Haskemathesis.Config.html"><span class="hs-identifier">Haskemathesis.Config</span></a></span><span> </span><span class="hs-special">(</span><span>
+</span><span id="line-46"></span><span>    </span><span class="annot"><a href="Haskemathesis.Config.html#TestConfig"><span class="hs-identifier">TestConfig</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><span id="line-47"></span><span>    </span><span class="annot"><a href="Haskemathesis.Config.html#defaultTestConfig"><span class="hs-identifier">defaultTestConfig</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-48"></span><span>    </span><span class="annot"><a href="Haskemathesis.Config.html#filterByOperationId"><span class="hs-identifier">filterByOperationId</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-49"></span><span>    </span><span class="annot"><a href="Haskemathesis.Config.html#filterByPathPrefix"><span class="hs-identifier">filterByPathPrefix</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-50"></span><span>    </span><span class="annot"><a href="Haskemathesis.Config.html#filterByTag"><span class="hs-identifier">filterByTag</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-51"></span><span>    </span><span class="annot"><a href="Haskemathesis.Config.html#defaultStatefulChecks"><span class="hs-identifier">defaultStatefulChecks</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-52"></span><span class="hs-special">)</span><span>
+</span><span id="line-53"></span><span class="hs-keyword">where</span><span>
+</span><span id="line-54"></span><span>
+</span><span id="line-55"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.ByteString</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">ByteString</span></span><span class="hs-special">)</span><span>
+</span><span id="line-56"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Text</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Text</span></span><span class="hs-special">)</span><span>
+</span><span id="line-57"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.Text</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">T</span></span><span>
+</span><span id="line-58"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Haskemathesis.Auth.Config.html"><span class="hs-identifier">Haskemathesis.Auth.Config</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Haskemathesis.Auth.Config.html#AuthConfig"><span class="hs-identifier">AuthConfig</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-59"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Haskemathesis.Check.Standard.html"><span class="hs-identifier">Haskemathesis.Check.Standard</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Haskemathesis.Check.Standard.html#defaultChecks"><span class="hs-identifier">defaultChecks</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-60"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Haskemathesis.Check.Types.html"><span class="hs-identifier">Haskemathesis.Check.Types</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Haskemathesis.Check.Types.html#Check"><span class="hs-identifier">Check</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-61"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Haskemathesis.Execute.Types.html"><span class="hs-identifier">Haskemathesis.Execute.Types</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Haskemathesis.Execute.Types.html#BaseUrl"><span class="hs-identifier">BaseUrl</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-62"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Haskemathesis.OpenApi.Types.html"><span class="hs-identifier">Haskemathesis.OpenApi.Types</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Haskemathesis.OpenApi.Types.html#ResolvedOperation"><span class="hs-identifier">ResolvedOperation</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-63"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Haskemathesis.Stateful.Checks.html"><span class="hs-identifier">Haskemathesis.Stateful.Checks</span></a></span><span> </span><span class="hs-special">(</span><span>
+</span><span id="line-64"></span><span>    </span><span class="annot"><a href="Haskemathesis.Stateful.Checks.html#StatefulCheck"><span class="hs-identifier">StatefulCheck</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-65"></span><span>    </span><span class="annot"><a href="Haskemathesis.Stateful.Checks.html#ensureResourceAvailability"><span class="hs-identifier">ensureResourceAvailability</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-66"></span><span>    </span><span class="annot"><a href="Haskemathesis.Stateful.Checks.html#useAfterFree"><span class="hs-identifier">useAfterFree</span></a></span><span class="hs-special">,</span><span>
+</span><span id="line-67"></span><span> </span><span class="hs-special">)</span><span>
+</span><span id="line-68"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="file:///nix/store/fsi2cvnm3mdngjk22hkkpyl0q5h66sjj-http-types-0.12.4-doc/share/doc/http-types-0.12.4/html/src/Network.HTTP.Types.html"><span class="hs-identifier">Network.HTTP.Types</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="file:///nix/store/fsi2cvnm3mdngjk22hkkpyl0q5h66sjj-http-types-0.12.4-doc/share/doc/http-types-0.12.4/html/src/Network.HTTP.Types.Header.html#HeaderName"><span class="hs-identifier">HeaderName</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-69"></span><span>
+</span><span id="line-70"></span><span class="annot"><span class="hs-comment">{- | Configuration for test generation and execution.
 
 This record controls how properties are generated, how many tests to run,
 authentication settings, and which operations to include.
@@ -63,25 +82,29 @@ authentication settings, and which operations to include.
 * 'tcOperationFilter' - Predicate to filter which operations to test
 * 'tcHeaders' - Global headers to include in every request
 * 'tcStreamingTimeout' - Default timeout for streaming endpoints (milliseconds)
+* 'tcStatefulTesting' - Whether to enable stateful testing
+* 'tcStatefulChecks' - List of stateful checks to run after sequences
+* 'tcMaxSequenceLength' - Maximum number of operations per sequence
+* 'tcCleanupOnFailure' - Whether to run cleanup steps even on failure
 -}</span></span><span>
-</span><span id="line-67"></span><span class="hs-keyword">data</span><span> </span><span id="TestConfig"><span class="annot"><a href="Haskemathesis.Config.html#TestConfig"><span class="hs-identifier hs-var">TestConfig</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="TestConfig"><span class="annot"><a href="Haskemathesis.Config.html#TestConfig"><span class="hs-identifier hs-var">TestConfig</span></a></span></span><span>
-</span><span id="line-68"></span><span>    </span><span class="hs-special">{</span><span> </span><span id="tcChecks"><span class="annot"><span class="annottext">TestConfig -&gt; [Check]
+</span><span id="line-90"></span><span class="hs-keyword">data</span><span> </span><span id="TestConfig"><span class="annot"><a href="Haskemathesis.Config.html#TestConfig"><span class="hs-identifier hs-var">TestConfig</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="TestConfig"><span class="annot"><a href="Haskemathesis.Config.html#TestConfig"><span class="hs-identifier hs-var">TestConfig</span></a></span></span><span>
+</span><span id="line-91"></span><span>    </span><span class="hs-special">{</span><span> </span><span id="tcChecks"><span class="annot"><span class="annottext">TestConfig -&gt; [Check]
 </span><a href="Haskemathesis.Config.html#tcChecks"><span class="hs-identifier hs-var hs-var">tcChecks</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-glyph">!</span><span class="hs-special">[</span><span class="annot"><a href="Haskemathesis.Check.Types.html#Check"><span class="hs-identifier hs-type">Check</span></a></span><span class="hs-special">]</span><span>
-</span><span id="line-69"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="tcAuthConfig"><span class="annot"><span class="annottext">TestConfig -&gt; Maybe AuthConfig
+</span><span id="line-92"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="tcAuthConfig"><span class="annot"><span class="annottext">TestConfig -&gt; Maybe AuthConfig
 </span><a href="Haskemathesis.Config.html#tcAuthConfig"><span class="hs-identifier hs-var hs-var">tcAuthConfig</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-glyph">!</span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="Haskemathesis.Auth.Config.html#AuthConfig"><span class="hs-identifier hs-type">AuthConfig</span></a></span><span class="hs-special">)</span><span>
-</span><span id="line-70"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="tcBaseUrl"><span class="annot"><span class="annottext">TestConfig -&gt; Maybe Text
+</span><span id="line-93"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="tcBaseUrl"><span class="annot"><span class="annottext">TestConfig -&gt; Maybe Text
 </span><a href="Haskemathesis.Config.html#tcBaseUrl"><span class="hs-identifier hs-var hs-var">tcBaseUrl</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-glyph">!</span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="Haskemathesis.Execute.Types.html#BaseUrl"><span class="hs-identifier hs-type">BaseUrl</span></a></span><span class="hs-special">)</span><span>
-</span><span id="line-71"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="tcPropertyCount"><span class="annot"><span class="annottext">TestConfig -&gt; Int
+</span><span id="line-94"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="tcPropertyCount"><span class="annot"><span class="annottext">TestConfig -&gt; Int
 </span><a href="Haskemathesis.Config.html#tcPropertyCount"><span class="hs-identifier hs-var hs-var">tcPropertyCount</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-glyph">!</span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span>
-</span><span id="line-72"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="tcNegativeTesting"><span class="annot"><span class="annottext">TestConfig -&gt; Bool
+</span><span id="line-95"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="tcNegativeTesting"><span class="annot"><span class="annottext">TestConfig -&gt; Bool
 </span><a href="Haskemathesis.Config.html#tcNegativeTesting"><span class="hs-identifier hs-var hs-var">tcNegativeTesting</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-glyph">!</span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span>
-</span><span id="line-73"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="tcOperationFilter"><span class="annot"><span class="annottext">TestConfig -&gt; ResolvedOperation -&gt; Bool
+</span><span id="line-96"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="tcOperationFilter"><span class="annot"><span class="annottext">TestConfig -&gt; ResolvedOperation -&gt; Bool
 </span><a href="Haskemathesis.Config.html#tcOperationFilter"><span class="hs-identifier hs-var hs-var">tcOperationFilter</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-glyph">!</span><span class="hs-special">(</span><span class="annot"><a href="Haskemathesis.OpenApi.Types.html#ResolvedOperation"><span class="hs-identifier hs-type">ResolvedOperation</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span class="hs-special">)</span><span>
-</span><span id="line-74"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="tcHeaders"><span class="annot"><span class="annottext">TestConfig -&gt; [(HeaderName, ByteString)]
+</span><span id="line-97"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="tcHeaders"><span class="annot"><span class="annottext">TestConfig -&gt; [(HeaderName, ByteString)]
 </span><a href="Haskemathesis.Config.html#tcHeaders"><span class="hs-identifier hs-var hs-var">tcHeaders</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-glyph">!</span><span class="hs-special">[</span><span class="hs-special">(</span><span class="annot"><a href="file:///nix/store/fsi2cvnm3mdngjk22hkkpyl0q5h66sjj-http-types-0.12.4-doc/share/doc/http-types-0.12.4/html/src/Network.HTTP.Types.Header.html#HeaderName"><span class="hs-identifier hs-type">HeaderName</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">ByteString</span></span><span class="hs-special">)</span><span class="hs-special">]</span><span>
-</span><span id="line-75"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="tcStreamingTimeout"><span class="annot"><span class="annottext">TestConfig -&gt; Maybe Int
+</span><span id="line-98"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="tcStreamingTimeout"><span class="annot"><span class="annottext">TestConfig -&gt; Maybe Int
 </span><a href="Haskemathesis.Config.html#tcStreamingTimeout"><span class="hs-identifier hs-var hs-var">tcStreamingTimeout</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-glyph">!</span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span class="hs-special">)</span><span>
-</span><span id="line-76"></span><span>    </span><span class="annot"><span class="hs-comment">{- ^ Default timeout in milliseconds for streaming endpoints.
+</span><span id="line-99"></span><span>    </span><span class="annot"><span class="hs-comment">{- ^ Default timeout in milliseconds for streaming endpoints.
 
     This timeout applies to operations that are detected as streaming
     (have @text/event-stream@ or @application/x-ndjson@ content types)
@@ -101,9 +124,50 @@ authentication settings, and which operations to include.
     Set to 'Nothing' to use the HTTP client's default timeout for
     streaming endpoints (which may cause tests to hang).
     -}</span></span><span>
-</span><span id="line-96"></span><span>    </span><span class="hs-special">}</span><span>
-</span><span id="line-97"></span><span>
-</span><span id="line-98"></span><span class="annot"><span class="hs-comment">{- | Sensible defaults for 'TestConfig'.
+</span><span id="line-119"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="tcStatefulTesting"><span class="annot"><span class="annottext">TestConfig -&gt; Bool
+</span><a href="Haskemathesis.Config.html#tcStatefulTesting"><span class="hs-identifier hs-var hs-var">tcStatefulTesting</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-glyph">!</span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span>
+</span><span id="line-120"></span><span>    </span><span class="annot"><span class="hs-comment">{- ^ Enable stateful testing.
+
+    When enabled, 'propertiesForSpecWithConfig' will also generate
+    stateful properties that test operation sequences. Use
+    'propertyStateful' for direct access to stateful testing.
+
+    Default: 'False'
+    -}</span></span><span>
+</span><span id="line-128"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="tcStatefulChecks"><span class="annot"><span class="annottext">TestConfig -&gt; [StatefulCheck]
+</span><a href="Haskemathesis.Config.html#tcStatefulChecks"><span class="hs-identifier hs-var hs-var">tcStatefulChecks</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-glyph">!</span><span class="hs-special">[</span><span class="annot"><a href="Haskemathesis.Stateful.Checks.html#StatefulCheck"><span class="hs-identifier hs-type">StatefulCheck</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-129"></span><span>    </span><span class="annot"><span class="hs-comment">{- ^ Stateful checks to run after each sequence.
+
+    These checks verify stateful properties like:
+
+    * 'useAfterFree' - Deleted resources return 404
+    * 'ensureResourceAvailability' - Created resources are accessible
+
+    Default: 'defaultStatefulChecks' (both of the above)
+    -}</span></span><span>
+</span><span id="line-138"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="tcMaxSequenceLength"><span class="annot"><span class="annottext">TestConfig -&gt; Int
+</span><a href="Haskemathesis.Config.html#tcMaxSequenceLength"><span class="hs-identifier hs-var hs-var">tcMaxSequenceLength</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-glyph">!</span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span>
+</span><span id="line-139"></span><span>    </span><span class="annot"><span class="hs-comment">{- ^ Maximum number of operations per stateful sequence.
+
+    Controls how long generated sequences can be. Longer sequences
+    test more complex scenarios but take longer to run and may be
+    harder to debug when they fail.
+
+    Default: 5
+    -}</span></span><span>
+</span><span id="line-147"></span><span>    </span><span class="hs-special">,</span><span> </span><span id="tcCleanupOnFailure"><span class="annot"><span class="annottext">TestConfig -&gt; Bool
+</span><a href="Haskemathesis.Config.html#tcCleanupOnFailure"><span class="hs-identifier hs-var hs-var">tcCleanupOnFailure</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-glyph">!</span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span>
+</span><span id="line-148"></span><span>    </span><span class="annot"><span class="hs-comment">{- ^ Whether to run cleanup steps even when the main sequence fails.
+
+    When 'True', cleanup operations (typically DELETEs) are executed
+    even if an earlier step in the sequence fails. This prevents
+    resource leaks but may make debugging harder.
+
+    Default: 'True'
+    -}</span></span><span>
+</span><span id="line-156"></span><span>    </span><span class="hs-special">}</span><span>
+</span><span id="line-157"></span><span>
+</span><span id="line-158"></span><span class="annot"><span class="hs-comment">{- | Sensible defaults for 'TestConfig'.
 
 The default configuration:
 
@@ -115,43 +179,81 @@ The default configuration:
 * All operations included (filter always returns 'True')
 * No global headers
 * 1 second (1000ms) streaming timeout
+* Stateful testing disabled
+* Default stateful checks (use-after-free, resource availability)
+* Max sequence length of 5
+* Cleanup on failure enabled
 -}</span></span><span>
-</span><span id="line-111"></span><span class="annot"><a href="Haskemathesis.Config.html#defaultTestConfig"><span class="hs-identifier hs-type">defaultTestConfig</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Haskemathesis.Config.html#TestConfig"><span class="hs-identifier hs-type">TestConfig</span></a></span><span>
-</span><span id="line-112"></span><span id="defaultTestConfig"><span class="annot"><span class="annottext">defaultTestConfig :: TestConfig
+</span><span id="line-175"></span><span class="annot"><a href="Haskemathesis.Config.html#defaultTestConfig"><span class="hs-identifier hs-type">defaultTestConfig</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Haskemathesis.Config.html#TestConfig"><span class="hs-identifier hs-type">TestConfig</span></a></span><span>
+</span><span id="line-176"></span><span id="defaultTestConfig"><span class="annot"><span class="annottext">defaultTestConfig :: TestConfig
 </span><a href="Haskemathesis.Config.html#defaultTestConfig"><span class="hs-identifier hs-var hs-var">defaultTestConfig</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
-</span><span id="line-113"></span><span>    </span><span class="annot"><a href="Haskemathesis.Config.html#TestConfig"><span class="hs-identifier hs-type">TestConfig</span></a></span><span>
-</span><span id="line-114"></span><span>        </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">tcChecks :: [Check]
+</span><span id="line-177"></span><span>    </span><span class="annot"><a href="Haskemathesis.Config.html#TestConfig"><span class="hs-identifier hs-type">TestConfig</span></a></span><span>
+</span><span id="line-178"></span><span>        </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">tcChecks :: [Check]
 </span><a href="Haskemathesis.Config.html#tcChecks"><span class="hs-identifier hs-var">tcChecks</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[Check]
 </span><a href="Haskemathesis.Check.Standard.html#defaultChecks"><span class="hs-identifier hs-var">defaultChecks</span></a></span><span>
-</span><span id="line-115"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">tcAuthConfig :: Maybe AuthConfig
+</span><span id="line-179"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">tcAuthConfig :: Maybe AuthConfig
 </span><a href="Haskemathesis.Config.html#tcAuthConfig"><span class="hs-identifier hs-var">tcAuthConfig</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe AuthConfig
 forall a. Maybe a
 </span><span class="hs-identifier hs-var">Nothing</span></span><span>
-</span><span id="line-116"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">tcBaseUrl :: Maybe Text
+</span><span id="line-180"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">tcBaseUrl :: Maybe Text
 </span><a href="Haskemathesis.Config.html#tcBaseUrl"><span class="hs-identifier hs-var">tcBaseUrl</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe Text
 forall a. Maybe a
 </span><span class="hs-identifier hs-var">Nothing</span></span><span>
-</span><span id="line-117"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">tcPropertyCount :: Int
+</span><span id="line-181"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">tcPropertyCount :: Int
 </span><a href="Haskemathesis.Config.html#tcPropertyCount"><span class="hs-identifier hs-var">tcPropertyCount</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Int
 </span><span class="hs-number">100</span></span><span>
-</span><span id="line-118"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">tcNegativeTesting :: Bool
+</span><span id="line-182"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">tcNegativeTesting :: Bool
 </span><a href="Haskemathesis.Config.html#tcNegativeTesting"><span class="hs-identifier hs-var">tcNegativeTesting</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Bool
 </span><span class="hs-identifier hs-var">False</span></span><span>
-</span><span id="line-119"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">tcOperationFilter :: ResolvedOperation -&gt; Bool
+</span><span id="line-183"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">tcOperationFilter :: ResolvedOperation -&gt; Bool
 </span><a href="Haskemathesis.Config.html#tcOperationFilter"><span class="hs-identifier hs-var">tcOperationFilter</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Bool -&gt; ResolvedOperation -&gt; Bool
 forall a b. a -&gt; b -&gt; a
 </span><span class="hs-identifier hs-var">const</span></span><span> </span><span class="annot"><span class="annottext">Bool
 </span><span class="hs-identifier hs-var">True</span></span><span>
-</span><span id="line-120"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">tcHeaders :: [(HeaderName, ByteString)]
+</span><span id="line-184"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">tcHeaders :: [(HeaderName, ByteString)]
 </span><a href="Haskemathesis.Config.html#tcHeaders"><span class="hs-identifier hs-var">tcHeaders</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>
-</span><span id="line-121"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">tcStreamingTimeout :: Maybe Int
+</span><span id="line-185"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">tcStreamingTimeout :: Maybe Int
 </span><a href="Haskemathesis.Config.html#tcStreamingTimeout"><span class="hs-identifier hs-var">tcStreamingTimeout</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Int -&gt; Maybe Int
 forall a. a -&gt; Maybe a
 </span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">Int
 </span><span class="hs-number">1000</span></span><span>
-</span><span id="line-122"></span><span>        </span><span class="hs-special">}</span><span>
-</span><span id="line-123"></span><span>
-</span><span id="line-124"></span><span class="annot"><span class="hs-comment">{- | Create a filter that matches a specific operation ID.
+</span><span id="line-186"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">tcStatefulTesting :: Bool
+</span><a href="Haskemathesis.Config.html#tcStatefulTesting"><span class="hs-identifier hs-var">tcStatefulTesting</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">False</span></span><span>
+</span><span id="line-187"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">tcStatefulChecks :: [StatefulCheck]
+</span><a href="Haskemathesis.Config.html#tcStatefulChecks"><span class="hs-identifier hs-var">tcStatefulChecks</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[StatefulCheck]
+</span><a href="Haskemathesis.Config.html#defaultStatefulChecks"><span class="hs-identifier hs-var">defaultStatefulChecks</span></a></span><span>
+</span><span id="line-188"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">tcMaxSequenceLength :: Int
+</span><a href="Haskemathesis.Config.html#tcMaxSequenceLength"><span class="hs-identifier hs-var">tcMaxSequenceLength</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">5</span></span><span>
+</span><span id="line-189"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">tcCleanupOnFailure :: Bool
+</span><a href="Haskemathesis.Config.html#tcCleanupOnFailure"><span class="hs-identifier hs-var">tcCleanupOnFailure</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">True</span></span><span>
+</span><span id="line-190"></span><span>        </span><span class="hs-special">}</span><span>
+</span><span id="line-191"></span><span>
+</span><span id="line-192"></span><span class="annot"><span class="hs-comment">{- | Default stateful checks.
+
+Includes:
+
+* 'useAfterFree' - Verifies deleted resources return 404
+* 'ensureResourceAvailability' - Verifies created resources are accessible
+
+Use these as a starting point and add or remove checks as needed:
+
+@
+myChecks = defaultStatefulChecks ++ [ensureModificationPersisted]
+@
+-}</span></span><span>
+</span><span id="line-205"></span><span class="annot"><a href="Haskemathesis.Config.html#defaultStatefulChecks"><span class="hs-identifier hs-type">defaultStatefulChecks</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="Haskemathesis.Stateful.Checks.html#StatefulCheck"><span class="hs-identifier hs-type">StatefulCheck</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-206"></span><span id="defaultStatefulChecks"><span class="annot"><span class="annottext">defaultStatefulChecks :: [StatefulCheck]
+</span><a href="Haskemathesis.Config.html#defaultStatefulChecks"><span class="hs-identifier hs-var hs-var">defaultStatefulChecks</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-207"></span><span>    </span><span class="hs-special">[</span><span> </span><span class="annot"><span class="annottext">StatefulCheck
+</span><a href="Haskemathesis.Stateful.Checks.html#useAfterFree"><span class="hs-identifier hs-var">useAfterFree</span></a></span><span>
+</span><span id="line-208"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">StatefulCheck
+</span><a href="Haskemathesis.Stateful.Checks.html#ensureResourceAvailability"><span class="hs-identifier hs-var">ensureResourceAvailability</span></a></span><span>
+</span><span id="line-209"></span><span>    </span><span class="hs-special">]</span><span>
+</span><span id="line-210"></span><span>
+</span><span id="line-211"></span><span class="annot"><span class="hs-comment">{- | Create a filter that matches a specific operation ID.
 
 Useful when you want to test a single endpoint:
 
@@ -161,20 +263,20 @@ config = defaultTestConfig
     }
 @
 -}</span></span><span>
-</span><span id="line-134"></span><span class="annot"><a href="Haskemathesis.Config.html#filterByOperationId"><span class="hs-identifier hs-type">filterByOperationId</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Haskemathesis.OpenApi.Types.html#ResolvedOperation"><span class="hs-identifier hs-type">ResolvedOperation</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span>
-</span><span id="line-135"></span><span id="filterByOperationId"><span class="annot"><span class="annottext">filterByOperationId :: Text -&gt; ResolvedOperation -&gt; Bool
-</span><a href="Haskemathesis.Config.html#filterByOperationId"><span class="hs-identifier hs-var hs-var">filterByOperationId</span></a></span></span><span> </span><span id="local-6989586621679242854"><span class="annot"><span class="annottext">Text
-</span><a href="#local-6989586621679242854"><span class="hs-identifier hs-var">opId</span></a></span></span><span> </span><span id="local-6989586621679242855"><span class="annot"><span class="annottext">ResolvedOperation
-</span><a href="#local-6989586621679242855"><span class="hs-identifier hs-var">op</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">ResolvedOperation -&gt; Maybe Text
+</span><span id="line-221"></span><span class="annot"><a href="Haskemathesis.Config.html#filterByOperationId"><span class="hs-identifier hs-type">filterByOperationId</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Haskemathesis.OpenApi.Types.html#ResolvedOperation"><span class="hs-identifier hs-type">ResolvedOperation</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span>
+</span><span id="line-222"></span><span id="filterByOperationId"><span class="annot"><span class="annottext">filterByOperationId :: Text -&gt; ResolvedOperation -&gt; Bool
+</span><a href="Haskemathesis.Config.html#filterByOperationId"><span class="hs-identifier hs-var hs-var">filterByOperationId</span></a></span></span><span> </span><span id="local-6989586621679244141"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679244141"><span class="hs-identifier hs-var">opId</span></a></span></span><span> </span><span id="local-6989586621679244142"><span class="annot"><span class="annottext">ResolvedOperation
+</span><a href="#local-6989586621679244142"><span class="hs-identifier hs-var">op</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">ResolvedOperation -&gt; Maybe Text
 </span><a href="Haskemathesis.OpenApi.Types.html#roOperationId"><span class="hs-identifier hs-var">roOperationId</span></a></span><span> </span><span class="annot"><span class="annottext">ResolvedOperation
-</span><a href="#local-6989586621679242855"><span class="hs-identifier hs-var">op</span></a></span><span> </span><span class="annot"><span class="annottext">Maybe Text -&gt; Maybe Text -&gt; Bool
+</span><a href="#local-6989586621679244142"><span class="hs-identifier hs-var">op</span></a></span><span> </span><span class="annot"><span class="annottext">Maybe Text -&gt; Maybe Text -&gt; Bool
 forall a. Eq a =&gt; a -&gt; a -&gt; Bool
 </span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Maybe Text
 forall a. a -&gt; Maybe a
 </span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">Text
-</span><a href="#local-6989586621679242854"><span class="hs-identifier hs-var">opId</span></a></span><span>
-</span><span id="line-136"></span><span>
-</span><span id="line-137"></span><span class="annot"><span class="hs-comment">{- | Create a filter that matches operations by path prefix.
+</span><a href="#local-6989586621679244141"><span class="hs-identifier hs-var">opId</span></a></span><span>
+</span><span id="line-223"></span><span>
+</span><span id="line-224"></span><span class="annot"><span class="hs-comment">{- | Create a filter that matches operations by path prefix.
 
 Useful for testing a subset of your API:
 
@@ -184,17 +286,17 @@ config = defaultTestConfig
     }
 @
 -}</span></span><span>
-</span><span id="line-147"></span><span class="annot"><a href="Haskemathesis.Config.html#filterByPathPrefix"><span class="hs-identifier hs-type">filterByPathPrefix</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Haskemathesis.OpenApi.Types.html#ResolvedOperation"><span class="hs-identifier hs-type">ResolvedOperation</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span>
-</span><span id="line-148"></span><span id="filterByPathPrefix"><span class="annot"><span class="annottext">filterByPathPrefix :: Text -&gt; ResolvedOperation -&gt; Bool
-</span><a href="Haskemathesis.Config.html#filterByPathPrefix"><span class="hs-identifier hs-var hs-var">filterByPathPrefix</span></a></span></span><span> </span><span id="local-6989586621679242857"><span class="annot"><span class="annottext">Text
-</span><a href="#local-6989586621679242857"><span class="hs-identifier hs-var">prefix</span></a></span></span><span> </span><span id="local-6989586621679242858"><span class="annot"><span class="annottext">ResolvedOperation
-</span><a href="#local-6989586621679242858"><span class="hs-identifier hs-var">op</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Bool
+</span><span id="line-234"></span><span class="annot"><a href="Haskemathesis.Config.html#filterByPathPrefix"><span class="hs-identifier hs-type">filterByPathPrefix</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Haskemathesis.OpenApi.Types.html#ResolvedOperation"><span class="hs-identifier hs-type">ResolvedOperation</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span>
+</span><span id="line-235"></span><span id="filterByPathPrefix"><span class="annot"><span class="annottext">filterByPathPrefix :: Text -&gt; ResolvedOperation -&gt; Bool
+</span><a href="Haskemathesis.Config.html#filterByPathPrefix"><span class="hs-identifier hs-var hs-var">filterByPathPrefix</span></a></span></span><span> </span><span id="local-6989586621679244144"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679244144"><span class="hs-identifier hs-var">prefix</span></a></span></span><span> </span><span id="local-6989586621679244145"><span class="annot"><span class="annottext">ResolvedOperation
+</span><a href="#local-6989586621679244145"><span class="hs-identifier hs-var">op</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Bool
 </span><span class="hs-identifier hs-var">T.isPrefixOf</span></span><span> </span><span class="annot"><span class="annottext">Text
-</span><a href="#local-6989586621679242857"><span class="hs-identifier hs-var">prefix</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">ResolvedOperation -&gt; Text
+</span><a href="#local-6989586621679244144"><span class="hs-identifier hs-var">prefix</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">ResolvedOperation -&gt; Text
 </span><a href="Haskemathesis.OpenApi.Types.html#roPath"><span class="hs-identifier hs-var">roPath</span></a></span><span> </span><span class="annot"><span class="annottext">ResolvedOperation
-</span><a href="#local-6989586621679242858"><span class="hs-identifier hs-var">op</span></a></span><span class="hs-special">)</span><span>
-</span><span id="line-149"></span><span>
-</span><span id="line-150"></span><span class="annot"><span class="hs-comment">{- | Create a filter that matches operations by tag.
+</span><a href="#local-6989586621679244145"><span class="hs-identifier hs-var">op</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-236"></span><span>
+</span><span id="line-237"></span><span class="annot"><span class="hs-comment">{- | Create a filter that matches operations by tag.
 
 Useful for testing operations by functional area:
 
@@ -204,15 +306,15 @@ config = defaultTestConfig
     }
 @
 -}</span></span><span>
-</span><span id="line-160"></span><span class="annot"><a href="Haskemathesis.Config.html#filterByTag"><span class="hs-identifier hs-type">filterByTag</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Haskemathesis.OpenApi.Types.html#ResolvedOperation"><span class="hs-identifier hs-type">ResolvedOperation</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span>
-</span><span id="line-161"></span><span id="filterByTag"><span class="annot"><span class="annottext">filterByTag :: Text -&gt; ResolvedOperation -&gt; Bool
-</span><a href="Haskemathesis.Config.html#filterByTag"><span class="hs-identifier hs-var hs-var">filterByTag</span></a></span></span><span> </span><span id="local-6989586621679242861"><span class="annot"><span class="annottext">Text
-</span><a href="#local-6989586621679242861"><span class="hs-identifier hs-var">tag</span></a></span></span><span> </span><span id="local-6989586621679242862"><span class="annot"><span class="annottext">ResolvedOperation
-</span><a href="#local-6989586621679242862"><span class="hs-identifier hs-var">op</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Text
-</span><a href="#local-6989586621679242861"><span class="hs-identifier hs-var">tag</span></a></span><span> </span><span class="annot"><span class="annottext">Text -&gt; [Text] -&gt; Bool
+</span><span id="line-247"></span><span class="annot"><a href="Haskemathesis.Config.html#filterByTag"><span class="hs-identifier hs-type">filterByTag</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Haskemathesis.OpenApi.Types.html#ResolvedOperation"><span class="hs-identifier hs-type">ResolvedOperation</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span>
+</span><span id="line-248"></span><span id="filterByTag"><span class="annot"><span class="annottext">filterByTag :: Text -&gt; ResolvedOperation -&gt; Bool
+</span><a href="Haskemathesis.Config.html#filterByTag"><span class="hs-identifier hs-var hs-var">filterByTag</span></a></span></span><span> </span><span id="local-6989586621679244148"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679244148"><span class="hs-identifier hs-var">tag</span></a></span></span><span> </span><span id="local-6989586621679244149"><span class="annot"><span class="annottext">ResolvedOperation
+</span><a href="#local-6989586621679244149"><span class="hs-identifier hs-var">op</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679244148"><span class="hs-identifier hs-var">tag</span></a></span><span> </span><span class="annot"><span class="annottext">Text -&gt; [Text] -&gt; Bool
 forall a. Eq a =&gt; a -&gt; [a] -&gt; Bool
 forall (t :: * -&gt; *) a. (Foldable t, Eq a) =&gt; a -&gt; t a -&gt; Bool
 </span><span class="hs-operator hs-var">`elem`</span></span><span> </span><span class="annot"><span class="annottext">ResolvedOperation -&gt; [Text]
 </span><a href="Haskemathesis.OpenApi.Types.html#roTags"><span class="hs-identifier hs-var">roTags</span></a></span><span> </span><span class="annot"><span class="annottext">ResolvedOperation
-</span><a href="#local-6989586621679242862"><span class="hs-identifier hs-var">op</span></a></span><span>
-</span><span id="line-162"></span></pre></body></html>
+</span><a href="#local-6989586621679244149"><span class="hs-identifier hs-var">op</span></a></span><span>
+</span><span id="line-249"></span></pre></body></html>
